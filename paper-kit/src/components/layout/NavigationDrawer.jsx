@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Home, Files, Clock, Star, Trash2, Settings,
-  HelpCircle, Share2, Info, X, ChevronRight, ShieldCheck, Sparkles, LogOut
+  HelpCircle, Share2, Info, X, ChevronRight, ShieldCheck, Sparkles, LogOut,
+  FileText, Sliders, Bot
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../context/I18nContext';
@@ -31,6 +32,12 @@ export default function NavigationDrawer({ isOpen, onClose }) {
   const initials = user?.name
     ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
     : 'PK';
+
+  const exclusiveTools = [
+    { id: 'pdf-editor', label: 'PDF Editor', badge: '3 Edits/Day', icon: FileText, path: '/tools/pdf-editor', color: '#6366f1' },
+    { id: 'ai-tools', label: 'AI Assistant', badge: '5 AI/Day', icon: Bot, path: '/ai', color: '#a855f7' },
+    { id: 'image-manipulator', label: 'Image Adjuster', badge: 'Unlimited', icon: Sliders, path: '/tools/image-manipulator', color: '#ec4899' },
+  ];
 
   const menuItems = [
     { id: 'home', label: t('home') || 'Home Dashboard', icon: Home, path: '/' },
@@ -98,6 +105,34 @@ export default function NavigationDrawer({ isOpen, onClose }) {
 
         {/* List of menu options */}
         <nav className="nav-drawer__menu">
+          {/* Exclusive Available Tools Section */}
+          <div style={{ padding: '0.5rem 1rem 0.25rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Exclusive Available Tools
+          </div>
+          {exclusiveTools.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                className="nav-drawer__menu-item"
+                onClick={() => handleItemClick(item)}
+                id={`drawer-menu-${item.id}`}
+                style={{ background: 'rgba(99, 102, 241, 0.05)', borderRadius: '8px', margin: '2px 0' }}
+              >
+                <div className="nav-drawer__menu-icon-wrapper">
+                  <Icon size={18} color={item.color} />
+                </div>
+                <span className="nav-drawer__menu-label" style={{ fontWeight: 600 }}>{item.label}</span>
+                <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', borderRadius: '12px', background: 'rgba(255,255,255,0.1)', color: 'var(--color-text-muted)', marginRight: '4px', fontWeight: 600 }}>
+                  {item.badge}
+                </span>
+                <ChevronRight size={16} color="var(--color-text-muted)" className="nav-drawer__chevron" />
+              </button>
+            );
+          })}
+
+          <div className="nav-drawer__divider" style={{ margin: '0.5rem 0' }}></div>
+
           {menuItems.map((item) => {
             const Icon = item.icon;
             return (

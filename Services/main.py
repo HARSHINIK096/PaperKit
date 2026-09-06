@@ -4,6 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
+import sys
+
+# Ensure local bin directory (containing ffmpeg/ffprobe) is on PATH
+bin_dir = os.path.join(os.path.dirname(__file__), "bin")
+if os.path.exists(bin_dir):
+    os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
 
 import asyncio
 from services.storage import cleanup_expired_guest_files
@@ -55,7 +61,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="PaperKit API",
     description="Open-Source PDF & Document Suite — backend API",
-    version="2.0.0",
+    version="7.3.2",
     lifespan=lifespan,
 )
 
@@ -135,6 +141,7 @@ os.makedirs(storage_dir, exist_ok=True)
 app.mount("/storage", CustomStaticFiles(directory=storage_dir), name="storage")
 
 from routers.media import router as media_router
+from routers.editor import router as editor_router
 
 # Routers
 app.include_router(auth_router)
@@ -143,6 +150,7 @@ app.include_router(tools_router)
 app.include_router(ai_router)
 app.include_router(jobs_router)
 app.include_router(media_router, prefix="/api/media", tags=["media"])
+app.include_router(editor_router, prefix="/api/editor", tags=["editor"])
 
 
 from fastapi.responses import Response

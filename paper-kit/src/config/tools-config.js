@@ -8,6 +8,7 @@ export const PDF_TOOLS = [
   { id: 'rotate-pdf',      label: 'Rotate PDF',      description: 'Rotate page orientation permanently', path: '/tools/rotate', color: 'blue' },
   { id: 'watermark',       label: 'Watermark',       description: 'Add text or logo watermarks', path: '/tools/watermark', color: 'teal' },
   { id: 'organize-pages',  label: 'Organize Pages',  description: 'Reorder, delete, duplicate & rotate', path: '/tools/organize-pages', color: 'indigo' },
+  { id: 'pdf-editor',      label: 'PDF Editor',      description: 'In-place text editing & object replacement', path: '/tools/pdf-editor', color: 'purple' },
 ];
 
 export const AI_TOOLS = [
@@ -48,6 +49,7 @@ export const IMAGE_FORMAT_TOOLS = [
   { id: 'webp-convert',label: 'WebP to JPG/PNG', description: 'Convert WebP to JPG or PNG', path: '/tools/image-converter?from=webp', color: 'teal' },
   { id: 'heic-to-jpg', label: 'HEIC to JPG',   description: 'Convert Apple HEIC to JPG', path: '/tools/image-converter?from=heic&to=jpg', color: 'pink' },
   { id: 'bmp-convert', label: 'BMP to JPG/PNG',  description: 'Convert BMP to JPG or PNG', path: '/tools/image-converter?from=bmp', color: 'indigo' },
+  { id: 'image-manipulator', label: 'Image Adjust & Manipulator', description: 'Adjust brightness, contrast, saturation & filters', path: '/tools/image-manipulator', color: 'purple' },
 ];
 
 export const IMAGE_COMPRESS_TOOLS = [
@@ -90,10 +92,10 @@ export const ARCHIVE_TOOLS = [
 ];
 
 export const QUICK_TOOLS = [
+  PDF_TOOLS[7], // PDF Editor
   PDF_TOOLS[0], // Merge PDF
   PDF_TOOLS[1], // Split PDF
   PDF_TOOLS[2], // Compress PDF
-  PDF_TOOLS[3], // Extract Pages
   AI_TOOLS[1],  // AI Summary
   AI_TOOLS[4],  // AI Document Chat
   SECURITY_TOOLS[0], // Protect PDF

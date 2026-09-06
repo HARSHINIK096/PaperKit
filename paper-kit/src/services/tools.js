@@ -9,6 +9,7 @@ export const DEFAULT_REGISTRY = [
   { toolId: 'rotate-pdf', name: 'Rotate PDF', category: 'PDF Tools', route: '/tools/rotate', description: 'Rotate PDF pages permanently', availability: { available: true } },
   { toolId: 'compress-pdf', name: 'Compress PDF', category: 'PDF Tools', route: '/tools/compress', description: 'Reduce PDF file size with multi-level optimization', availability: { available: true } },
   { toolId: 'watermark', name: 'Watermark', category: 'PDF Tools', route: '/tools/watermark', description: 'Add confidential text/image watermarks', availability: { available: true } },
+  { toolId: 'pdf-editor', name: 'PDF Editor', category: 'PDF Tools', route: '/tools/pdf-editor', description: 'In-place text editing and object/image replacement', availability: { available: true } },
   
   // Conversions
   { toolId: 'word-to-pdf', name: 'Word to PDF', category: 'Convert', route: '/tools/convert?from=word&to=pdf', description: 'Convert Word documents to PDF', availability: { available: true } },
@@ -211,6 +212,27 @@ export async function convertHtmlToWord(htmlContent, filename = 'edited_document
 export async function organizePDF(fileId, pages, toolId = 'organize-pages') {
   const res = await api.post('/tools/organize', { file_id: fileId, pages, tool_id: toolId });
   return res.data;
+}
+
+export async function getEditorLimits() {
+  const res = await api.get('/editor/limits');
+  return res.data;
+}
+
+export async function applyPdfEdits(fileOrFileId, editsPayload) {
+  const formData = new FormData();
+  if (typeof fileOrFileId === 'string') {
+    formData.append('file_id', fileOrFileId);
+  } else if (fileOrFileId instanceof File || fileOrFileId instanceof Blob) {
+    formData.append('file', fileOrFileId, fileOrFileId.name || 'document.pdf');
+  }
+  formData.append('payload', JSON.stringify(editsPayload));
+
+  const res = await api.post('/editor/edit', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    responseType: 'blob',
+  });
+  return res;
 }
 
 

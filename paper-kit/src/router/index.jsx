@@ -46,6 +46,8 @@ const AudioConverterScreen  = lazy(() => import('../screens/tools/AudioConverter
 const VideoConverterScreen  = lazy(() => import('../screens/tools/VideoConverterScreen'));
 const VideoCompressorScreen = lazy(() => import('../screens/tools/VideoCompressorScreen'));
 const ArchiveToolScreen     = lazy(() => import('../screens/tools/ArchiveToolScreen'));
+const PDFEditorScreen       = lazy(() => import('../screens/tools/PDFEditorScreen'));
+const ImageManipulatorScreen= lazy(() => import('../screens/tools/ImageManipulatorScreen'));
 
 /* AI tool screens */
 const SummarizePDFScreen    = lazy(() => import('../screens/ai/SummarizePDFScreen'));
@@ -215,6 +217,8 @@ export default function AppRouter() {
             <Route path="/tools/video-converter" element={<AppShell headerProps={{ title: 'Video Converter' }}><VideoConverterScreen /></AppShell>} />
             <Route path="/tools/video-compressor" element={<AppShell headerProps={{ title: 'Video Compressor' }}><VideoCompressorScreen /></AppShell>} />
             <Route path="/tools/archive"          element={<AppShell headerProps={{ title: 'Archive Studio' }}><ArchiveToolScreen /></AppShell>} />
+            <Route path="/tools/pdf-editor"       element={<AppShell headerProps={{ title: 'PDF Editor' }}><PDFEditorScreen /></AppShell>} />
+            <Route path="/tools/image-manipulator" element={<AppShell headerProps={{ title: 'Image Adjust & Manipulator' }}><ImageManipulatorScreen /></AppShell>} />
 
             {/* AI tool routes */ }
             <Route path="/ai/ocr"                element={<AppShell headerProps={{ title: 'OCR Text Recognition' }}><OCRScreen /></AppShell>} />
