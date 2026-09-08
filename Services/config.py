@@ -7,7 +7,7 @@ from pydantic import ConfigDict
 from functools import lru_cache
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
-load_dotenv(dotenv_path=ENV_PATH)
+load_dotenv(dotenv_path=ENV_PATH, override=True)
 
 
 class Settings(BaseSettings):
@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     database_name: str = "paperkit"
 
     # JWT
-    secret_key: str = "paperkit-default-dev-secret-key-render-32-chars-long"
+    secret_key: str = "4FgEO_eIDN5458NzUUQgwHQkM4u5H2iS1ezjr7Zru3WRcX1xgaCXziiXf6kLjGVy3eAeKLJuZhR0W4-oFvyoxA"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 10080  # 7 days
 
@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     pdf_preserve_images: bool = True
 
     model_config = ConfigDict(
-        env_file=".env",
+        env_file=str(ENV_PATH),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
