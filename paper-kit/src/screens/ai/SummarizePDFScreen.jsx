@@ -9,6 +9,7 @@ import { useProcessing } from "../../context/ProcessingContext";
 import { summarizePDF } from "../../services/ai";
 import api from "../../services/api";
 import "../ai/ai-screen.css";
+import "../../components/common/CommonResultScreen.css";
 
 const MODES = [
   { id: "short",        label: "Short Summary",    desc: "1-2 concise paragraphs" },

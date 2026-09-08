@@ -766,6 +766,31 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
+/* Docx Preview Container */
+.preview-modal__docx-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.preview-modal__docx-container .docx-wrapper {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.preview-modal__docx-container .docx-wrapper > section.docx {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+  border-radius: 8px !important;
+  margin-bottom: 24px !important;
+  padding: clamp(20px, 4vw, 48px) !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .preview-modal__container {
@@ -793,3 +818,4 @@
     box-shadow: 4px 0 12px rgba(0,0,0,0.15);
   }
 }
+

@@ -4,6 +4,7 @@ import FeatureTipsSwipeStack from '../../components/ui/FeatureTipsSwipeStack';
 import { Info, Trash2, Save, Download, CheckCircle2, FileText, Search, Zap, ShieldCheck } from 'lucide-react';
 import { uploadFile } from '../../services/files';
 import { getPDFMetadata, updatePDFMetadata } from '../../services/tools';
+import { downloadAndOpenFile } from '../../services/native';
 import { PrimaryButton, SecondaryButton } from '../../components/ui/Button';
 import Toast from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
@@ -218,14 +219,17 @@ export default function MetadataScreen() {
                     PDF Metadata Updated Successfully!
                   </span>
                 </div>
-                <a
-                  href={updatedResult.download_url}
-                  download={`${selectedFile?.name?.split('.')[0] || 'document'}_metadata.pdf`}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fname = `${selectedFile?.name?.split('.')[0] || 'document'}_metadata.pdf`;
+                    downloadAndOpenFile(updatedResult.download_url, fname, 'application/pdf');
+                  }}
                   className="btn-primary"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', textDecoration: 'none', padding: '10px', borderRadius: '8px', background: '#10B981', color: '#fff', fontSize: '13px', fontWeight: 600 }}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: 'none', padding: '12px', borderRadius: '8px', background: '#10B981', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
                 >
                   <Download size={15} /> Download Updated PDF
-                </a>
+                </button>
               </div>
             )}
           </div>

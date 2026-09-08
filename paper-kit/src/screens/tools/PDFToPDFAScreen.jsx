@@ -8,6 +8,7 @@ import FilePreviewModal from '../../components/ui/FilePreviewModal';
 import { useToast } from '../../hooks/useToast';
 import { useProcessing } from '../../context/ProcessingContext';
 import { saveProcessedFile } from '../../services/files';
+import { downloadAndOpenFile } from '../../services/native';
 import './PDFToPDFAScreen.css';
 
 
@@ -187,14 +188,15 @@ export default function PDFToPDFAScreen() {
               </div>
             </div>
             <div className="pdfa-screen__result-actions">
-              <a
-                href={result.download_url}
-                download={result.filename}
+              <button
+                type="button"
+                onClick={() => downloadAndOpenFile(result.download_url, result.filename, 'application/pdf')}
                 className="pdfa-screen__btn-download"
+                style={{ border: 'none', cursor: 'pointer' }}
               >
                 <Download size={18} />
                 <span>Download PDF/A Document</span>
-              </a>
+              </button>
               <button
                 type="button"
                 className="pdfa-screen__btn-preview"

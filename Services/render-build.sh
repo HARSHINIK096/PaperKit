@@ -21,6 +21,7 @@ if [ -f ffmpeg.tar.xz ]; then
   tar -xf ffmpeg.tar.xz 2>/dev/null || true
   cp ffmpeg-*-static/ffmpeg bin/ 2>/dev/null || true
   cp ffmpeg-*-static/ffprobe bin/ 2>/dev/null || true
+  chmod +x bin/ffmpeg bin/ffprobe 2>/dev/null || true
   rm -rf ffmpeg.tar.xz ffmpeg-*-static 2>/dev/null || true
 fi
 

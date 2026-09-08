@@ -78,53 +78,30 @@ async def download_youtube(req: DownloadRequest, background_tasks: BackgroundTas
         raise HTTPException(status_code=500, detail=str(e))
 
 
+from spotify_downloader import download_spotify_track
+
 @router.post("/download-spotify")
 async def download_spotify(req: DownloadRequest, background_tasks: BackgroundTasks):
-    if not req.url or "spotify.com" not in req.url:
+    if not req.url or ("spotify.com" not in req.url and "spotify:" not in req.url):
         raise HTTPException(status_code=400, detail="Valid Spotify URL required")
 
     job_id = str(uuid.uuid4())
-    output_template = os.path.join(DOWNLOAD_DIR, f"{job_id}_{{title}} - {{artists}}.{{ext}}")
     
     try:
-        bin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "bin")
-        ffmpeg_path = os.path.join(bin_dir, "ffmpeg.exe" if os.name == "nt" else "ffmpeg")
+        downloaded_file = download_spotify_track(req.url, output_dir=DOWNLOAD_DIR, job_id=job_id)
         
-        cmd = [
-            sys.executable, "-m", "spotdl", "download", req.url,
-            "--output", output_template,
-            "--dont-filter-results",
-            "--audio", "youtube", "youtube-music", "soundcloud"
-        ]
-        
-        if os.path.exists(ffmpeg_path):
-            cmd.extend(["--ffmpeg", ffmpeg_path])
-            
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        if res.returncode != 0:
-            print(f"spotdl error: {res.stderr}")
-            raise Exception(res.stderr or "spotdl download failed")
-            
-        # Find the downloaded file
-        downloaded_file = None
-        for filename in os.listdir(DOWNLOAD_DIR):
-            if filename.startswith(job_id):
-                downloaded_file = os.path.join(DOWNLOAD_DIR, filename)
-                break
-                
-        if not downloaded_file:
-            files = [os.path.join(DOWNLOAD_DIR, f) for f in os.listdir(DOWNLOAD_DIR) if os.path.isfile(os.path.join(DOWNLOAD_DIR, f))]
-            if files:
-                downloaded_file = max(files, key=os.path.getctime)
-
         if not downloaded_file or not os.path.exists(downloaded_file):
             raise Exception("Downloaded audio file not found")
             
         background_tasks.add_task(cleanup_file, downloaded_file)
         
+        filename = os.path.basename(downloaded_file)
+        if filename.startswith(f"{job_id}_"):
+            filename = filename[len(f"{job_id}_"):]
+            
         return FileResponse(
             downloaded_file, 
-            filename=os.path.basename(downloaded_file).replace(f"{job_id}_", ""),
+            filename=filename,
             media_type="audio/mpeg"
         )
         

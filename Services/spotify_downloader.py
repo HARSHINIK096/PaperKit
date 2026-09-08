@@ -1,35 +1,186 @@
+import os
 import sys
+import ssl
+import json
+import argparse
 import subprocess
+from typing import Optional, Tuple
 
-def download_spotify_track(url, output_dir="."):
+# Ensure SSL certificates are properly loaded
+try:
+    import certifi
+    ca_bundle = certifi.where()
+    os.environ["SSL_CERT_FILE"] = ca_bundle
+    os.environ["REQUESTS_CA_BUNDLE"] = ca_bundle
+    os.environ["CURL_CA_BUNDLE"] = ca_bundle
+except ImportError:
+    ca_bundle = None
+
+def find_ffmpeg_path() -> Optional[str]:
     """
-    Downloads Spotify track, album, or playlist audio along with metadata and album art using spotDL.
+    Locates ffmpeg binary in the local bin/ folder or on the system PATH.
     """
-    print(f"Downloading Spotify content from: {url}\n")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    bin_dir = os.path.join(base_dir, "bin")
     
-    # Run spotdl CLI command using subprocess
-    cmd = [
-        sys.executable, "-m", "spotdl", "download", url,
-        "--output", output_dir,
-        "--dont-filter-results",
-        "--audio", "youtube", "youtube-music", "soundcloud"
+    local_ffmpeg = os.path.join(bin_dir, "ffmpeg.exe" if os.name == "nt" else "ffmpeg")
+    if os.path.isfile(local_ffmpeg):
+        return local_ffmpeg
+        
+    return None
+
+def extract_spotify_metadata(url: str) -> Tuple[str, str]:
+    """
+    Retrieves track metadata (Title & Artist) using Spotify's official oEmbed API with OpenGraph fallback.
+    """
+    import urllib.request
+    import bs4
+    
+    clean_url = url.split("?")[0].strip()
+    
+    ctx = ssl.create_default_context(cafile=ca_bundle) if ca_bundle else ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    
+    title = ""
+    artists = ""
+    
+    # 1. Primary: Official Spotify oEmbed API (fast, structured, no auth required)
+    try:
+        oembed_url = f"https://open.spotify.com/oembed?url={clean_url}"
+        req = urllib.request.Request(
+            oembed_url,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        )
+        resp = urllib.request.urlopen(req, context=ctx, timeout=8).read().decode("utf-8")
+        data = json.loads(resp)
+        if data.get("title"):
+            title = data["title"].strip()
+    except Exception as e:
+        print(f"oEmbed fetch note: {e}")
+        
+    # 2. Extract detailed artists from Spotify Page HTML OpenGraph tags
+    try:
+        req = urllib.request.Request(
+            clean_url,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        )
+        html = urllib.request.urlopen(req, context=ctx, timeout=8).read().decode("utf-8")
+        soup = bs4.BeautifulSoup(html, "html.parser")
+        
+        if not title:
+            og_title = soup.find("meta", property="og:title")
+            if og_title and og_title.get("content"):
+                title = og_title["content"].strip()
+                
+        og_desc = soup.find("meta", property="og:description")
+        if og_desc and og_desc.get("content"):
+            desc = og_desc["content"].strip()
+            artists = desc.split("·")[0].strip() if "·" in desc else desc
+            
+        if not title and soup.title:
+            raw_title = soup.title.string or ""
+            title = raw_title.split("|")[0].replace("- song and lyrics by", "").replace("- song by", "").strip()
+    except Exception as e:
+        print(f"OpenGraph scrape note: {e}")
+        
+    return title or "Spotify Track", artists
+
+def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str] = None) -> str:
+    """
+    Downloads audio stream using yt-dlp search and converts to standard 192kbps MP3.
+    """
+    import yt_dlp
+    
+    prefix = f"{job_id}_" if job_id else ""
+    out_tmpl = os.path.join(output_dir, f"{prefix}%(title)s.%(ext)s")
+    
+    ffmpeg_bin = find_ffmpeg_path()
+    
+    ydl_opts = {
+        "outtmpl": out_tmpl,
+        "format": "bestaudio/best",
+        "postprocessors": [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "192",
+        }],
+        "quiet": False,
+        "no_warnings": True,
+    }
+    
+    if ffmpeg_bin:
+        ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin)
+        
+    print(f"Searching and downloading audio stream for: '{search_query}'...")
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([f"ytsearch1:{search_query}"])
+        
+    # Locate output file
+    matching_files = [
+        os.path.join(output_dir, f)
+        for f in os.listdir(output_dir)
+        if os.path.isfile(os.path.join(output_dir, f)) and f.endswith(".mp3") and (not job_id or f.startswith(job_id))
     ]
     
-    try:
-        subprocess.run(cmd, check=True)
-        print("\nDownload completed successfully!")
-    except subprocess.CalledProcessError as e:
-        print(f"\nAn error occurred during download: Exit code {e.returncode}")
-    except Exception as e:
-        print(f"\nAn unexpected error occurred: {e}")
+    if matching_files:
+        return max(matching_files, key=os.path.getctime)
+        
+    # Check all files
+    all_files = [
+        os.path.join(output_dir, f)
+        for f in os.listdir(output_dir)
+        if os.path.isfile(os.path.join(output_dir, f)) and (not job_id or f.startswith(job_id))
+    ]
+    if all_files:
+        return max(all_files, key=os.path.getctime)
+        
+    raise RuntimeError("Download completed but output audio file was not found.")
+
+def download_spotify_track(url: str, output_dir: str = ".", output_template: Optional[str] = None, job_id: Optional[str] = None) -> str:
+    """
+    Downloads Spotify track audio as MP3 along with metadata.
+    """
+    if not url or not url.strip():
+        raise ValueError("A valid Spotify URL must be provided.")
+    
+    url = url.strip()
+    if "spotify.com" not in url and "spotify:" not in url:
+        raise ValueError("Invalid Spotify URL. URL must contain 'spotify.com' or 'spotify:'.")
+        
+    os.makedirs(output_dir, exist_ok=True)
+    
+    print(f"Resolving Spotify track: {url}")
+    title, artists = extract_spotify_metadata(url)
+    search_query = f"{artists} {title}".strip() if artists and title != artists else title
+    print(f"Identified Track: '{title}' by '{artists}'")
+    print(f"Search Query: '{search_query}'")
+    
+    downloaded_file = download_via_ytdlp(search_query, output_dir, job_id=job_id)
+    print(f"\nSuccessfully downloaded track: {downloaded_file}")
+    return downloaded_file
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        spotify_url = sys.argv[1]
-    else:
-        spotify_url = input("Enter Spotify Track / Album / Playlist URL: ")
+    parser = argparse.ArgumentParser(description="PaperKit Spotify Media Downloader CLI")
+    parser.add_argument("url", nargs="?", help="Spotify track, album, or playlist URL")
+    parser.add_argument("-o", "--output", default=".", help="Target output directory")
+    args = parser.parse_args()
     
-    if spotify_url.strip():
-        download_spotify_track(spotify_url.strip())
+    target_url = args.url
+    if not target_url:
+        try:
+            target_url = input("Enter Spotify Track / Album / Playlist URL: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nAborted.")
+            sys.exit(0)
+            
+    if target_url:
+        try:
+            downloaded = download_spotify_track(target_url, output_dir=args.output)
+            print(f"\n[SUCCESS] File ready at: {downloaded}")
+        except Exception as err:
+            print(f"\n[ERROR] {err}")
+            sys.exit(1)
     else:
         print("No URL provided.")
+        sys.exit(1)

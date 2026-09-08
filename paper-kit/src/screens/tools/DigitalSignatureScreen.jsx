@@ -4,6 +4,7 @@ import FeatureTipsSwipeStack from '../../components/ui/FeatureTipsSwipeStack';
 import { PenTool, Type, Image as ImageIcon, Download, Check, Trash2, Lock, Users, ShieldCheck, Clock, ChevronLeft, ChevronRight, Move, Sparkles } from 'lucide-react';
 import { uploadFile } from '../../services/files';
 import { signPDF } from '../../services/tools';
+import { downloadAndOpenFile } from '../../services/native';
 import { PrimaryButton } from '../../components/ui/Button';
 import Toast from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
@@ -635,14 +636,17 @@ export default function DigitalSignatureScreen() {
                 Digital Signature Applied to Document!
               </span>
             </div>
-            <a
-              href={signedResult.download_url}
-              download={`${selectedFile?.name?.split('.')[0] || 'document'}_signed.pdf`}
+            <button
+              type="button"
+              onClick={() => {
+                const fname = `${selectedFile?.name?.split('.')[0] || 'document'}_signed.pdf`;
+                downloadAndOpenFile(signedResult.download_url, fname, 'application/pdf');
+              }}
               className="btn-primary"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', textDecoration: 'none', padding: '12px', borderRadius: '10px', background: '#4F46E5', color: '#fff', fontWeight: 600 }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', padding: '13px', borderRadius: '10px', background: '#4F46E5', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
             >
-              <Download size={16} /> Download Signed PDF
-            </a>
+              <Download size={16} /> DOWNLOAD SIGNED PDF
+            </button>
           </div>
         )}
       </div>

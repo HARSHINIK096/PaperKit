@@ -1,6 +1,8 @@
 /* FilePreviewModal.jsx — Comprehensive Multi-Format Document & Media Previewer for PaperKit */
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as docxPreview from 'docx-preview';
+import JSZip from 'jszip';
 import {
   X, Download, FileText, Image as ImageIcon, Code, Table,
   ZoomIn, ZoomOut, RotateCw, Maximize2, Minimize2, ChevronLeft,
@@ -26,31 +28,39 @@ export default function FilePreviewModal({
   mimeType,
   fileId,
   rawFile,
+  file,
 }) {
   const navigate = useNavigate();
 
+  const actualFileUrl = fileUrl || file?.download_url || file?.url;
+  const actualFileName = (fileName && fileName !== 'Document') ? fileName : file?.name || file?.filename || 'Document';
+  const actualFileSize = fileSize || file?.size;
+  const actualMimeType = mimeType || file?.mimeType || file?.type;
+  const actualFileId = fileId || file?.id || file?._id;
+  const actualRawFile = rawFile || file?.rawFile || file?.file;
+
   // Mode & format detection
   const ext = useMemo(() => {
-    if (fileName && fileName.includes('.')) {
-      return fileName.split('.').pop().toLowerCase();
+    if (actualFileName && actualFileName.includes('.')) {
+      return actualFileName.split('.').pop().toLowerCase();
     }
     return '';
-  }, [fileName]);
+  }, [actualFileName]);
 
   const fileKind = useMemo(() => {
-    if (mimeType === 'application/pdf' || ext === 'pdf') return 'pdf';
-    if (mimeType?.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'ico'].includes(ext)) return 'image';
-    if (['txt', 'log', 'env', 'conf', 'ini'].includes(ext) || mimeType === 'text/plain') return 'text';
+    if (actualMimeType === 'application/pdf' || ext === 'pdf') return 'pdf';
+    if (actualMimeType?.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'ico'].includes(ext)) return 'image';
+    if (['txt', 'log', 'env', 'conf', 'ini'].includes(ext) || actualMimeType === 'text/plain') return 'text';
     if (['md', 'markdown'].includes(ext)) return 'markdown';
     if (['json', 'js', 'jsx', 'ts', 'tsx', 'py', 'html', 'css', 'scss', 'xml', 'yaml', 'yml', 'sh', 'bat'].includes(ext)) return 'code';
     if (['csv', 'tsv'].includes(ext)) return 'csv';
     if (['doc', 'docx'].includes(ext)) return 'word';
     if (['xls', 'xlsx'].includes(ext)) return 'excel';
     if (['ppt', 'pptx'].includes(ext)) return 'ppt';
-    if (mimeType?.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext)) return 'audio';
-    if (mimeType?.startsWith('video/') || ['mp4', 'webm', 'mov'].includes(ext)) return 'video';
+    if (actualMimeType?.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext)) return 'audio';
+    if (actualMimeType?.startsWith('video/') || ['mp4', 'webm', 'mov'].includes(ext)) return 'video';
     return 'generic';
-  }, [ext, mimeType]);
+  }, [ext, actualMimeType]);
 
   // General State
   const [loading, setLoading] = useState(true);
@@ -78,6 +88,9 @@ export default function FilePreviewModal({
   const [renderMarkdown, setRenderMarkdown] = useState(true);
   const [csvAsTable, setCsvAsTable] = useState(true);
 
+  // Office / DOCX Specific State
+  const [isDocxRendered, setIsDocxRendered] = useState(false);
+
   // Image info
   const [imageMeta, setImageMeta] = useState(null); // { width, height }
 
@@ -85,6 +98,7 @@ export default function FilePreviewModal({
   const modalRef = useRef(null);
   const contentContainerRef = useRef(null);
   const canvasRefs = useRef({});
+  const docxContainerRef = useRef(null);
 
   // Reset state on open/close or target file change
   useEffect(() => {
@@ -100,6 +114,7 @@ export default function FilePreviewModal({
       setCurrentPage(1);
       setPageJumpVal('1');
       setShowThumbnails(false);
+      setIsDocxRendered(false);
       return;
     }
 
@@ -109,7 +124,8 @@ export default function FilePreviewModal({
     setZoom(1);
     setCurrentPage(1);
     setPageJumpVal('1');
-  }, [isOpen, fileUrl, rawFile]);
+    setIsDocxRendered(false);
+  }, [isOpen, actualFileUrl, actualRawFile]);
 
   // Load PDF content via PDF.js
   const loadPdfDocument = useCallback(async () => {
@@ -129,11 +145,11 @@ export default function FilePreviewModal({
       }
 
       let loadingTask;
-      if (rawFile instanceof File || rawFile instanceof Blob) {
-        const ab = await rawFile.arrayBuffer();
+      if (actualRawFile instanceof File || actualRawFile instanceof Blob) {
+        const ab = await actualRawFile.arrayBuffer();
         loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(ab) });
-      } else if (fileUrl) {
-        const targetUrl = resolveFullUrl(fileUrl);
+      } else if (actualFileUrl) {
+        const targetUrl = resolveFullUrl(actualFileUrl);
         // Fetch as arraybuffer to prevent CORS issue on some servers
         try {
           const resp = await fetch(targetUrl);
@@ -176,7 +192,7 @@ export default function FilePreviewModal({
     } finally {
       setLoading(false);
     }
-  }, [fileUrl, rawFile]);
+  }, [actualFileUrl, actualRawFile]);
 
   // Load Text / Code / Markdown / CSV content
   const loadTextDocument = useCallback(async () => {
@@ -185,10 +201,10 @@ export default function FilePreviewModal({
       setError(null);
 
       let text = '';
-      if (rawFile instanceof File || rawFile instanceof Blob) {
-        text = await rawFile.text();
-      } else if (fileUrl) {
-        const targetUrl = resolveFullUrl(fileUrl);
+      if (actualRawFile instanceof File || actualRawFile instanceof Blob) {
+        text = await actualRawFile.text();
+      } else if (actualFileUrl) {
+        const targetUrl = resolveFullUrl(actualFileUrl);
         const resp = await fetch(targetUrl);
         if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching text file`);
         text = await resp.text();
@@ -200,44 +216,101 @@ export default function FilePreviewModal({
     } finally {
       setLoading(false);
     }
-  }, [fileUrl, rawFile]);
+  }, [actualFileUrl, actualRawFile]);
 
   // Load Office Document Preview (DOCX / XLSX / PPTX)
   const loadOfficeDocumentPreview = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      setIsDocxRendered(false);
 
-      // Extract text content from document buffer
+      // Extract array buffer
       let ab;
-      if (rawFile instanceof File || rawFile instanceof Blob) {
-        ab = await rawFile.arrayBuffer();
-      } else if (fileUrl) {
-        const resp = await fetch(resolveFullUrl(fileUrl));
+      if (actualRawFile instanceof File || actualRawFile instanceof Blob) {
+        ab = await actualRawFile.arrayBuffer();
+      } else if (actualFileUrl) {
+        const resp = await fetch(resolveFullUrl(actualFileUrl));
         if (resp.ok) ab = await resp.arrayBuffer();
       }
 
       if (ab) {
-        const decoder = new TextDecoder('utf-8', { fatal: false });
-        const rawStr = decoder.decode(ab);
-        const cleanText = rawStr
-          .replace(/<style[\s\S]*?<\/style>/gi, '')
-          .replace(/<script[\s\S]*?<\/script>/gi, '')
-          .replace(/<[^>]+>/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
+        // 1. If it's a Word document (.docx/.doc), render visually via docx-preview
+        if (ext === 'docx' || ext === 'doc') {
+          try {
+            if (docxContainerRef.current) {
+              docxContainerRef.current.innerHTML = '';
+              await docxPreview.renderAsync(ab, docxContainerRef.current, null, {
+                className: 'docx-preview-wrapper',
+                inWrapper: true,
+                ignoreWidth: false,
+                ignoreHeight: false,
+                renderHeaders: true,
+                renderFooters: true,
+                renderFootnotes: true,
+              });
+              setIsDocxRendered(true);
+            }
+          } catch (docxErr) {
+            console.warn('docx-preview direct render notice:', docxErr);
+          }
 
-        if (cleanText && cleanText.length > 15) {
-          const sentences = cleanText.split(/(?<=\.|\?|!)\s+/).filter(s => s.trim().length > 0);
-          setTextContent(sentences.join('\n\n'));
+          // 2. Extract clean text using JSZip & DOMParser (never raw TextDecoder on zip binary)
+          try {
+            const zip = await JSZip.loadAsync(ab);
+            const docXml = await zip.file('word/document.xml')?.async('string');
+            if (docXml) {
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(docXml, 'text/xml');
+              const paragraphs = xmlDoc.getElementsByTagName('w:p');
+              const lines = [];
+              for (let i = 0; i < paragraphs.length; i++) {
+                const texts = paragraphs[i].getElementsByTagName('w:t');
+                let pText = '';
+                for (let j = 0; j < texts.length; j++) {
+                  pText += texts[j].textContent || '';
+                }
+                if (pText.trim()) {
+                  lines.push(pText.trim());
+                }
+              }
+              if (lines.length > 0) {
+                setTextContent(lines.join('\n\n'));
+              }
+            }
+          } catch (zipErr) {
+            console.warn('Docx text extraction notice:', zipErr);
+          }
+        } else if (ext === 'xlsx' || ext === 'xls') {
+          // Spreadsheet: Extract shared strings if present cleanly
+          try {
+            const zip = await JSZip.loadAsync(ab);
+            const stringsXml = await zip.file('xl/sharedStrings.xml')?.async('string');
+            if (stringsXml) {
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(stringsXml, 'text/xml');
+              const stringNodes = xmlDoc.getElementsByTagName('t');
+              const strings = [];
+              for (let i = 0; i < Math.min(stringNodes.length, 100); i++) {
+                if (stringNodes[i].textContent?.trim()) {
+                  strings.push(stringNodes[i].textContent.trim());
+                }
+              }
+              if (strings.length > 0) {
+                setTextContent(strings.join('\n'));
+              }
+            }
+          } catch (xlsxErr) {
+            console.warn('XLSX text extraction notice:', xlsxErr);
+          }
         }
       }
 
       // Auto-attempt backend conversion to PDF if fileId exists
-      if (fileId) {
+      if (actualFileId) {
         try {
           const fromFmt = ext.startsWith('doc') ? 'word' : ext.startsWith('xls') ? 'excel' : 'ppt';
-          const res = await convertFile(fileId, fromFmt, 'pdf');
+          const res = await convertFile(actualFileId, fromFmt, 'pdf');
           if (res && res.download_url) {
             const pdfjsLib = await import('pdfjs-dist');
             try {
@@ -262,16 +335,16 @@ export default function FilePreviewModal({
     } finally {
       setLoading(false);
     }
-  }, [fileId, ext, rawFile, fileUrl]);
+  }, [actualFileId, ext, actualRawFile, actualFileUrl]);
 
   const handleConvertOfficeToPdf = async () => {
     try {
       setLoading(true);
       setError(null);
-      let targetFileId = fileId;
-      if (!targetFileId && rawFile) {
+      let targetFileId = actualFileId;
+      if (!targetFileId && actualRawFile) {
         const { uploadFile } = await import('../../services/files');
-        const uploadRes = await uploadFile(rawFile);
+        const uploadRes = await uploadFile(actualRawFile);
         targetFileId = uploadRes._id || uploadRes.id;
       }
 
@@ -316,7 +389,7 @@ export default function FilePreviewModal({
       loadOfficeDocumentPreview();
     } else if (fileKind === 'image') {
       // Pre-load image to get dimensions
-      const targetUrl = rawFile instanceof File ? URL.createObjectURL(rawFile) : resolveFullUrl(fileUrl);
+      const targetUrl = actualRawFile instanceof File ? URL.createObjectURL(actualRawFile) : resolveFullUrl(actualFileUrl);
       const img = new Image();
       img.onload = () => {
         setImageMeta({ width: img.naturalWidth, height: img.naturalHeight });
@@ -330,7 +403,7 @@ export default function FilePreviewModal({
     } else {
       setLoading(false);
     }
-  }, [isOpen, fileKind, fileUrl, rawFile, loadPdfDocument, loadTextDocument, loadOfficeDocumentPreview]);
+  }, [isOpen, fileKind, actualFileUrl, actualRawFile, loadPdfDocument, loadTextDocument, loadOfficeDocumentPreview]);
 
   // Render active PDF page(s) on canvas with sharp DPI scaling
   const renderPdfPage = useCallback(async (pageNum) => {
@@ -426,15 +499,15 @@ export default function FilePreviewModal({
 
   // Download handler
   const handleDownload = () => {
-    if (rawFile instanceof File) {
-      const url = URL.createObjectURL(rawFile);
-      downloadAndOpenFile(url, fileName || rawFile.name, mimeType);
+    if (actualRawFile instanceof File) {
+      const url = URL.createObjectURL(actualRawFile);
+      downloadAndOpenFile(url, actualFileName || actualRawFile.name, actualMimeType);
       return;
     }
 
-    if (fileUrl) {
-      const fullUrl = resolveFullUrl(fileUrl);
-      downloadAndOpenFile(fullUrl, fileName || 'document.pdf', mimeType);
+    if (actualFileUrl) {
+      const fullUrl = resolveFullUrl(actualFileUrl);
+      downloadAndOpenFile(fullUrl, actualFileName || 'document.pdf', actualMimeType);
     }
   };
 
@@ -445,7 +518,7 @@ export default function FilePreviewModal({
       if (printWin) {
         printWin.document.write(`
           <html>
-            <head><title>Print ${fileName}</title></head>
+            <head><title>Print ${actualFileName}</title></head>
             <body style="margin:0;display:flex;justify-content:center;align-items:center;">
               <img src="${renderedPages[currentPage]}" style="max-width:100%;height:auto;" onload="window.print();window.close();" />
             </body>
@@ -490,7 +563,7 @@ export default function FilePreviewModal({
 
   if (!isOpen) return null;
 
-  const targetFileSrc = rawFile instanceof File ? URL.createObjectURL(rawFile) : resolveFullUrl(fileUrl);
+  const targetFileSrc = actualRawFile instanceof File ? URL.createObjectURL(actualRawFile) : resolveFullUrl(actualFileUrl);
 
   // Formatted CSV rows
   const parsedCsv = fileKind === 'csv' && textContent ? textContent.split('\n').filter(Boolean).map(r => r.split(',')) : [];
@@ -514,12 +587,12 @@ export default function FilePreviewModal({
               {fileKind === 'generic' && <FileText size={18} color="#4B5563" />}
             </div>
             <div className="preview-modal__title-info">
-              <h3 className="preview-modal__title" title={fileName}>{fileName}</h3>
+              <h3 className="preview-modal__title" title={actualFileName}>{actualFileName}</h3>
               <div className="preview-modal__meta-tags">
                 {ext && <span className="preview-tag">{ext.toUpperCase()}</span>}
-                {fileSize && (
+                {actualFileSize && (
                   <span className="preview-tag">
-                    {(fileSize / 1024 > 1024 ? `${(fileSize / (1024 * 1024)).toFixed(2)} MB` : `${(fileSize / 1024).toFixed(1)} KB`)}
+                    {(actualFileSize / 1024 > 1024 ? `${(actualFileSize / (1024 * 1024)).toFixed(2)} MB` : `${(actualFileSize / 1024).toFixed(1)} KB`)}
                   </span>
                 )}
                 {numPages > 0 && <span className="preview-tag">{numPages} {numPages === 1 ? 'Page' : 'Pages'}</span>}
@@ -547,25 +620,25 @@ export default function FilePreviewModal({
                   {fileKind === 'pdf' ? (
                     <>
                       <button
-                        onClick={() => { onClose(); navigate(`/ai/summarize`, { state: { fileId, file: rawFile } }); }}
+                        onClick={() => { onClose(); navigate(`/ai/summarize`, { state: { fileId: actualFileId, file: actualRawFile } }); }}
                         className="preview-modal__dropdown-item"
                       >
                         <Sparkles size={14} /> AI Document Summary
                       </button>
                       <button
-                        onClick={() => { onClose(); navigate(`/ai/ocr`, { state: { fileId, file: rawFile } }); }}
+                        onClick={() => { onClose(); navigate(`/ai/ocr`, { state: { fileId: actualFileId, file: actualRawFile } }); }}
                         className="preview-modal__dropdown-item"
                       >
                         <Search size={14} /> OCR Text Recognition
                       </button>
                       <button
-                        onClick={() => { onClose(); navigate(`/tools/compress`, { state: { fileId, file: rawFile } }); }}
+                        onClick={() => { onClose(); navigate(`/tools/compress`, { state: { fileId: actualFileId, file: actualRawFile } }); }}
                         className="preview-modal__dropdown-item"
                       >
                         <Sliders size={14} /> Compress PDF File
                       </button>
                       <button
-                        onClick={() => { onClose(); navigate(`/tools/split`, { state: { fileId, file: rawFile } }); }}
+                        onClick={() => { onClose(); navigate(`/tools/split`, { state: { fileId: actualFileId, file: actualRawFile } }); }}
                         className="preview-modal__dropdown-item"
                       >
                         <Scissors size={14} /> Split or Extract Pages
@@ -586,7 +659,7 @@ export default function FilePreviewModal({
                     </button>
                   ) : (
                     <button
-                      onClick={() => { onClose(); navigate(`/ai/ocr`, { state: { file: rawFile } }); }}
+                      onClick={() => { onClose(); navigate(`/ai/ocr`, { state: { file: actualRawFile } }); }}
                       className="preview-modal__dropdown-item"
                     >
                       <Search size={14} /> OCR Text Detection
@@ -972,48 +1045,62 @@ export default function FilePreviewModal({
                       </button>
                     </div>
 
-                    {textContent ? (
-                      <div className="preview-modal__document-reader">
-                        <div className="preview-modal__reader-header">
-                          <h4>Interactive Document Reader</h4>
-                          <span className="preview-tag">Extracted Text View</span>
-                        </div>
-                        <div className="preview-modal__reader-body">
-                          {textContent.split('\n\n').map((paragraph, pIdx) => (
-                            <p key={pIdx} className="preview-modal__reader-paragraph">
-                              {paragraph}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="preview-modal__office-card">
-                        <div className="preview-modal__office-icon">
-                          <FileText size={48} color="var(--color-primary)" />
-                        </div>
-                        <h3 className="preview-modal__office-title">{fileName}</h3>
-                        <p className="preview-modal__office-desc">
-                          This is a Microsoft Office document ({ext.toUpperCase()}). Click below to convert it into an interactive high-fidelity PDF to view, zoom, and print directly inside PaperKit.
-                        </p>
+                    {/* Live Visual DOCX Render Stage (via docx-preview) */}
+                    <div
+                      ref={docxContainerRef}
+                      className="preview-modal__docx-container"
+                      style={{
+                        display: isDocxRendered ? 'block' : 'none',
+                        transform: `scale(${zoom}) rotate(${rotation}deg)`,
+                        transformOrigin: 'top center',
+                        transition: 'transform 0.15s ease',
+                      }}
+                    />
 
-                        <div className="preview-modal__office-actions">
-                          <button
-                            className="preview-btn preview-btn--primary"
-                            onClick={handleConvertOfficeToPdf}
-                          >
-                            <Sparkles size={16} />
-                            <span>Render High-Fidelity Interactive PDF</span>
-                          </button>
-
-                          <button
-                            className="preview-btn preview-btn--subtle"
-                            onClick={handleDownload}
-                          >
-                            <Download size={16} />
-                            <span>Download Original {ext.toUpperCase()}</span>
-                          </button>
+                    {!isDocxRendered && (
+                      textContent ? (
+                        <div className="preview-modal__document-reader">
+                          <div className="preview-modal__reader-header">
+                            <h4>Interactive Document Reader</h4>
+                            <span className="preview-tag">Extracted Text View</span>
+                          </div>
+                          <div className="preview-modal__reader-body">
+                            {textContent.split('\n\n').map((paragraph, pIdx) => (
+                              <p key={pIdx} className="preview-modal__reader-paragraph">
+                                {paragraph}
+                              </p>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="preview-modal__office-card">
+                          <div className="preview-modal__office-icon">
+                            <FileText size={48} color="var(--color-primary)" />
+                          </div>
+                          <h3 className="preview-modal__office-title">{actualFileName}</h3>
+                          <p className="preview-modal__office-desc">
+                            This is a Microsoft Office document ({ext.toUpperCase()}). Click below to convert it into an interactive high-fidelity PDF to view, zoom, and print directly inside PaperKit.
+                          </p>
+
+                          <div className="preview-modal__office-actions">
+                            <button
+                              className="preview-btn preview-btn--primary"
+                              onClick={handleConvertOfficeToPdf}
+                            >
+                              <Sparkles size={16} />
+                              <span>Render High-Fidelity Interactive PDF</span>
+                            </button>
+
+                            <button
+                              className="preview-btn preview-btn--subtle"
+                              onClick={handleDownload}
+                            >
+                              <Download size={16} />
+                              <span>Download Original {ext.toUpperCase()}</span>
+                            </button>
+                          </div>
+                        </div>
+                      )
                     )}
                   </div>
                 )}
@@ -1031,11 +1118,10 @@ export default function FilePreviewModal({
                   </div>
                 )}
 
-                {/* 6. Generic Binary Fallback */}
                 {fileKind === 'generic' && (
                   <div className="preview-modal__office-card">
                     <FileText size={48} color="var(--color-text-muted)" />
-                    <h3 className="preview-modal__office-title">{fileName}</h3>
+                    <h3 className="preview-modal__office-title">{actualFileName}</h3>
                     <p className="preview-modal__office-desc">
                       Binary file format. Download to open with your default desktop application.
                     </p>
