@@ -61,7 +61,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="PaperKit API",
     description="Open-Source PDF & Document Suite — backend API",
-    version="7.3.2",
+    version="1.5.6",
     lifespan=lifespan,
 )
 
