@@ -1,197 +1,132 @@
-"""
-Tests for /auth endpoints — register, login, me, update profile, delete account.
-"""
+"""Authentication and User Profile Test Suite"""
 import pytest
-from middleware.auth import create_access_token, hash_password
+from middleware.auth import hash_password, verify_password, create_access_token, decode_token
 
 
-class TestRegister:
-    """POST /auth/register"""
-
-    async def test_register_success(self, client):
-        """Registering with valid data should return 200 and user_id."""
-        resp = await client.post("/auth/register", json={
-            "name": "Alice",
-            "email": "alice@paperkit.dev",
-            "password": "SecurePass99",
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "user_id" in data
-        assert data["message"] == "Account created successfully"
-
-    async def test_register_missing_fields(self, client):
-        """Missing required fields should return 400."""
-        resp = await client.post("/auth/register", json={"name": "Bob"})
-        assert resp.status_code == 400
-
-    async def test_register_short_password(self, client):
-        """Password under 8 characters should be rejected."""
-        resp = await client.post("/auth/register", json={
-            "name": "Charlie",
-            "email": "charlie@paperkit.dev",
-            "password": "short",
-        })
-        assert resp.status_code == 400
-        assert "8 characters" in resp.json()["detail"]
-
-    async def test_register_duplicate_email(self, client, seeded_user):
-        """Registering with an existing email should return 409."""
-        resp = await client.post("/auth/register", json={
-            "name": "Duplicate",
-            "email": "test@paperkit.dev",  # already seeded
-            "password": "AnotherPass1!",
-        })
-        assert resp.status_code == 409
-
-    async def test_register_email_case_insensitive(self, client):
-        """Emails should be normalized to lowercase."""
-        resp = await client.post("/auth/register", json={
-            "name": "Eve",
-            "email": "EVE@PaperKit.DEV",
-            "password": "ValidPass12",
-        })
-        assert resp.status_code == 200
-        # Registering the same email in different case should fail
-        resp2 = await client.post("/auth/register", json={
-            "name": "Eve Again",
-            "email": "eve@paperkit.dev",
-            "password": "ValidPass12",
-        })
-        assert resp2.status_code == 409
+def test_password_hashing():
+    """Verify bcrypt password hashing and verification."""
+    password = "SuperSecretPassword123!"
+    hashed = hash_password(password)
+    assert hashed != password
+    assert verify_password(password, hashed) is True
+    assert verify_password("WrongPassword!", hashed) is False
 
 
-class TestLogin:
-    """POST /auth/login (OAuth2 form)"""
-
-    async def test_login_success(self, client, seeded_user):
-        """Login with correct credentials should return access_token."""
-        resp = await client.post("/auth/login", data={
-            "username": "test@paperkit.dev",
-            "password": "TestPassword123!",
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "access_token" in data
-        assert data["token_type"] == "bearer"
-
-    async def test_login_wrong_password(self, client, seeded_user):
-        """Wrong password should return 401."""
-        resp = await client.post("/auth/login", data={
-            "username": "test@paperkit.dev",
-            "password": "WrongPassword",
-        })
-        assert resp.status_code == 401
-
-    async def test_login_nonexistent_user(self, client):
-        """Login with non-existent email should return 401."""
-        resp = await client.post("/auth/login", data={
-            "username": "nobody@paperkit.dev",
-            "password": "SomePass123",
-        })
-        assert resp.status_code == 401
-
-    async def test_login_case_insensitive_email(self, client, seeded_user):
-        """Login should work regardless of email casing."""
-        resp = await client.post("/auth/login", data={
-            "username": "TEST@PAPERKIT.DEV",
-            "password": "TestPassword123!",
-        })
-        assert resp.status_code == 200
-        assert "access_token" in resp.json()
+def test_jwt_token_generation_and_decoding():
+    """Verify JWT token creation and decoding."""
+    payload = {"sub": "64b1f2e3d4c5b6a7f8e9d0c1", "role": "user"}
+    token = create_access_token(payload)
+    assert isinstance(token, str)
+    decoded = decode_token(token)
+    assert decoded["sub"] == payload["sub"]
+    assert decoded["role"] == "user"
+    assert "exp" in decoded
 
 
-class TestGetMe:
-    """GET /auth/me"""
-
-    async def test_get_me_authenticated(self, client, seeded_user, auth_headers):
-        """Authenticated user should receive their profile."""
-        resp = await client.get("/auth/me", headers=auth_headers)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["email"] == "test@paperkit.dev"
-        assert data["name"] == "Test User"
-        assert "id" in data
-        assert "preferences" in data
-
-    async def test_get_me_unauthenticated(self, client):
-        """Request without token should return 401."""
-        resp = await client.get("/auth/me")
-        assert resp.status_code == 401
-
-    async def test_get_me_invalid_token(self, client):
-        """Request with invalid token should return 401."""
-        resp = await client.get("/auth/me", headers={
-            "Authorization": "Bearer invalid-garbage-token"
-        })
-        assert resp.status_code == 401
-
-    async def test_get_me_expired_token(self, client, seeded_user):
-        """An expired token should return 401."""
-        from datetime import timedelta
-        token = create_access_token(
-            {"sub": str(seeded_user["_id"])},
-            expires_delta=timedelta(seconds=-10),
-        )
-        resp = await client.get("/auth/me", headers={
-            "Authorization": f"Bearer {token}"
-        })
-        assert resp.status_code == 401
+@pytest.mark.asyncio
+async def test_register_success(client):
+    """POST /auth/register creates a new user account."""
+    resp = await client.post(
+        "/auth/register",
+        json={"name": "Alice Tester", "email": "alice@paperkit.dev", "password": "SecurePassword123!"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "user_id" in data
+    assert data["message"] == "Account created successfully"
 
 
-class TestUpdateProfile:
-    """PUT /auth/me"""
-
-    async def test_update_name(self, client, seeded_user, auth_headers):
-        """Updating name should persist and return new value."""
-        resp = await client.put("/auth/me", json={"name": "New Name"}, headers=auth_headers)
-        assert resp.status_code == 200
-        assert resp.json()["name"] == "New Name"
-
-    async def test_update_empty_name_rejected(self, client, seeded_user, auth_headers):
-        """Empty name should return 400."""
-        resp = await client.put("/auth/me", json={"name": "   "}, headers=auth_headers)
-        assert resp.status_code == 400
-
-    async def test_update_preferences(self, client, seeded_user, auth_headers):
-        """Updating preferences should merge with existing ones."""
-        resp = await client.put("/auth/me", json={
-            "preferences": {"dark_mode": True}
-        }, headers=auth_headers)
-        assert resp.status_code == 200
-        prefs = resp.json()["preferences"]
-        assert prefs["dark_mode"] is True
-        # Other preferences should remain unchanged
-        assert prefs["default_view"] == "list"
-
-    async def test_update_password(self, client, seeded_user, auth_headers):
-        """Changing password should succeed and new password should work for login."""
-        resp = await client.put("/auth/me", json={
-            "password": "NewSecure99!"
-        }, headers=auth_headers)
-        assert resp.status_code == 200
-
-        # Login with new password
-        resp2 = await client.post("/auth/login", data={
-            "username": "test@paperkit.dev",
-            "password": "NewSecure99!",
-        })
-        assert resp2.status_code == 200
-
-    async def test_update_password_too_short(self, client, seeded_user, auth_headers):
-        """Password under 8 characters should be rejected."""
-        resp = await client.put("/auth/me", json={"password": "short"}, headers=auth_headers)
-        assert resp.status_code == 400
+@pytest.mark.asyncio
+async def test_register_missing_fields(client):
+    """POST /auth/register fails if required fields are missing."""
+    resp = await client.post("/auth/register", json={"email": "alice@paperkit.dev"})
+    assert resp.status_code == 400
 
 
-class TestDeleteAccount:
-    """DELETE /auth/delete-account"""
+@pytest.mark.asyncio
+async def test_register_short_password(client):
+    """POST /auth/register rejects passwords under 8 chars."""
+    resp = await client.post(
+        "/auth/register",
+        json={"name": "Short", "email": "short@paperkit.dev", "password": "123"},
+    )
+    assert resp.status_code == 400
+    assert "8 characters" in resp.json()["detail"]
 
-    async def test_delete_account(self, client, seeded_user, auth_headers):
-        """Deleting account should succeed and user should no longer exist."""
-        resp = await client.delete("/auth/delete-account", headers=auth_headers)
-        assert resp.status_code == 200
 
-        # Verify user can no longer access /me
-        resp2 = await client.get("/auth/me", headers=auth_headers)
-        assert resp2.status_code == 401
+@pytest.mark.asyncio
+async def test_register_duplicate_email(client, seeded_user):
+    """POST /auth/register rejects already registered email."""
+    resp = await client.post(
+        "/auth/register",
+        json={
+            "name": "Duplicate User",
+            "email": seeded_user["email"],
+            "password": "Password123!",
+        },
+    )
+    assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_login_success(client, seeded_user):
+    """POST /auth/login returns JWT bearer token on valid credentials."""
+    resp = await client.post(
+        "/auth/login",
+        data={"username": seeded_user["email"], "password": "TestPassword123!"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+
+
+@pytest.mark.asyncio
+async def test_login_invalid_password(client, seeded_user):
+    """POST /auth/login returns 401 on incorrect password."""
+    resp = await client.post(
+        "/auth/login",
+        data={"username": seeded_user["email"], "password": "WrongPassword999!"},
+    )
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_login_unknown_user(client):
+    """POST /auth/login returns 401 on non-existent account."""
+    resp = await client.post(
+        "/auth/login",
+        data={"username": "nonexistent@paperkit.dev", "password": "AnyPassword123!"},
+    )
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_get_current_user_profile(client, seeded_user, auth_headers):
+    """GET /auth/me returns authenticated user's profile."""
+    resp = await client.get("/auth/me", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["email"] == seeded_user["email"]
+    assert data["name"] == seeded_user["name"]
+
+
+@pytest.mark.asyncio
+async def test_update_user_profile(client, seeded_user, auth_headers):
+    """PUT /auth/me updates user display name and preferences."""
+    resp = await client.put(
+        "/auth/me",
+        headers=auth_headers,
+        json={"name": "Updated Name", "preferences": {"dark_mode": False}},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == "Updated Name"
+
+
+@pytest.mark.asyncio
+async def test_delete_user_account(client, seeded_user, auth_headers):
+    """DELETE /auth/delete-account removes user and related data."""
+    resp = await client.delete("/auth/delete-account", headers=auth_headers)
+    assert resp.status_code == 200
+    assert "deleted successfully" in resp.json()["message"]

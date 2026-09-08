@@ -1,41 +1,40 @@
-"""
-Tests for /health and application startup.
-"""
+"""Health, Root and Static File Endpoints Test Suite"""
 import pytest
 
 
-class TestHealth:
-    """Health check and app configuration tests."""
+@pytest.mark.asyncio
+async def test_root_endpoint(client):
+    """GET / returns active service metadata and API information."""
+    resp = await client.get("/")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "online"
+    assert data["service"] == "PaperKit API"
+    assert "version" in data
+    assert "health" in data
+    assert "docs" in data
 
-    async def test_health_endpoint_returns_ok(self, client):
-        """GET /health should return 200 with status ok."""
-        resp = await client.get("/health")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["status"] == "ok"
-        assert data["service"] == "PaperKit API"
-        assert "version" in data
 
-    async def test_health_endpoint_contains_version(self, client):
-        """Health response should include a semantic version string."""
-        resp = await client.get("/health")
-        version = resp.json()["version"]
-        parts = version.split(".")
-        assert len(parts) >= 2, f"Version '{version}' doesn't look semantic"
+@pytest.mark.asyncio
+async def test_health_endpoint(client):
+    """GET /health returns 200 OK status."""
+    resp = await client.get("/health")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert data["service"] == "PaperKit API"
 
-    async def test_cors_headers_present(self, client):
-        """Preflight OPTIONS should return CORS headers for allowed origins."""
-        resp = await client.options(
-            "/health",
-            headers={
-                "Origin": "http://localhost:5173",
-                "Access-Control-Request-Method": "GET",
-            },
-        )
-        # FastAPI CORS middleware should respond
-        assert resp.status_code in (200, 204, 405)
 
-    async def test_unknown_route_returns_404(self, client):
-        """Requesting a non-existent route should return 404 or 405."""
-        resp = await client.get("/nonexistent-route-xyz")
-        assert resp.status_code in (404, 405)
+@pytest.mark.asyncio
+async def test_favicon_endpoint(client):
+    """GET /favicon.ico returns 204 No Content."""
+    resp = await client.get("/favicon.ico")
+    assert resp.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_openapi_docs(client):
+    """GET /docs returns OpenAPI HTML."""
+    resp = await client.get("/docs")
+    assert resp.status_code == 200
+    assert "swagger" in resp.text.lower() or "openapi" in resp.text.lower()

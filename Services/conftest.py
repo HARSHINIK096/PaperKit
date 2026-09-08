@@ -1,28 +1,31 @@
-"""
-PaperKit Test Configuration — conftest.py
-Provides isolated test fixtures using an in-memory MockDatabase and
-a FastAPI TestClient so tests never touch production data.
+"""PaperKit Test Suite — Central Fixtures and Configurations
+Provides isolated, fast test execution with in-memory database and async FastAPI TestClient.
 """
 import os
 import sys
 import pytest
-import asyncio
+import io
+import fitz  # PyMuPDF
 from datetime import timezone, datetime
 from bson import ObjectId
+from docx import Document
+from PIL import Image
 
 # Ensure the Services directory is on sys.path
-sys.path.insert(0, os.path.dirname(__file__))
+SERVICES_DIR = os.path.dirname(__file__)
+if SERVICES_DIR not in sys.path:
+    sys.path.insert(0, SERVICES_DIR)
 
-# ── Override environment BEFORE any app module imports ─────────────────────────
-os.environ["MONGODB_URL"] = ""
+# Configure environment variables for test execution
+os.environ["MONGODB_URL"] = "mock://"
 os.environ["DATABASE_NAME"] = "paperkit_test"
-os.environ["SECRET_KEY"] = ""
+os.environ["SECRET_KEY"] = "test-paperkit-jwt-secret-key-32-chars-long"
 os.environ["ALGORITHM"] = "HS256"
-os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "60"
-os.environ["GEMINI_API_KEY"] = ""
+os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "120"
+os.environ["GEMINI_API_KEY"] = "mock-gemini-key"
+os.environ["GROQ_API_KEY"] = "mock-groq-key"
 os.environ["FRONTEND_URL"] = "http://localhost:5173"
 
-# Clear cached settings so they reload with test env vars
 from config import get_settings
 get_settings.cache_clear()
 
@@ -30,18 +33,15 @@ from httpx import AsyncClient, ASGITransport
 from middleware.auth import create_access_token, hash_password
 from database import get_db, MockDatabase, MockDatabaseClient
 import database as db_module
+from main import app as fastapi_app
 
-
-# ── Fixtures ──────────────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
 def reset_db():
-    """Reset the mock database to a clean state before each test."""
-    # Create a fresh in-memory mock database that never writes to disk
+    """Reset the mock database to a clean in-memory state before each test."""
     fresh_db = MockDatabase.__new__(MockDatabase)
     fresh_db.file_path = None
     fresh_db._data = {}
-    # Override save_db to be a no-op so insert_one/update_one don't hit the filesystem
     fresh_db.save_db = lambda: None
 
     fresh_client = MockDatabaseClient.__new__(MockDatabaseClient)
@@ -53,36 +53,26 @@ def reset_db():
 
 @pytest.fixture
 def db():
-    """Get the test mock database instance."""
+    """Returns the mock database instance."""
     return get_db()
 
 
 @pytest.fixture
-def test_user_data():
-    """Standard test user data."""
-    return {
-        "name": "Test User",
-        "email": "test@paperkit.dev",
-        "password": "TestPassword123!",
-    }
-
-
-@pytest.fixture
 def test_user_doc():
-    """A pre-built user document as it would exist in the DB."""
+    """Pre-built registered user document."""
     user_id = ObjectId()
     return {
         "_id": user_id,
-        "name": "Test User",
-        "email": "test@paperkit.dev",
+        "name": "PaperKit Tester",
+        "email": "tester@paperkit.dev",
         "hashed_password": hash_password("TestPassword123!"),
         "avatar_url": None,
         "oauth_provider": None,
         "oauth_id": None,
         "created_at": datetime.now(timezone.utc),
         "preferences": {
-            "dark_mode": False,
-            "default_view": "list",
+            "dark_mode": True,
+            "default_view": "grid",
             "language": "en",
         },
     }
@@ -90,88 +80,108 @@ def test_user_doc():
 
 @pytest.fixture
 def auth_token(test_user_doc):
-    """Create a valid JWT for the test user."""
+    """Generates a valid JWT bearer token for the test user."""
     return create_access_token({"sub": str(test_user_doc["_id"])})
 
 
 @pytest.fixture
-def auth_headers(auth_token):
-    """Authorization headers with Bearer token."""
+def auth_headers(seeded_user, auth_token):
+    """Returns Authorization header with Bearer token for seeded test user."""
     return {"Authorization": f"Bearer {auth_token}"}
 
 
 @pytest.fixture
 async def seeded_user(db, test_user_doc):
-    """Insert the test user into the DB and return the doc."""
+    """Inserts the test user into DB and returns user doc."""
     await db.users.insert_one(test_user_doc)
     return test_user_doc
 
 
 @pytest.fixture
 def sample_pdf_bytes():
-    """Generate a minimal valid PDF in memory."""
-    try:
-        import fitz  # PyMuPDF
-        doc = fitz.open()
-        page = doc.new_page()
-        page.insert_text((72, 72), "PaperKit Test Document\nThis is test content for automated testing.")
-        pdf_bytes = doc.tobytes()
-        doc.close()
-        return pdf_bytes
-    except ImportError:
-        # Fallback: minimal valid PDF
-        return (
-            b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
-            b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
-            b"3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R>>endobj\n"
-            b"xref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n"
-            b"0000000058 00000 n \n0000000115 00000 n \n"
-            b"trailer<</Size 4/Root 1 0 R>>\nstartxref\n190\n%%EOF"
-        )
+    """Generates a real valid PDF in memory with selectable text."""
+    doc = fitz.open()
+    page = doc.new_page(width=595, height=842)
+    page.insert_text((72, 100), "PaperKit Universal Test Document", fontsize=16)
+    page.insert_text((72, 140), "This document tests PDF manipulation, encryption, OCR, and AI operations.", fontsize=11)
+    pdf_bytes = doc.tobytes()
+    doc.close()
+    return pdf_bytes
+
+
+@pytest.fixture
+def multi_page_pdf_bytes():
+    """Generates a 3-page PDF for split, organize, and page extraction tests."""
+    doc = fitz.open()
+    for i in range(1, 4):
+        page = doc.new_page(width=595, height=842)
+        page.insert_text((72, 100), f"PaperKit Test Page {i}", fontsize=18)
+    pdf_bytes = doc.tobytes()
+    doc.close()
+    return pdf_bytes
+
+
+@pytest.fixture
+def sample_image_bytes():
+    """Generates a sample PNG image in memory."""
+    img = Image.new("RGB", (200, 200), color=(79, 70, 229))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+@pytest.fixture
+def sample_docx_bytes():
+    """Generates a valid DOCX file in memory."""
+    doc = Document()
+    doc.add_heading("PaperKit Test DOCX", level=1)
+    doc.add_paragraph("This is paragraph content for bidirectional document conversion tests.")
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
 
 
 @pytest.fixture
 async def seeded_file(db, seeded_user, sample_pdf_bytes):
-    """Insert a sample file record into the DB."""
-    import tempfile, os
+    """Creates a physical file in storage and adds a corresponding DB record."""
     from services.storage import LOCAL_STORAGE_DIR
-    # Write PDF to a temp file for local storage
     os.makedirs(LOCAL_STORAGE_DIR, exist_ok=True)
-    file_path = os.path.join(LOCAL_STORAGE_DIR, "test_doc.pdf")
+    file_id = ObjectId()
+    filename = f"test_{file_id}.pdf"
+    file_path = os.path.join(LOCAL_STORAGE_DIR, filename)
     with open(file_path, "wb") as f:
         f.write(sample_pdf_bytes)
 
-    file_id = ObjectId()
     file_doc = {
         "_id": file_id,
         "user_id": str(seeded_user["_id"]),
-        "original_filename": "test_doc.pdf",
+        "original_filename": "test_document.pdf",
         "content_type": "application/pdf",
         "size": len(sample_pdf_bytes),
         "page_count": 1,
-        "storage_url": "/storage/test_doc.pdf",
+        "storage_url": f"/storage/{filename}",
         "is_deleted": False,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }
     await db.files.insert_one(file_doc)
     yield file_doc
-    # Cleanup temp file
     if os.path.exists(file_path):
-        os.remove(file_path)
+        try:
+            os.remove(file_path)
+        except OSError:
+            pass
 
 
 @pytest.fixture
 def app():
-    """Create a fresh FastAPI app instance for testing."""
-    # Import after env vars are set
-    from main import app as fastapi_app
+    """Returns the FastAPI application instance."""
     return fastapi_app
 
 
 @pytest.fixture
 async def client(app):
-    """Async HTTP test client using httpx."""
+    """Async HTTP test client."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

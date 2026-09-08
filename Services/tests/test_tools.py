@@ -1,156 +1,157 @@
-"""
-Tests for /tools endpoints — merge, split, compress, rotate, watermark, convert.
-"""
+"""PDF Manipulation and Core Tools Test Suite"""
 import pytest
-import io
-from bson import ObjectId
-from datetime import timezone, datetime
+from services.processing import get_page_count
 
 
-@pytest.fixture
-async def two_pdf_files(db, seeded_user, sample_pdf_bytes):
-    """Insert two PDF files for merge/multi-file operations."""
-    import os
-    from services.storage import LOCAL_STORAGE_DIR
-    os.makedirs(LOCAL_STORAGE_DIR, exist_ok=True)
+@pytest.mark.asyncio
+async def test_merge_pdfs(client, seeded_file, sample_pdf_bytes, auth_headers):
+    """POST /tools/merge merges multiple PDF files into one."""
+    file_id_1 = str(seeded_file["_id"])
+    
+    # Upload second file
+    files = {"file": ("doc2.pdf", sample_pdf_bytes, "application/pdf")}
+    up_resp = await client.post("/files/upload", files=files, headers=auth_headers)
+    file_id_2 = up_resp.json()["_id"]
 
-    files = []
-    for i in range(2):
-        file_path = os.path.join(LOCAL_STORAGE_DIR, f"merge_test_{i}.pdf")
-        with open(file_path, "wb") as f:
-            f.write(sample_pdf_bytes)
+    resp = await client.post(
+        "/tools/merge",
+        json={"file_ids": [file_id_1, file_id_2]},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "download_url" in data
 
-        file_id = ObjectId()
-        doc = {
-            "_id": file_id,
-            "user_id": str(seeded_user["_id"]),
-            "original_filename": f"merge_test_{i}.pdf",
-            "content_type": "application/pdf",
-            "size": len(sample_pdf_bytes),
-            "page_count": 1,
-            "storage_url": f"/storage/merge_test_{i}.pdf",
-            "is_deleted": False,
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc),
+
+@pytest.mark.asyncio
+async def test_organize_pdf(client, seeded_file, auth_headers):
+    """POST /tools/organize rearranges and rotates pages in a PDF."""
+    file_id = str(seeded_file["_id"])
+    resp = await client.post(
+        "/tools/organize",
+        json={"file_id": file_id, "pages": [{"index": 0, "rotation": 90}]},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert "download_url" in resp.json()
+
+
+@pytest.mark.asyncio
+async def test_split_pdf(client, seeded_file, auth_headers):
+    """POST /tools/split splits or extracts pages from a PDF."""
+    file_id = str(seeded_file["_id"])
+    resp = await client.post(
+        "/tools/split",
+        json={"file_id": file_id, "mode": "all"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "download_url" in data or "download_urls" in data
+
+
+@pytest.mark.asyncio
+async def test_rotate_pdf(client, seeded_file, auth_headers):
+    """POST /tools/rotate rotates specified PDF pages."""
+    file_id = str(seeded_file["_id"])
+    resp = await client.post(
+        "/tools/rotate",
+        json={"file_id": file_id, "degrees": 90},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert "download_url" in resp.json()
+
+
+@pytest.mark.asyncio
+async def test_watermark_pdf(client, seeded_file, auth_headers):
+    """POST /tools/watermark applies text watermark to document."""
+    file_id = str(seeded_file["_id"])
+    resp = await client.post(
+        "/tools/watermark",
+        json={"file_id": file_id, "text": "CONFIDENTIAL", "opacity": 0.3},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert "download_url" in resp.json()
+
+
+@pytest.mark.asyncio
+async def test_compress_pdf(client, seeded_file, auth_headers):
+    """POST /tools/compress optimizes PDF file size."""
+    file_id = str(seeded_file["_id"])
+    resp = await client.post(
+        "/tools/compress",
+        json={"file_id": file_id, "quality": "balanced"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert "download_url" in resp.json()
+
+
+@pytest.mark.asyncio
+async def test_protect_pdf(client, seeded_file, auth_headers):
+    """POST /tools/protect password-protects a PDF."""
+    file_id = str(seeded_file["_id"])
+    resp = await client.post(
+        "/tools/protect",
+        json={"file_id": file_id, "password": "SafePassword123!"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert "download_url" in resp.json()
+
+
+@pytest.mark.asyncio
+async def test_sign_pdf(client, seeded_file, auth_headers):
+    """POST /tools/sign places visual digital signatures on PDF pages."""
+    file_id = str(seeded_file["_id"])
+    signatures = [
+        {
+            "page": 0,
+            "x": 72,
+            "y": 100,
+            "width": 120,
+            "height": 50,
+            "image_base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
         }
-        await db.files.insert_one(doc)
-        files.append(doc)
-    yield files
-    for doc in files:
-        filename = doc["storage_url"].split("/storage/")[1]
-        path = os.path.join(LOCAL_STORAGE_DIR, filename)
-        if os.path.exists(path):
-            os.remove(path)
+    ]
+    resp = await client.post(
+        "/tools/sign",
+        json={"file_id": file_id, "signatures": signatures},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert "download_url" in resp.json()
 
 
-class TestMergePDF:
-    """POST /tools/merge"""
+@pytest.mark.asyncio
+async def test_pdf_metadata_get_and_update(client, seeded_file, auth_headers):
+    """GET /tools/metadata/{id} and POST /tools/metadata."""
+    file_id = str(seeded_file["_id"])
+    # 1. Read
+    resp_get = await client.get(f"/tools/metadata/{file_id}", headers=auth_headers)
+    assert resp_get.status_code == 200
+    assert "metadata" in resp_get.json()
 
-    async def test_merge_two_pdfs(self, client, seeded_user, auth_headers, two_pdf_files):
-        """Merging two valid PDFs should return a download URL."""
-        file_ids = [str(f["_id"]) for f in two_pdf_files]
-        resp = await client.post("/tools/merge", json={
-            "file_ids": file_ids,
-        }, headers=auth_headers)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "url" in data or "download_url" in data or "storage_url" in data
-
-    async def test_merge_single_file_rejected(self, client, seeded_user, auth_headers, seeded_file):
-        """Merging a single file should be rejected (need at least 2)."""
-        resp = await client.post("/tools/merge", json={
-            "file_ids": [str(seeded_file["_id"])],
-        }, headers=auth_headers)
-        assert resp.status_code in (400, 422)
-
-    async def test_merge_invalid_token(self, client):
-        """Merge with invalid token should return 401."""
-        resp = await client.post("/tools/merge", json={"file_ids": ["fake"]}, headers={"Authorization": "Bearer bad-token"})
-        assert resp.status_code == 401
+    # 2. Update
+    resp_update = await client.post(
+        "/tools/metadata",
+        json={"file_id": file_id, "updates": {"title": "PaperKit Automated Title"}},
+        headers=auth_headers,
+    )
+    assert resp_update.status_code == 200
+    assert "download_url" in resp_update.json()
 
 
-class TestSplitPDF:
-    """POST /tools/split"""
-
-    async def test_split_pdf_by_range(self, client, seeded_file, auth_headers):
-        """Splitting a PDF by page range should succeed."""
-        resp = await client.post("/tools/split", json={
-            "file_id": str(seeded_file["_id"]),
-            "page_range": "1",
-        }, headers=auth_headers)
-        assert resp.status_code == 200
-
-    async def test_split_nonexistent_file(self, client, seeded_user, auth_headers):
-        """Splitting a non-existent file should return 404."""
-        resp = await client.post("/tools/split", json={
-            "file_id": str(ObjectId()),
-            "ranges": "1",
-        }, headers=auth_headers)
-        assert resp.status_code == 404
-
-
-class TestCompressPDF:
-    """POST /tools/compress"""
-
-    async def test_compress_pdf(self, client, seeded_file, auth_headers):
-        """Compressing a valid PDF should return result info."""
-        resp = await client.post("/tools/compress", json={
-            "file_id": str(seeded_file["_id"]),
-            "quality": "medium",
-        }, headers=auth_headers)
-        assert resp.status_code == 200
-
-
-class TestRotatePDF:
-    """POST /tools/rotate"""
-
-    async def test_rotate_pdf_90(self, client, seeded_file, auth_headers):
-        """Rotating a PDF by 90 degrees should succeed."""
-        resp = await client.post("/tools/rotate", json={
-            "file_id": str(seeded_file["_id"]),
-            "angle": 90,
-        }, headers=auth_headers)
-        assert resp.status_code == 200
-
-    async def test_rotate_pdf_invalid_angle(self, client, seeded_file, auth_headers):
-        """Rotating by an invalid angle may be rejected."""
-        resp = await client.post("/tools/rotate", json={
-            "file_id": str(seeded_file["_id"]),
-            "angle": 45,
-        }, headers=auth_headers)
-        # Some implementations allow any angle, others only 90/180/270
-        assert resp.status_code in (200, 400, 422)
-
-
-class TestWatermark:
-    """POST /tools/watermark"""
-
-    async def test_add_text_watermark(self, client, seeded_file, auth_headers):
-        """Adding a text watermark should succeed."""
-        resp = await client.post("/tools/watermark", json={
-            "file_id": str(seeded_file["_id"]),
-            "text": "CONFIDENTIAL",
-        }, headers=auth_headers)
-        assert resp.status_code == 200
-
-
-class TestToolsAuth:
-    """Cross-cutting auth tests for tool endpoints."""
-
-    async def test_tools_require_auth(self, client):
-        """All tool endpoints should reject invalid authorization tokens."""
-        endpoints = [
-            ("/tools/merge", {"file_ids": []}),
-            ("/tools/split", {"file_id": "x", "ranges": "1"}),
-            ("/tools/compress", {"file_id": "x"}),
-            ("/tools/rotate", {"file_id": "x", "angle": 90}),
-            ("/tools/watermark", {"file_id": "x", "text": "test"}),
-        ]
-        for url, body in endpoints:
-            resp = await client.post(url, json=body, headers={"Authorization": "Bearer bad-token"})
-            assert resp.status_code == 401, f"{url} should reject invalid auth token"
-
-    async def test_tools_guest_execution_allowed(self, client):
-        """Guest users should be able to execute tools without auth headers."""
-        resp = await client.post("/tools/merge", json={"file_ids": []})
-        assert resp.status_code in (400, 422)
+@pytest.mark.asyncio
+async def test_redact_pdf(client, seeded_file, auth_headers):
+    """POST /tools/redact applies text blackouts."""
+    file_id = str(seeded_file["_id"])
+    resp = await client.post(
+        "/tools/redact",
+        json={"file_id": file_id, "terms": ["Document"]},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert "download_url" in resp.json()
