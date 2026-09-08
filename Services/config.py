@@ -2,8 +2,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
@@ -38,7 +37,7 @@ class Settings(BaseSettings):
     pdf_preserve_fonts: bool = True
     pdf_preserve_images: bool = True
 
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_file=str(ENV_PATH),
         env_file_encoding="utf-8",
         case_sensitive=False,
