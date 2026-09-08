@@ -12,11 +12,11 @@ load_dotenv(dotenv_path=ENV_PATH)
 
 class Settings(BaseSettings):
     # MongoDB
-    mongodb_url: str
+    mongodb_url: str = "mock://"
     database_name: str = "paperkit"
 
     # JWT
-    secret_key: str
+    secret_key: str = "paperkit-default-dev-secret-key-render-32-chars-long"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 10080  # 7 days
 
