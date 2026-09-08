@@ -1,7 +1,11 @@
 /* api.js — Axios instance with auth interceptor, cold-start retries, and error normalization */
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'https://paperkit-backend.onrender.com';
+export const REMOTE_API_BASE = 'https://paperkit-backend.onrender.com';
+
+const configuredUrl = import.meta.env.VITE_API_URL;
+export const API_BASE = configuredUrl || REMOTE_API_BASE;
 
 export function resolveBackendFileUrl(fileUrl) {
   if (!fileUrl || typeof fileUrl !== 'string') return '';
@@ -64,18 +68,20 @@ api.interceptors.response.use(
 );
 
 /**
- * Pre-warm the backend server on application boot.
- * Sends non-blocking requests to trigger Render container cold boot immediately.
+ * Pre-warm the backend server and web instance on application boot.
+ * Sends non-blocking requests to trigger Render container cold boots immediately.
  */
 export function prewarmBackend() {
   const backendUrl = API_BASE.replace(/\/+$/, '');
+  const webUrl = import.meta.env.VITE_WEB_URL || 'https://paperkit-web.onrender.com';
   try {
     fetch(`${backendUrl}/health`, { cache: 'no-store' }).catch(() => {});
+    fetch(webUrl, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
   } catch {
     // Ignore background network errors
   }
 
-  api.get('/health', { timeout: 5000, _fast: true }).catch(() => {});
+  api.get('/health', { timeout: 8000, _fast: true }).catch(() => {});
 }
 
 /**

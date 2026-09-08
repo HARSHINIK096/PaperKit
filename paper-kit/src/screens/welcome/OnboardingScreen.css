@@ -47,9 +47,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  padding-top: calc(16px + 7px);
-  margin-top: 7px;
+  padding: 0 24px 12px;
+  padding-top: max(1cm, env(safe-area-inset-top, 0px));
   z-index: 10;
   backdrop-filter: blur(12px);
 }
@@ -66,6 +65,46 @@
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #0F172A;
+}
+
+.onboarding-screen__cloud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.onboarding-screen__cloud-pill--ready {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1.5px solid rgba(16, 185, 129, 0.3);
+}
+
+.onboarding-screen__cloud-pill--booting {
+  color: #D97706;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1.5px solid rgba(245, 158, 11, 0.3);
+}
+
+.onboarding-screen__cloud-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  animation: obCloudPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes obCloudPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
 }
 
 .onboarding-screen__page-pill {

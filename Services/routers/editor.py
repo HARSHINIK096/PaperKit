@@ -21,25 +21,39 @@ from database import get_db
 
 router = APIRouter()
 
-FONT_MAPPING = {
-    "helvetica": "helv",
-    "arial": "helv",
-    "sans-serif": "helv",
-    "times": "tiro",
-    "times-roman": "tiro",
-    "serif": "tiro",
-    "courier": "cour",
-    "monospace": "cour",
-}
+def resolve_pymupdf_font(font_name: str, is_bold: bool = False, is_italic: bool = False) -> str:
+    """Resolve font family + weight/style into standard PyMuPDF 14 base fonts."""
+    fn_lower = (font_name or "").lower()
+    is_bold = is_bold or any(b in fn_lower for b in ["bold", "black", "heavy", "medium", "semibold", "tibo", "hebo", "cobo"])
+    is_italic = is_italic or any(it in fn_lower for it in ["italic", "oblique", "slanted", "tiit", "heit", "coit"])
 
-def map_font_name(font_name: str) -> str:
-    if not font_name:
-        return "helv"
-    name_lower = font_name.lower().strip()
-    for k, v in FONT_MAPPING.items():
-        if k in name_lower:
-            return v
-    return "helv"
+    if any(k in fn_lower for k in ["times", "serif", "roman", "georgia", "cambria", "garamond", "minion", "tiro"]):
+        if is_bold and is_italic:
+            return "tibi"
+        elif is_bold:
+            return "tibo"
+        elif is_italic:
+            return "tiit"
+        else:
+            return "tiro"
+    elif any(k in fn_lower for k in ["courier", "mono", "consolas", "menlo", "code", "cour"]):
+        if is_bold and is_italic:
+            return "cobi"
+        elif is_bold:
+            return "cobo"
+        elif is_italic:
+            return "coit"
+        else:
+            return "cour"
+    else: # Helvetica / Arial / Sans-serif / default
+        if is_bold and is_italic:
+            return "hebi"
+        elif is_bold:
+            return "hebo"
+        elif is_italic:
+            return "heit"
+        else:
+            return "helv"
 
 @router.get("/limits")
 async def get_editor_limits(request: Request, response: Response):
@@ -167,13 +181,39 @@ async def apply_pdf_in_place_edits(
 
             if edit_type == "text":
                 new_text = edit.get("new_text", edit.get("text", ""))
-                font_name = map_font_name(edit.get("font_name", "Helvetica"))
-                font_size = float(edit.get("font_size", edit.get("fontSize", 12)))
 
+                # Extract original font attributes directly from PDF span in clip rect
+                clip_dict = page.get_text("dict", clip=rect)
+                orig_spans = []
+                for b in clip_dict.get("blocks", []):
+                    for l in b.get("lines", []):
+                        for s in l.get("spans", []):
+                            orig_spans.append(s)
+
+                orig_span = orig_spans[0] if orig_spans else None
+
+                target_font_name = edit.get("raw_font_name") or edit.get("font_name") or (orig_span.get("font") if orig_span else "Helvetica")
+                is_bold = edit.get("is_bold", False)
+                is_italic = edit.get("is_italic", False)
+
+                if orig_span:
+                    flags = orig_span.get("flags", 0)
+                    orig_font_name = orig_span.get("font", "").lower()
+                    is_bold = is_bold or bool(flags & 16) or any(b in orig_font_name for b in ["bold", "black", "heavy", "medium"])
+                    is_italic = is_italic or bool(flags & 2) or any(it in orig_font_name for it in ["italic", "oblique"])
+
+                font_code = resolve_pymupdf_font(target_font_name, is_bold=is_bold, is_italic=is_italic)
+                font_size = float(edit.get("font_size") or (orig_span.get("size") if orig_span else 12.0))
+
+                # Color resolution: preserve original color if not customized
                 color_arr = edit.get("color", [0, 0, 0])
-                if isinstance(color_arr, list) and len(color_arr) == 3:
+                if (color_arr == [0, 0, 0] or not color_arr) and orig_span and "color" in orig_span and orig_span["color"] != 0:
+                    c_int = int(orig_span["color"])
+                    r = ((c_int >> 16) & 255) / 255.0
+                    g = ((c_int >> 8) & 255) / 255.0
+                    b = (c_int & 255) / 255.0
+                elif isinstance(color_arr, list) and len(color_arr) == 3:
                     r, g, b = float(color_arr[0]), float(color_arr[1]), float(color_arr[2])
-                    # Normalize [0-255] RGB values to [0.0-1.0] if needed
                     if r > 1.0 or g > 1.0 or b > 1.0:
                         r, g, b = r / 255.0, g / 255.0, b / 255.0
                 else:
@@ -183,17 +223,18 @@ async def apply_pdf_in_place_edits(
                 page.add_redact_annot(rect, fill=(1, 1, 1))
                 page.apply_redactions()
 
-                # Calculate text baseline position
-                # Point baseline in PyMuPDF is y0 + baseline offset
-                baseline_y = y0 + font_size * 0.8
-                point = fitz.Point(x0, baseline_y)
+                # Calculate text baseline position: use original baseline if available
+                if orig_span and "origin" in orig_span:
+                    baseline_point = fitz.Point(orig_span["origin"][0], orig_span["origin"][1])
+                else:
+                    baseline_point = fitz.Point(x0, y0 + font_size * 0.8)
 
                 if new_text:
                     page.insert_text(
-                        point,
+                        baseline_point,
                         new_text,
                         fontsize=font_size,
-                        fontname=font_name,
+                        fontname=font_code,
                         color=(r, g, b)
                     )
 

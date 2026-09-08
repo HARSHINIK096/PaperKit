@@ -329,14 +329,6 @@ select:focus,
   box-shadow: 0 4px 16px rgba(37, 99, 235, 0.08) !important;
 }
 
-/* 7px gap above all top headers across all pages */
-.topbar,
-.back-header,
-.onboarding-screen__topbar,
-.landing-screen__topbar {
-  margin-top: 7px;
-}
-
 
 
 .bottom-nav {

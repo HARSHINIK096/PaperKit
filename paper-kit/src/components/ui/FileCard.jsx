@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MoreVertical } from 'lucide-react';
 import { FileTypeIcon } from '../icons/ToolIcons';
 import { formatFileTimestamp } from '../../utils/dateUtils';
@@ -36,14 +37,21 @@ function formatSize(bytes) {
 }
 
 export default function FileCard({ file, onMore, onClick }) {
+  const [imgError, setImgError] = useState(false);
   const type = getFileType(file.original_filename || file.filename);
+
+  const rawThumb = file.thumbnail_url || (type === 'image' ? (file.storage_url || file.download_url) : null);
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://paperkit-backend.onrender.com';
+  const thumbUrl = rawThumb && rawThumb.startsWith('/') ? `${apiUrl}${rawThumb}` : rawThumb;
+  const showThumb = thumbUrl && !imgError && !thumbUrl.startsWith('blob:');
 
   return (
     <div className="file-card" onClick={onClick} id={`file-card-${file._id || file.id}`}>
-      {file.thumbnail_url ? (
+      {showThumb ? (
         <img
-          src={file.thumbnail_url}
-          alt={file.original_filename || file.filename}
+          src={thumbUrl}
+          alt=""
+          onError={() => setImgError(true)}
           style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
           className="file-card__thumbnail"
         />

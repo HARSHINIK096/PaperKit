@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../context/I18nContext';
 import { shareUrl } from '../../services/native';
+import { endSessionAndClearStorage } from '../../services/auth';
 import api from '../../services/api';
 import './NavigationDrawer.css';
 
@@ -65,13 +66,7 @@ export default function NavigationDrawer({ isOpen, onClose }) {
 
   async function handleClearSession() {
     if (window.confirm("Are you sure you want to end this session and clear all local and remote data? This action cannot be undone.")) {
-      try {
-        await api.delete('/auth/clear-session');
-      } catch (err) {
-        console.warn("Backend session clear failed or not available:", err);
-      }
-      localStorage.clear();
-      sessionStorage.clear();
+      await endSessionAndClearStorage();
       window.location.href = '/';
     }
   }

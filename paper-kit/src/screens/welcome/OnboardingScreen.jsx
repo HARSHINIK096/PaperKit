@@ -25,9 +25,11 @@ import {
   Pause,
   CheckCircle2,
   AlertTriangle,
-  Info
+  Info,
+  Cloud
 } from 'lucide-react';
 import ParticleBackground from '../../components/ui/ParticleBackground';
+import { probeBothRenderServices } from '../../services/backendHealth';
 import './OnboardingScreen.css';
 
 const ONBOARDING_PAGES = [
@@ -273,6 +275,50 @@ export default function OnboardingScreen({ onFinish = null }) {
   const [touchStartX, setTouchStartX] = useState(null);
   const autoPlayTimerRef = useRef(null);
 
+  // Background boot-up poller for Render 50s cold start
+  const [backendHealth, setBackendHealth] = useState({
+    backendReady: false,
+    webReady: false,
+    elapsedSeconds: 0,
+  });
+  const startTimeRef = useRef(Date.now());
+
+  useEffect(() => {
+    let isMounted = true;
+    let timerId = null;
+
+    async function pollCloudBoot() {
+      if (!isMounted) return;
+      const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      try {
+        const res = await probeBothRenderServices(5000);
+        if (isMounted) {
+          setBackendHealth({
+            backendReady: Boolean(res.backendOk),
+            webReady: Boolean(res.webOk),
+            elapsedSeconds: elapsed,
+          });
+          if (res.backendOk) {
+            return; // Backend is booted and ready
+          }
+        }
+      } catch {
+        if (isMounted) {
+          setBackendHealth(prev => ({ ...prev, elapsedSeconds: elapsed }));
+        }
+      }
+      if (isMounted) {
+        timerId = setTimeout(pollCloudBoot, 3000);
+      }
+    }
+
+    pollCloudBoot();
+    return () => {
+      isMounted = false;
+      if (timerId) clearTimeout(timerId);
+    };
+  }, []);
+
   const totalPages = ONBOARDING_PAGES.length;
   const currentPage = ONBOARDING_PAGES[currentSlideIndex];
   const IconComponent = currentPage.icon;
@@ -313,19 +359,17 @@ export default function OnboardingScreen({ onFinish = null }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext, handlePrev, handleFinish, isLastPage]);
 
-  /* Auto play handler */
+  /* Continuous 4-second automatic slide transition (14 slides * ~4s = ~56s covering Render 50s boot) */
   useEffect(() => {
-    if (isPlaying && !isLastPage) {
+    if (!isLastPage) {
       autoPlayTimerRef.current = setTimeout(() => {
         handleNext();
       }, 4000);
-    } else if (isLastPage) {
-      setIsPlaying(false);
     }
     return () => {
       if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
     };
-  }, [isPlaying, currentSlideIndex, handleNext, isLastPage]);
+  }, [currentSlideIndex, handleNext, isLastPage]);
 
   /* Touch Swiping */
   function handleTouchStart(e) {
@@ -360,44 +404,24 @@ export default function OnboardingScreen({ onFinish = null }) {
       <div className="onboarding-screen__glow-1" style={{ background: currentPage.bgColor }} />
       <div className="onboarding-screen__glow-2" />
 
-      {/* Top Bar */}
+      {/* Top Bar with Live Cloud Boot Status */}
       <header className="onboarding-screen__topbar">
         <div className="onboarding-screen__brand">
           <img src="/icon-48.png" alt="PaperKit" width="28" height="28" style={{ borderRadius: '8px' }} />
           <span className="onboarding-screen__brand-title">PaperKit</span>
-          <span className="onboarding-screen__page-pill">
-            {currentSlideIndex + 1} / {totalPages}
-          </span>
         </div>
 
-        <div className="onboarding-screen__top-right-actions">
-          <button
-            type="button"
-            className="onboarding-screen__autoplay-btn"
-            onClick={() => setIsPlaying(!isPlaying)}
-            title={isPlaying ? 'Pause auto-slide' : 'Start auto-slide'}
-          >
-            {isPlaying ? <Pause size={15} /> : <Play size={15} />}
-            <span>{isPlaying ? 'Pause' : 'Auto'}</span>
-          </button>
-
-          {!isLastPage ? (
-            <button
-              type="button"
-              className="onboarding-screen__skip-btn"
-              onClick={() => setCurrentSlideIndex(totalPages - 1)}
-            >
-              Skip to End
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="onboarding-screen__skip-btn"
-              onClick={handleFinish}
-            >
-              Enter Studio
-            </button>
-          )}
+        {/* Live Render Backend Boot Indicator */}
+        <div
+          className={`onboarding-screen__cloud-pill ${backendHealth.backendReady ? 'onboarding-screen__cloud-pill--ready' : 'onboarding-screen__cloud-pill--booting'}`}
+          title="PaperKit Render Cloud Services"
+        >
+          <span className="onboarding-screen__cloud-dot" />
+          <span>
+            {backendHealth.backendReady
+              ? 'Cloud Backend Ready'
+              : `Waking Backend... (${backendHealth.elapsedSeconds}s)`}
+          </span>
         </div>
       </header>
 

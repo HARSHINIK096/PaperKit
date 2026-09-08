@@ -34,16 +34,16 @@ for pkg in ["routers", "services", "models", "middleware"]:
 async def _guest_cleanup_loop():
     while True:
         try:
-            await asyncio.sleep(3600)  # Run once every hour
             db = get_db()
-            if db is not None:
-                cleaned = await cleanup_expired_guest_files(db, max_age_hours=24)
-                if cleaned > 0:
-                    print(f"[Storage] Auto-purged {cleaned} expired guest session files.")
+            cleaned = await cleanup_expired_guest_files(db, max_age_minutes=15)
+            if cleaned > 0:
+                print(f"[Storage] Auto-purged {cleaned} ephemeral/session storage files & chunks.")
+            await asyncio.sleep(180)  # Run every 3 minutes
         except asyncio.CancelledError:
             break
         except Exception as e:
-            print(f"[Storage] Guest cleanup error: {e}")
+            print(f"[Storage] Auto-cleanup error: {e}")
+            await asyncio.sleep(180)
 
 
 @asynccontextmanager
@@ -145,11 +145,14 @@ from routers.editor import router as editor_router
 
 # Routers
 app.include_router(auth_router)
+app.include_router(auth_router, prefix="/api")
 app.include_router(files_router)
 app.include_router(tools_router)
 app.include_router(ai_router)
 app.include_router(jobs_router)
+app.include_router(media_router, prefix="/media", tags=["media"])
 app.include_router(media_router, prefix="/api/media", tags=["media"])
+app.include_router(editor_router, prefix="/editor", tags=["editor"])
 app.include_router(editor_router, prefix="/api/editor", tags=["editor"])
 
 

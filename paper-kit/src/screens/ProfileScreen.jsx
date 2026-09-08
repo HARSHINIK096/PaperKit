@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useI18n, SUPPORTED_LANGUAGES } from '../context/I18nContext';
-import { updateMe } from '../services/auth';
+import { updateMe, endSessionAndClearStorage } from '../services/auth';
 import { getStorageUsage } from '../services/jobs';
 import { getProcessingHistory } from '../services/tools';
 import LoadingState from '../components/ui/LoadingState';
@@ -172,8 +172,10 @@ export default function ProfileScreen() {
   }
 
   async function handleLogout() {
-    await logout();
-    await exitApp();
+    if (window.confirm('End session and clear all stored data, temporary files, and cache?')) {
+      await endSessionAndClearStorage();
+      await exitApp();
+    }
   }
 
   async function handleResetPreferences() {

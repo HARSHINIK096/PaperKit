@@ -53,6 +53,22 @@ function getFileType(filename) {
   return map[ext] || 'default';
 }
 
+function RecentFileThumb({ url, type }) {
+  const [imgError, setImgError] = useState(false);
+  const showThumb = url && !imgError && !url.startsWith('blob:');
+
+  if (showThumb) {
+    return (
+      <img
+        src={url}
+        alt=""
+        onError={() => setImgError(true)}
+        style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }}
+      />
+    );
+  }
+  return <FileTypeIcon type={type} size={32} />;
+}
 
 export default function FilesScreen() {
   const { query: search, setQuery: setSearch } = useContext(SearchContext);
@@ -336,26 +352,24 @@ export default function FilesScreen() {
           <div className="files-screen__recent-section">
             <h3 className="files-screen__section-title">Recent Files</h3>
             <div className="files-screen__recent-scroll">
-              {recentFiles.map(rf => (
-                <div
-                  key={rf._id || rf.id}
-                  className="files-screen__recent-card"
-                  onClick={() => handlePreview(rf)}
-                  id={`recent-file-${rf._id || rf.id}`}
-                >
-                  {rf.thumbnail_url ? (
-                    <img
-                      src={rf.thumbnail_url}
-                      alt={rf.original_filename}
-                      style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <FileTypeIcon type={getFileType(rf.original_filename)} size={32} />
-                  )}
-                  <span className="files-screen__recent-name">{rf.original_filename}</span>
-                  <span className="files-screen__recent-time">{formatFileTimestamp(rf.created_at || rf.updated_at)}</span>
-                </div>
-              ))}
+              {recentFiles.map(rf => {
+                const type = getFileType(rf.original_filename);
+                const rawThumb = rf.thumbnail_url || (type === 'image' ? (rf.storage_url || rf.download_url) : null);
+                const apiUrl = import.meta.env.VITE_API_URL || 'https://paperkit-backend.onrender.com';
+                const thumbUrl = rawThumb && rawThumb.startsWith('/') ? `${apiUrl}${rawThumb}` : rawThumb;
+                return (
+                  <div
+                    key={rf._id || rf.id}
+                    className="files-screen__recent-card"
+                    onClick={() => handlePreview(rf)}
+                    id={`recent-file-${rf._id || rf.id}`}
+                  >
+                    <RecentFileThumb url={thumbUrl} type={type} />
+                    <span className="files-screen__recent-name">{rf.original_filename}</span>
+                    <span className="files-screen__recent-time">{formatFileTimestamp(rf.created_at || rf.updated_at)}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

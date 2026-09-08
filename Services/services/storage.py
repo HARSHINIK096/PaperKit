@@ -106,30 +106,64 @@ async def get_file_metadata(file_id: str, user_id: str, db) -> dict:
     }
 
 
-async def cleanup_expired_guest_files(db, max_age_hours: int = 24) -> int:
-    """Delete guest files older than max_age_hours from disk storage and MongoDB."""
+async def cleanup_expired_guest_files(db, max_age_minutes: int = 15, max_age_hours: int = None) -> int:
+    """Delete guest, temporary, and orphaned processed files older than max_age_minutes from disk storage and MongoDB."""
     from datetime import datetime, timezone, timedelta
     from middleware.auth import GUEST_USER_ID
 
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
-    cursor = db.files.find({
-        "user_id": str(GUEST_USER_ID),
-        "created_at": {"$lt": cutoff},
-        "is_deleted": False
-    })
+    if max_age_hours is not None:
+        effective_delta = timedelta(hours=max_age_hours)
+        max_age_seconds = max_age_hours * 3600
+    else:
+        effective_delta = timedelta(minutes=max_age_minutes)
+        max_age_seconds = max_age_minutes * 60
 
+    cutoff = datetime.now(timezone.utc) - effective_delta
     cleaned_count = 0
-    async for doc in cursor:
-        storage_url = doc.get("storage_url", "")
-        if storage_url:
-            try:
-                await delete_file(storage_url)
-            except Exception:
-                pass
-        await db.files.update_one(
-            {"_id": doc["_id"]},
-            {"$set": {"is_deleted": True, "deleted_at": datetime.now(timezone.utc)}}
-        )
-        cleaned_count += 1
+
+    if db is not None:
+        try:
+            cursor = db.files.find({
+                "$or": [
+                    {"user_id": str(GUEST_USER_ID)},
+                    {"user_id": GUEST_USER_ID},
+                    {"user_id": "local_user"}
+                ],
+                "created_at": {"$lt": cutoff},
+                "is_deleted": False
+            })
+
+            async for doc in cursor:
+                storage_url = doc.get("storage_url", "")
+                if storage_url:
+                    try:
+                        await delete_file(storage_url)
+                    except Exception:
+                        pass
+                await db.files.update_one(
+                    {"_id": doc["_id"]},
+                    {"$set": {"is_deleted": True, "deleted_at": datetime.now(timezone.utc)}}
+                )
+                cleaned_count += 1
+        except Exception as e:
+            print(f"[Cleanup] DB cleanup error: {e}")
+
+    # Aggressive auto-cleanup of disk chunks & files in LOCAL_STORAGE_DIR
+    try:
+        import time
+        now = time.time()
+        if os.path.exists(LOCAL_STORAGE_DIR):
+            for fname in os.listdir(LOCAL_STORAGE_DIR):
+                fpath = os.path.join(LOCAL_STORAGE_DIR, fname)
+                if os.path.isfile(fpath):
+                    # Delete files older than threshold
+                    if now - os.path.getmtime(fpath) > max_age_seconds:
+                        try:
+                            os.remove(fpath)
+                            cleaned_count += 1
+                        except Exception:
+                            pass
+    except Exception as e:
+        print(f"[Cleanup] Disk storage cleanup error: {e}")
 
     return cleaned_count

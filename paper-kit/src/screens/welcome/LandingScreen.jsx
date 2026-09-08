@@ -1,12 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Sparkles, ArrowRight, ShieldCheck, Zap, Star, 
   ChevronDown, ChevronUp, FileText, Upload, CheckCircle2,
   Lock, Globe, Cpu, Search, Sliders, Play,
-  ArrowLeft, MoreHorizontal, User
+  ArrowLeft, MoreHorizontal, User, Cloud
 } from 'lucide-react';
 import { useI18n } from '../../context/I18nContext';
+import { probeBothRenderServices } from '../../services/backendHealth';
 import './LandingScreen.css';
 
 export default function LandingScreen() {
@@ -15,6 +16,41 @@ export default function LandingScreen() {
   const [openFaq, setOpenFaq] = useState(null);
   const [activeCategory, setActiveCategory] = useState('All');
   
+  // Real-time Render services health state on landing page
+  const [servicesHealth, setServicesHealth] = useState({
+    backend: false,
+    web: false,
+    probing: true,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    async function checkHealth() {
+      try {
+        const res = await probeBothRenderServices(6000);
+        if (isMounted) {
+          setServicesHealth({
+            backend: Boolean(res.backendOk),
+            web: Boolean(res.webOk),
+            probing: false,
+          });
+        }
+      } catch {
+        if (isMounted) {
+          setServicesHealth(prev => ({ ...prev, probing: false }));
+        }
+      }
+    }
+
+    checkHealth();
+    // Periodically keep Render instances warm while on landing page
+    const interval = setInterval(checkHealth, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   // Interactive Live Demo state on landing page
   const [demoFile, setDemoFile] = useState(null);
   const fileInputRef = useRef(null);
@@ -107,6 +143,15 @@ export default function LandingScreen() {
         </div>
 
         <div className="landing-screen__top-actions">
+          {/* Real-time Render cloud health badge */}
+          <div
+            className={`landing-screen__cloud-pill ${servicesHealth.backend ? 'landing-screen__cloud-pill--online' : 'landing-screen__cloud-pill--syncing'}`}
+            title={`Render Backend: ${servicesHealth.backend ? 'Online (200 OK)' : 'Connecting / Waking...'} | Render Web: ${servicesHealth.web ? 'Online' : 'Syncing...'}`}
+          >
+            <span className="landing-screen__cloud-dot" />
+            <span>{servicesHealth.backend ? 'Cloud Ready' : 'Syncing Cloud...'}</span>
+          </div>
+
           <div className="landing-screen__lang-pill">
             <Globe size={14} color="#2563EB" />
             <select

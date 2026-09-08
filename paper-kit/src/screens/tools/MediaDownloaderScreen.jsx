@@ -70,10 +70,9 @@ export default function MediaDownloaderScreen() {
     return null;
   }
 
-  // Multi-instance Cobalt Stream Resolver
+  // Multi-instance Cobalt Stream Resolver (for non-YouTube audio/media)
   async function resolveWithCobalt(targetUrl, isAudioOnly = false) {
     const cobaltInstances = [
-      'https://api.cobalt.tools',
       'https://cobalt-api.kwiatekm.com',
       'https://cobalt.xy2401.com',
       'https://api.wuk.sh'
@@ -81,6 +80,8 @@ export default function MediaDownloaderScreen() {
 
     for (const instance of cobaltInstances) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
         const res = await fetch(instance, {
           method: 'POST',
           headers: {
@@ -92,8 +93,10 @@ export default function MediaDownloaderScreen() {
             downloadMode: isAudioOnly ? 'audio' : 'auto',
             audioFormat: 'mp3',
             videoQuality: '1080'
-          })
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (res.ok) {
           const data = await res.json();
@@ -108,26 +111,66 @@ export default function MediaDownloaderScreen() {
     return null;
   }
 
+  // Invidious Stream Resolver for YouTube
+  async function resolveWithInvidious(videoId) {
+    const invidiousInstances = [
+      `https://inv.tux.pizza/api/v1/videos/${videoId}`,
+      `https://invidious.jing.rocks/api/v1/videos/${videoId}`,
+      `https://vid.puffyan.us/api/v1/videos/${videoId}`,
+      `https://iv.ggtyler.dev/api/v1/videos/${videoId}`,
+      `https://invidious.projectsegfau.lt/api/v1/videos/${videoId}`
+    ];
+
+    for (const endpoint of invidiousInstances) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(endpoint, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.formatStreams && data.formatStreams.length > 0) {
+            const formats = data.formatStreams;
+            const chosen = formats.find(f => f.qualityLabel === '720p' || f.quality === 'medium') || formats[0];
+            if (chosen && chosen.url) {
+              return {
+                streamUrl: chosen.url,
+                title: data.title || 'youtube_video'
+              };
+            }
+          }
+        }
+      } catch (err) {
+        console.debug(`Invidious instance ${endpoint} unavailable:`, err.message);
+      }
+    }
+    return null;
+  }
+
   // Piped Stream Resolver for YouTube
   async function resolveWithPiped(videoId) {
     const pipedInstances = [
-      `https://pipedapi.kavin.rocks/streams/${videoId}`,
+      `https://pipedapi.tokhmi.xyz/streams/${videoId}`,
       `https://api.piped.privacydev.net/streams/${videoId}`,
-      `https://pipedapi.tokhmi.xyz/streams/${videoId}`
+      `https://pipedapi.kavin.rocks/streams/${videoId}`
     ];
 
     for (const instance of pipedInstances) {
       try {
-        const res = await fetch(instance);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(instance, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (res.ok) {
           const data = await res.json();
           if (data && data.videoStreams && data.videoStreams.length > 0) {
-            // Find 1080p or 720p or highest available mp4
             const mp4s = data.videoStreams.filter(s => s.mimeType?.includes('mp4') || s.format === 'MPEG_4');
             const stream = mp4s[0] || data.videoStreams[0];
             return {
               streamUrl: stream.url,
-              title: data.title || 'video'
+              title: data.title || 'youtube_video'
             };
           }
         }
@@ -136,6 +179,13 @@ export default function MediaDownloaderScreen() {
       }
     }
     return null;
+  }
+
+  function getFallbackPortalUrl(targetUrl, isYt) {
+    if (isYt) {
+      return `https://ssyoutube.com/en795/?url=${encodeURIComponent(targetUrl)}`;
+    }
+    return `https://spotifydown.com/?url=${encodeURIComponent(targetUrl)}`;
   }
 
   async function handleDownload() {
@@ -153,54 +203,76 @@ export default function MediaDownloaderScreen() {
       let downloadFilename = isYouTube ? 'youtube_video.mp4' : 'spotify_track.mp3';
       let downloadUrl = null;
 
-      // ── Stage 1: Try Primary Backend API ──
+      // ── Stage 1: Try Primary Backend API (Local / Render) ──
       try {
-        const { API_BASE } = await import('../../services/api');
-        const endpoint = isYouTube 
-          ? `${API_BASE}/api/media/download-youtube` 
-          : `${API_BASE}/api/media/download-spotify`;
-          
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: trimmed })
-        });
-        
-        if (response.ok) {
-          const contentDisposition = response.headers.get('content-disposition');
-          if (contentDisposition) {
-            const match = contentDisposition.match(/filename="?([^"]+)"?/);
-            if (match) downloadFilename = match[1];
+        const { API_BASE, REMOTE_API_BASE } = await import('../../services/api');
+        const apiTargets = [API_BASE];
+        if (REMOTE_API_BASE && REMOTE_API_BASE !== API_BASE) {
+          apiTargets.push(REMOTE_API_BASE);
+        }
+
+        for (const targetBase of apiTargets) {
+          try {
+            const endpoint = isYouTube 
+              ? `${targetBase}/api/media/download-youtube` 
+              : `${targetBase}/api/media/download-spotify`;
+              
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            const response = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: trimmed }),
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+              const contentDisposition = response.headers.get('content-disposition');
+              if (contentDisposition) {
+                const match = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (match) downloadFilename = match[1];
+              }
+              downloadBlob = await response.blob();
+              if (downloadBlob) break;
+            }
+          } catch (targetErr) {
+            console.debug(`Backend target ${targetBase} error:`, targetErr.message);
           }
-          downloadBlob = await response.blob();
         }
       } catch (backendErr) {
         console.debug('Backend download endpoint error, falling back to public stream resolver:', backendErr.message);
       }
 
-      // ── Stage 2: Cobalt Stream Engine Fallback ──
-      if (!downloadBlob) {
-        setStatusMessage('Resolving high-speed media stream…');
-        const resolvedDirectUrl = await resolveWithCobalt(trimmed, !isYouTube);
+      // ── Stage 2: Invidious / Piped Resolver for YouTube ──
+      if (!downloadBlob && isYouTube) {
+        setStatusMessage('Extracting direct HD video stream…');
+        const ytId = extractYouTubeId(trimmed);
+        if (ytId) {
+          const invidiousData = await resolveWithInvidious(ytId);
+          if (invidiousData && invidiousData.streamUrl) {
+            downloadUrl = invidiousData.streamUrl;
+            downloadFilename = `${invidiousData.title.replace(/[^\w\s.-]/gi, '').trim() || 'youtube_video'}.mp4`;
+          } else {
+            const pipedData = await resolveWithPiped(ytId);
+            if (pipedData && pipedData.streamUrl) {
+              downloadUrl = pipedData.streamUrl;
+              downloadFilename = `${pipedData.title.replace(/[^\w\s.-]/gi, '').trim() || 'youtube_video'}.mp4`;
+            }
+          }
+        }
+      }
+
+      // ── Stage 3: Cobalt Stream Engine Fallback for Spotify / Audio ──
+      if (!downloadBlob && !downloadUrl && !isYouTube) {
+        setStatusMessage('Resolving audio stream…');
+        const resolvedDirectUrl = await resolveWithCobalt(trimmed, true);
         
         if (resolvedDirectUrl) {
           downloadUrl = resolvedDirectUrl;
           const mediaTitle = await fetchMediaTitle(trimmed);
           if (mediaTitle) {
-            downloadFilename = `${mediaTitle}.${isYouTube ? 'mp4' : 'mp3'}`;
-          }
-        }
-      }
-
-      // ── Stage 3: Piped Engine Fallback for YouTube ──
-      if (!downloadBlob && !downloadUrl && isYouTube) {
-        setStatusMessage('Extracting direct HD video stream…');
-        const ytId = extractYouTubeId(trimmed);
-        if (ytId) {
-          const pipedData = await resolveWithPiped(ytId);
-          if (pipedData && pipedData.streamUrl) {
-            downloadUrl = pipedData.streamUrl;
-            downloadFilename = `${pipedData.title.replace(/[^\w\s.-]/gi, '').trim() || 'youtube_video'}.mp4`;
+            downloadFilename = `${mediaTitle}.mp3`;
           }
         }
       }
@@ -212,7 +284,6 @@ export default function MediaDownloaderScreen() {
         showToast('Download started successfully!', 'success');
         setUrl('');
       } else if (downloadUrl) {
-        // Attempt fetch blob or trigger browser download link
         try {
           const streamFetch = await fetch(downloadUrl);
           if (streamFetch.ok) {
@@ -241,7 +312,7 @@ export default function MediaDownloaderScreen() {
         setUrl('');
       } else {
         // Direct web portal fallback
-        const fallbackPortal = `https://cobalt.tools/?u=${encodeURIComponent(trimmed)}`;
+        const fallbackPortal = getFallbackPortalUrl(trimmed, isYouTube);
         window.open(fallbackPortal, '_blank');
         showToast('Opening high-speed media stream portal…', 'info');
       }
@@ -249,7 +320,8 @@ export default function MediaDownloaderScreen() {
     } catch (err) {
       console.error('Media download error:', err);
       showToast(err.message || 'Failed to download media. Opening portal…', 'error');
-      window.open(`https://cobalt.tools/?u=${encodeURIComponent(trimmed)}`, '_blank');
+      const fallbackPortal = getFallbackPortalUrl(trimmed, isYouTube);
+      window.open(fallbackPortal, '_blank');
     } finally {
       setDownloading(false);
     }

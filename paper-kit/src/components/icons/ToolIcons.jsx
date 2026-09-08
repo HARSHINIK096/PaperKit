@@ -311,6 +311,13 @@ export const DuplicateIcon = ({ size }) => (
   </Icon>
 );
 
+export const PDFEditorIcon = ({ size }) => (
+  <Icon color="purple" size={size}>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+  </Icon>
+);
+
 export const PDFAIcon = ({ size }) => (
   <Icon color="red" size={size}>
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -613,6 +620,20 @@ export const BmpToJpgIcon = ({ size }) => (
   </Icon>
 );
 
+export const ImageManipulatorIcon = ({ color = "purple", size }) => (
+  <Icon color={color} size={size}>
+    <line x1={4} y1={21} x2={4} y2={14} />
+    <line x1={4} y1={10} x2={4} y2={3} />
+    <line x1={12} y1={21} x2={12} y2={12} />
+    <line x1={12} y1={8} x2={12} y2={3} />
+    <line x1={20} y1={21} x2={20} y2={16} />
+    <line x1={20} y1={12} x2={20} y2={3} />
+    <line x1={1} y1={14} x2={7} y2={14} />
+    <line x1={9} y1={8} x2={15} y2={8} />
+    <line x1={17} y1={16} x2={23} y2={16} />
+  </Icon>
+);
+
 export const ImageCompressIcon = ({ color = "orange", size }) => (
   <Icon color={color} size={size}>
     <rect x={3} y={3} width={18} height={18} rx={2} ry={2} />
@@ -662,6 +683,9 @@ export const TOOL_ICON_MAP = {
 
   'merge-pdf':        MergeIcon,
   'split-pdf':        SplitIcon,
+  'pdf-editor':       PDFEditorIcon,
+  'pdf-edit':         PDFEditorIcon,
+  'edit-pdf':         PDFEditorIcon,
   'extract-pages':    ExtractPagesIcon,
   'remove-pages':     RemovePagesIcon,
   'reorder-pages':    ReorderIcon,
@@ -707,6 +731,8 @@ export const TOOL_ICON_MAP = {
   'heic-to-jpg':      HeicToJpgIcon,
   'bmp-to-jpg':       BmpToJpgIcon,
   'bmp-convert':      BmpToJpgIcon,
+  'image-manipulator': ImageManipulatorIcon,
+  'image-adjust':     ImageManipulatorIcon,
   'image-compressor': ImageCompressIcon,
   'compress-low':     CompressLowIcon,
   'compress-medium':  CompressMedIcon,

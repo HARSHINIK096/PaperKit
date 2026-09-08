@@ -1,10 +1,11 @@
 """Auth router — register, login, me, update profile, delete account (No Firebase)"""
+import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timezone, datetime
 from database import get_db
 from middleware.auth import hash_password, verify_password, create_access_token, get_current_user, get_required_user
-from services.storage import delete_file
+from services.storage import delete_file, LOCAL_STORAGE_DIR
 from config import get_settings
 from bson import ObjectId
 
@@ -142,26 +143,41 @@ async def delete_account(current_user: dict = Depends(get_required_user)):
 
     return {"message": "Account and all associated files deleted successfully"}
 
-@router.delete("/clear-session")
-async def clear_session(current_user: dict = Depends(get_required_user)):
+@router.api_route("/clear-session", methods=["DELETE", "POST", "GET"])
+async def clear_session(current_user: dict = Depends(get_current_user)):
     db = get_db()
-    user_id = str(current_user["_id"])
+    user_id = str(current_user.get("_id", "local_user"))
 
-    cursor = db.files.find({"user_id": user_id})
-    async for f in cursor:
+    if db is not None:
         try:
-            if "storage_url" in f and f["storage_url"]:
-                await delete_file(f["storage_url"])
+            user_filter = {"$or": [{"user_id": user_id}, {"user_id": current_user.get("_id")}]}
+            cursor = db.files.find(user_filter)
+            async for f in cursor:
+                try:
+                    if "storage_url" in f and f["storage_url"]:
+                        await delete_file(f["storage_url"])
+                except Exception as e:
+                    print(f"Error deleting file {f.get('_id')} from storage: {e}")
+
+            await db.files.delete_many(user_filter)
+            await db.jobs.delete_many(user_filter)
+            await db.history.delete_many(user_filter)
+            await db.ai_usage_logs.delete_many(user_filter)
         except Exception as e:
-            print(f"Error deleting file {f.get('_id')} from storage: {e}")
+            print(f"Database clear error: {e}")
 
-    await db.files.delete_many({"user_id": user_id})
-    
+    # Comprehensive local storage cleanup for open/guest/local user sessions
     try:
-        await db.jobs.delete_many({"user_id": user_id})
-        await db.history.delete_many({"user_id": user_id})
-        await db.ai_usage_logs.delete_many({"user_id": user_id})
-    except Exception:
-        pass
+        from services.storage import LOCAL_STORAGE_DIR
+        if os.path.exists(LOCAL_STORAGE_DIR):
+            for fname in os.listdir(LOCAL_STORAGE_DIR):
+                fpath = os.path.join(LOCAL_STORAGE_DIR, fname)
+                if os.path.isfile(fpath):
+                    try:
+                        os.remove(fpath)
+                    except Exception:
+                        pass
+    except Exception as e:
+        print(f"Storage dir cleanup error: {e}")
 
-    return {"message": "Session data cleared successfully"}
+    return {"message": "Session and all storage data cleared successfully"}

@@ -5,18 +5,12 @@ export const RENDER_WEB_URL = import.meta.env.VITE_WEB_URL || 'https://paperkit-
 export const API_BASE = RENDER_BACKEND_URL;
 
 /**
- * Checks if a specific URL is responsive.
+ * Checks if a specific URL is responsive by dispatching a real network probe.
  * @param {string} url
  * @param {number} timeoutMs
  * @returns {Promise<{ ok: boolean, status?: number, data?: any, error?: string }>}
  */
-export async function pingUrl(url, timeoutMs = 5000) {
-  // In dev mode, strict COEP headers block cross-origin requests to Render.
-  // We bypass the health check locally so the app loads instantly without errors.
-  if (import.meta.env.DEV && (url.includes('onrender.com') || url.includes('localhost'))) {
-    return { ok: true, status: 200, data: { status: 'dev-bypass' } };
-  }
-
+export async function pingUrl(url, timeoutMs = 7000) {
   const isWebUrl = url.includes('paperkit-web.onrender.com');
 
   try {
@@ -34,6 +28,7 @@ export async function pingUrl(url, timeoutMs = 5000) {
     clearTimeout(timeoutId);
 
     if (isWebUrl) {
+      // In no-cors mode, a non-throwing response confirms the Render web instance is reached and awake
       return { ok: true, status: 200 };
     }
 

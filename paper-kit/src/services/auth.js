@@ -78,3 +78,60 @@ export async function updateMe(data) {
 export async function deleteAccount() {
   return { status: 'ok' };
 }
+
+export async function endSessionAndClearStorage() {
+  try {
+    await api.delete('/auth/clear-session');
+  } catch (err) {
+    console.warn("Backend session clear error/offline:", err);
+  }
+
+  // Clear all localStorage & sessionStorage
+  try {
+    localStorage.clear();
+  } catch (e) {
+    console.warn("localStorage clear error:", e);
+  }
+  try {
+    sessionStorage.clear();
+  } catch (e) {
+    console.warn("sessionStorage clear error:", e);
+  }
+
+  // Clear all IndexedDB databases
+  if (typeof window !== 'undefined' && window.indexedDB && window.indexedDB.databases) {
+    try {
+      const dbs = await window.indexedDB.databases();
+      for (const db of dbs) {
+        if (db.name) {
+          window.indexedDB.deleteDatabase(db.name);
+        }
+      }
+    } catch (e) {
+      console.warn("IndexedDB clear error:", e);
+    }
+  }
+
+  // Clear all CacheStorage
+  if (typeof window !== 'undefined' && window.caches) {
+    try {
+      const cacheNames = await window.caches.keys();
+      await Promise.all(cacheNames.map(name => window.caches.delete(name)));
+    } catch (e) {
+      console.warn("CacheStorage clear error:", e);
+    }
+  }
+
+  // Clear cookies
+  if (typeof document !== 'undefined') {
+    try {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i];
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+      }
+    } catch {}
+  }
+}

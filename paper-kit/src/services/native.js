@@ -324,8 +324,9 @@ export async function downloadAndOpenFile(fileUrl, filename = 'document.pdf', mi
   const { resolveBackendFileUrl } = await import('./api');
   const fullUrl = resolveBackendFileUrl(fileUrl);
   const resolvedMime = mimeType || getMimeType(filename);
+  const isBlob = fullUrl.startsWith('blob:') || fullUrl.startsWith('data:');
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('pk_token') || 'guest_access_token' : 'guest_access_token';
-  const fetchHeaders = { Authorization: `Bearer ${token}` };
+  const fetchHeaders = isBlob ? {} : { Authorization: `Bearer ${token}` };
 
   if (isNative) {
     try {
