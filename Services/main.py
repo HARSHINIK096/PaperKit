@@ -155,7 +155,7 @@ app.include_router(editor_router, prefix="/api/editor", tags=["editor"])
 
 from fastapi.responses import Response
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {
         "status": "online",
@@ -170,6 +170,6 @@ async def root():
 async def favicon():
     return Response(status_code=204)
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     return {"status": "ok", "service": "PaperKit API", "version": "2.0.0"}
