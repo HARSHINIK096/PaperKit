@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   FileUp, Download, ChevronLeft, ChevronRight, 
-  CheckCircle2, AlertTriangle, ShieldAlert, Sparkles, X 
+  CheckCircle2, AlertTriangle, ShieldAlert, Sparkles, X,
+  Type, Palette, Minus, Plus
 } from 'lucide-react';
 import { getEditorLimits, applyPdfEdits } from '../../services/tools';
+import { triggerHaptic, downloadAndOpenFile, showNativeToast } from '../../services/native';
 import './PDFEditorScreen.css';
 
 export default function PDFEditorScreen() {
@@ -11,9 +13,27 @@ export default function PDFEditorScreen() {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const scale = 0.6;
+  const [scale, setScale] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      return Math.min(0.75, Math.max(0.48, (window.innerWidth - 32) / 595));
+    }
+    return 0.65;
+  });
   const [textSpans, setTextSpans] = useState([]);
   const [pageViewport, setPageViewport] = useState(null);
+
+  // Responsive scale listener for mobile devices & orientation changes
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth < 640) {
+        setScale(Math.min(0.75, Math.max(0.48, (window.innerWidth - 32) / 595)));
+      } else {
+        setScale(0.65);
+      }
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Remaining daily edits rate limit state
   const [limits, setLimits] = useState({ remaining: 3, limit: 3 });
@@ -220,6 +240,7 @@ export default function PDFEditorScreen() {
 
   // Handle clicking a text span to activate inline editor
   const handleSpanClick = (span) => {
+    triggerHaptic('light');
     setActiveSpan(span);
     setEditText(span.str);
     setEditFontSize(span.fontSize);
@@ -240,6 +261,7 @@ export default function PDFEditorScreen() {
   // Save edit for active span
   const saveActiveSpanEdit = () => {
     if (!activeSpan) return;
+    triggerHaptic('medium');
 
     const newEdit = {
       id: activeSpan.id.startsWith('edit-') ? activeSpan.id : `edit-${Date.now()}`,
@@ -279,6 +301,7 @@ export default function PDFEditorScreen() {
 
   // Delete an edit record
   const deleteEdit = (pageNum, editId) => {
+    triggerHaptic('light');
     setPageEdits(prev => {
       const currentList = prev[pageNum] || [];
       return {
@@ -293,7 +316,6 @@ export default function PDFEditorScreen() {
     const selected = e.target.files?.[0];
     if (selected) loadPdfFile(selected);
   };
-
 
   // Submit all edits to backend API
   const handleApplyEdits = async () => {
@@ -327,7 +349,7 @@ export default function PDFEditorScreen() {
     }).filter(p => p.edits.length > 0);
 
     if (payload.length === 0) {
-      alert('Please add at least one text edit before applying.');
+      alert('Please tap on any text in the document and make at least one edit before applying.');
       return;
     }
 
@@ -338,33 +360,37 @@ export default function PDFEditorScreen() {
     try {
       const response = await applyPdfEdits(file, payload);
       
-      // Download response blob as file
+      // Create blob and download/open using native helper (compatible with Capacitor & Web)
       const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `edited_${file.name}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const blobUrl = URL.createObjectURL(blob);
+      const sanitizedName = file.name.replace(/\.pdf$/i, '');
+      const downloadFilename = `edited_${sanitizedName}.pdf`;
 
-      // Re-load the new edited PDF into the editor viewer live!
-      const updatedFile = new File([blob], file.name, { type: 'application/pdf' });
-      await loadPdfFile(updatedFile);
+      await downloadAndOpenFile(blobUrl, downloadFilename, 'application/pdf');
 
-      setSuccessMsg('PDF edited & downloaded successfully!');
+      // Re-load the new edited PDF into the editor viewer live
+      try {
+        const updatedFile = new File([blob], downloadFilename, { type: 'application/pdf' });
+        await loadPdfFile(updatedFile);
+      } catch (reloadErr) {
+        console.warn('Live reload notice:', reloadErr);
+      }
+
+      setSuccessMsg('PDF edited & saved successfully!');
+      triggerHaptic('success');
+      showNativeToast('PDF saved successfully!');
       
       // Update rate limits count
       refreshLimits();
     } catch (err) {
       console.error('Error applying PDF edits:', err);
+      triggerHaptic('error');
       if (err.response && err.response.status === 429) {
         const errorDetail = err.response.data?.detail || 'Daily free limit reached (3/3). Resets at midnight.';
         setRateLimitError(errorDetail);
         refreshLimits();
       } else {
-        alert('Failed to process PDF edits. Please try again.');
+        alert('Failed to process PDF edits: ' + (err.message || 'Please check your connection and try again.'));
       }
     } finally {
       setExporting(false);
@@ -523,6 +549,7 @@ export default function PDFEditorScreen() {
                   const screenY = edit.bbox[1] * scale;
                   const screenW = Math.max(16, (edit.bbox[2] - edit.bbox[0]) * scale);
                   const screenH = Math.max(14, (edit.bbox[3] - edit.bbox[1]) * scale);
+                  const maxAllowedW = Math.max(30, (pageViewport?.width || 595 * scale) - screenX - 6);
                   const isBeingEdited = activeSpan?.id === edit.id || activeSpan?.spanId === edit.spanId;
 
                   if (isBeingEdited) return null;
@@ -536,6 +563,7 @@ export default function PDFEditorScreen() {
                         left: `${screenX}px`,
                         top: `${screenY}px`,
                         minWidth: `${screenW}px`,
+                        maxWidth: `${maxAllowedW}px`,
                         height: `${screenH}px`,
                         backgroundColor: '#ffffff',
                         color: `rgb(${edit.color[0]}, ${edit.color[1]}, ${edit.color[2]})`,
@@ -545,6 +573,8 @@ export default function PDFEditorScreen() {
                         fontSize: `${edit.font_size * scale}px`,
                         lineHeight: `${screenH}px`,
                         whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                         zIndex: 6,
                         cursor: 'pointer',
                         padding: '0 3px',
@@ -555,9 +585,10 @@ export default function PDFEditorScreen() {
                         alignItems: 'center',
                         userSelect: 'none'
                       }}
-                      title={`Edited: "${edit.new_text}" (Click to re-edit)`}
+                      title={`Edited: "${edit.new_text}" (Tap to re-edit)`}
                       onClick={(e) => {
                         e.stopPropagation();
+                        triggerHaptic('light');
                         setActiveSpan({
                           id: edit.id,
                           spanId: edit.spanId,
@@ -593,6 +624,7 @@ export default function PDFEditorScreen() {
                       left: `${activeSpan.pdfX0 * scale}px`,
                       top: `${activeSpan.pdfY0 * scale}px`,
                       minWidth: `${Math.max(12, (activeSpan.pdfX1 - activeSpan.pdfX0) * scale)}px`,
+                      maxWidth: `${Math.max(30, (pageViewport?.width || 595 * scale) - (activeSpan.pdfX0 * scale) - 6)}px`,
                       height: `${Math.max(14, (activeSpan.pdfY1 - activeSpan.pdfY0) * scale)}px`,
                       backgroundColor: '#ffffff',
                       color: editColor,
@@ -602,6 +634,8 @@ export default function PDFEditorScreen() {
                       fontSize: `${parseFloat(editFontSize || 12) * scale}px`,
                       lineHeight: `${Math.max(14, (activeSpan.pdfY1 - activeSpan.pdfY0) * scale)}px`,
                       whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                       zIndex: 7,
                       padding: '0 3px',
                       outline: '2px solid #818cf8',
@@ -620,12 +654,16 @@ export default function PDFEditorScreen() {
 
               {/* Responsive Floating Text Editor Panel */}
               {activeSpan && (
-                <div className="inline-text-editor-container">
+                <div 
+                  className="inline-text-editor-container"
+                  onTouchStart={e => e.stopPropagation()}
+                  onTouchMove={e => e.stopPropagation()}
+                >
                   <div className="inline-text-editor">
                     <div className="inline-text-editor__header">
                       <div className="inline-text-editor__title">
-                        <Sparkles size={14} color="#818cf8" />
-                        <span>Edit Selected Text Span</span>
+                        <Sparkles size={15} color="#818cf8" />
+                        <span>Edit Text Element</span>
                       </div>
                       <button 
                         type="button"
@@ -647,29 +685,38 @@ export default function PDFEditorScreen() {
                     />
 
                     <div className="editor-controls-row">
-                      <label className="editor-control-item">
-                        <span>Size:</span>
-                        <input
-                          type="number"
-                          step="0.5"
-                          value={editFontSize}
-                          onChange={e => setEditFontSize(e.target.value)}
-                        />
-                      </label>
-                      <label className="editor-control-item">
-                        <span>Color:</span>
-                        <input
-                          type="color"
-                          value={editColor}
-                          onChange={e => setEditColor(e.target.value)}
-                        />
-                      </label>
+                      {/* Font Size Stepper */}
+                      <div className="editor-control-item">
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Size:</span>
+                        <div className="editor-stepper">
+                          <button
+                            type="button"
+                            className="stepper-btn"
+                            onClick={() => setEditFontSize(prev => Math.max(6, (parseFloat(prev) || 12) - 1))}
+                          >
+                            <Minus size={12} />
+                          </button>
+                          <span className="stepper-val">{editFontSize}</span>
+                          <button
+                            type="button"
+                            className="stepper-btn"
+                            onClick={() => setEditFontSize(prev => Math.min(72, (parseFloat(prev) || 12) + 1))}
+                          >
+                            <Plus size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Font Style Toggles */}
                       <div className="editor-btn-group">
                         <button
                           type="button"
                           className={`toolbar-btn ${editIsBold ? 'active' : ''}`}
-                          style={{ padding: '0.2rem 0.5rem', fontWeight: 'bold', minWidth: '30px', height: '30px', fontSize: '0.85rem' }}
-                          onClick={() => setEditIsBold(!editIsBold)}
+                          style={{ padding: '0.2rem 0.5rem', fontWeight: 'bold', minWidth: '32px', height: '32px', fontSize: '0.9rem' }}
+                          onClick={() => {
+                            triggerHaptic('light');
+                            setEditIsBold(!editIsBold);
+                          }}
                           title="Toggle Bold"
                         >
                           B
@@ -677,13 +724,18 @@ export default function PDFEditorScreen() {
                         <button
                           type="button"
                           className={`toolbar-btn ${editIsItalic ? 'active' : ''}`}
-                          style={{ padding: '0.2rem 0.5rem', fontStyle: 'italic', minWidth: '30px', height: '30px', fontSize: '0.85rem' }}
-                          onClick={() => setEditIsItalic(!editIsItalic)}
+                          style={{ padding: '0.2rem 0.5rem', fontStyle: 'italic', minWidth: '32px', height: '32px', fontSize: '0.9rem' }}
+                          onClick={() => {
+                            triggerHaptic('light');
+                            setEditIsItalic(!editIsItalic);
+                          }}
                           title="Toggle Italic"
                         >
                           I
                         </button>
                       </div>
+
+                      {/* Font Family Selector */}
                       <select
                         className="editor-font-select"
                         value={editFontName}
@@ -695,11 +747,52 @@ export default function PDFEditorScreen() {
                       </select>
                     </div>
 
+                    {/* Quick Color Palette Swatches */}
+                    <div className="editor-color-swatches-row">
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Color:</span>
+                      <div className="color-swatches-list">
+                        {['#000000', '#1e293b', '#2563eb', '#dc2626', '#16a34a', '#d97706', '#7c3aed'].map(c => (
+                          <button
+                            key={c}
+                            type="button"
+                            className={`color-swatch-dot ${editColor.toLowerCase() === c.toLowerCase() ? 'active' : ''}`}
+                            style={{ backgroundColor: c }}
+                            onClick={() => {
+                              triggerHaptic('light');
+                              setEditColor(c);
+                            }}
+                            title={c}
+                          />
+                        ))}
+                        <label className="color-picker-label" title="Custom color">
+                          <Palette size={14} color="#94a3b8" />
+                          <input
+                            type="color"
+                            value={editColor}
+                            onChange={e => setEditColor(e.target.value)}
+                            className="hidden-color-input"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
                     <div className="editor-actions-row">
-                      <button type="button" className="toolbar-btn btn-primary" style={{ flex: 1 }} onClick={saveActiveSpanEdit}>
-                        Save Edit
+                      <button 
+                        type="button" 
+                        className="toolbar-btn btn-primary" 
+                        style={{ flex: 1, height: '38px', fontWeight: 700 }} 
+                        onClick={saveActiveSpanEdit}
+                      >
+                        <CheckCircle2 size={16} />
+                        <span>Save Edit</span>
                       </button>
-                      <button type="button" className="toolbar-btn" onClick={() => setActiveSpan(null)}>
+                      <button 
+                        type="button" 
+                        className="toolbar-btn" 
+                        style={{ height: '38px' }}
+                        onClick={() => setActiveSpan(null)}
+                      >
                         Cancel
                       </button>
                     </div>

@@ -276,36 +276,19 @@ export default function OnboardingScreen({ onFinish = null }) {
   const autoPlayTimerRef = useRef(null);
 
   // Background boot-up poller for Render 50s cold start
-  const [backendHealth, setBackendHealth] = useState({
-    backendReady: false,
-    webReady: false,
-    elapsedSeconds: 0,
-  });
-  const startTimeRef = useRef(Date.now());
-
   useEffect(() => {
     let isMounted = true;
     let timerId = null;
 
     async function pollCloudBoot() {
       if (!isMounted) return;
-      const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
       try {
         const res = await probeBothRenderServices(5000);
-        if (isMounted) {
-          setBackendHealth({
-            backendReady: Boolean(res.backendOk),
-            webReady: Boolean(res.webOk),
-            elapsedSeconds: elapsed,
-          });
-          if (res.backendOk) {
-            return; // Backend is booted and ready
-          }
+        if (isMounted && res.backendOk) {
+          return; // Backend is booted and ready
         }
       } catch {
-        if (isMounted) {
-          setBackendHealth(prev => ({ ...prev, elapsedSeconds: elapsed }));
-        }
+        // continue polling
       }
       if (isMounted) {
         timerId = setTimeout(pollCloudBoot, 3000);
@@ -403,27 +386,6 @@ export default function OnboardingScreen({ onFinish = null }) {
       {/* Background ambient lighting */}
       <div className="onboarding-screen__glow-1" style={{ background: currentPage.bgColor }} />
       <div className="onboarding-screen__glow-2" />
-
-      {/* Top Bar with Live Cloud Boot Status */}
-      <header className="onboarding-screen__topbar">
-        <div className="onboarding-screen__brand">
-          <img src="/icon-48.png" alt="PaperKit" width="28" height="28" style={{ borderRadius: '8px' }} />
-          <span className="onboarding-screen__brand-title">PaperKit</span>
-        </div>
-
-        {/* Live Render Backend Boot Indicator */}
-        <div
-          className={`onboarding-screen__cloud-pill ${backendHealth.backendReady ? 'onboarding-screen__cloud-pill--ready' : 'onboarding-screen__cloud-pill--booting'}`}
-          title="PaperKit Render Cloud Services"
-        >
-          <span className="onboarding-screen__cloud-dot" />
-          <span>
-            {backendHealth.backendReady
-              ? 'Cloud Backend Ready'
-              : `Waking Backend... (${backendHealth.elapsedSeconds}s)`}
-          </span>
-        </div>
-      </header>
 
       {/* Top Visual Progress Line */}
       <div className="onboarding-screen__progress-container">

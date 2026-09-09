@@ -101,7 +101,6 @@ export default function ProfileScreen() {
       title: t('app_preferences'),
       items: [
         { id: 'storage', label: t('storage'), icon: HardDrive, path: '/storage', color: 'var(--tool-teal)', badge: `${storageStats.totalMB} MB` },
-        { id: 'history', label: t('history'), icon: Clock, path: '/history', color: 'var(--tool-indigo)', badge: `${historyCount}` },
         { id: 'settings', label: t('settings'), icon: Settings, color: 'var(--color-text-secondary)', isSettings: true },
       ]
     },
@@ -269,7 +268,7 @@ export default function ProfileScreen() {
           <div className="profile-screen__stat-label">{t('storage_used')}</div>
         </div>
 
-        <div className="profile-screen__stat-card" onClick={() => navigate('/history')}>
+        <div className="profile-screen__stat-card">
           <div className="profile-screen__stat-icon" style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#8B5CF6' }}>
             <Zap size={18} />
           </div>

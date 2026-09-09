@@ -61,7 +61,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="PaperKit API",
     description="Open-Source PDF & Document Suite — backend API",
-    version="2.0.0",
+    version="2.1.0",
     lifespan=lifespan,
 )
 
@@ -163,7 +163,7 @@ async def root():
     return {
         "status": "online",
         "service": "PaperKit API",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "docs": "/docs",
         "health": "/health",
         "environment": settings.environment if hasattr(settings, 'environment') else "production"
@@ -175,4 +175,4 @@ async def favicon():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-    return {"status": "ok", "service": "PaperKit API", "version": "2.0.0"}
+    return {"status": "ok", "service": "PaperKit API", "version": "2.1.0"}

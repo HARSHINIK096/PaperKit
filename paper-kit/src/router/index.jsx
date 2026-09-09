@@ -79,6 +79,9 @@ export default function AppRouter() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return localStorage.getItem('paperkit_onboarding_done') !== 'true';
   });
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return localStorage.getItem('paperkit_welcome_done') !== 'true';
+  });
 
   const [healthState, setHealthState] = useState({
     stage: 'connecting',
@@ -132,7 +135,7 @@ export default function AppRouter() {
     }
   }, [minTimeElapsed, splashVisible, fadeOut]);
 
-  /* Show 13-page Onboarding right after splash screen */
+  /* 1. Splash Screen */
   if (splashVisible && !fadeOut) {
     return (
       <SplashScreen
@@ -151,13 +154,33 @@ export default function AppRouter() {
     );
   }
 
+  /* 2. Onboarding Screens */
   if (showOnboarding) {
     return (
       <Suspense fallback={<LoadingState text="Preparing Onboarding..." />}>
-        <OnboardingScreen onFinish={() => setShowOnboarding(false)} />
+        <OnboardingScreen
+          onFinish={() => {
+            setShowOnboarding(false);
+          }}
+        />
       </Suspense>
     );
   }
+
+  /* 3. Welcome & Feature Tour */
+  if (showWelcome) {
+    return (
+      <Suspense fallback={<LoadingState text="Preparing Feature Tour..." />}>
+        <LandingScreen
+          onFinish={() => {
+            setShowWelcome(false);
+          }}
+        />
+      </Suspense>
+    );
+  }
+
+  /* 4. Home Page & Workspace Routes */
 
   return (
     <>

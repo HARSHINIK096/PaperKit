@@ -10,11 +10,23 @@ import { useI18n } from '../../context/I18nContext';
 import { probeBothRenderServices } from '../../services/backendHealth';
 import './LandingScreen.css';
 
-export default function LandingScreen() {
+export default function LandingScreen({ onFinish = null }) {
   const navigate = useNavigate();
   const { t, lang, setLang, supportedLanguages } = useI18n();
   const [openFaq, setOpenFaq] = useState(null);
   const [activeCategory, setActiveCategory] = useState('All');
+  
+  function handleEnterStudio(targetPath = '/') {
+    try {
+      localStorage.setItem('paperkit_welcome_done', 'true');
+    } catch {
+      // Ignore storage error
+    }
+    if (onFinish) {
+      onFinish();
+    }
+    navigate(targetPath);
+  }
   
   // Real-time Render services health state on landing page
   const [servicesHealth, setServicesHealth] = useState({
@@ -172,7 +184,7 @@ export default function LandingScreen() {
           <button
             type="button"
             className="landing-screen__signin-btn"
-            onClick={() => navigate('/')}
+            onClick={() => handleEnterStudio('/')}
           >
             Open Studio
           </button>
@@ -189,7 +201,7 @@ export default function LandingScreen() {
 
           <div className="landing-glass-card__media-box">
             <img src="/landing-hero.jpg" alt="Calm Document Studio" className="landing-glass-card__bg-img" />
-            <div className="landing-glass-card__play-btn" onClick={() => navigate('/')}>
+            <div className="landing-glass-card__play-btn" onClick={() => handleEnterStudio('/')}>
               <Play size={18} fill="#0F172A" color="#0F172A" style={{ marginLeft: '2px' }} />
             </div>
           </div>
@@ -309,7 +321,7 @@ export default function LandingScreen() {
             <button
               type="button"
               className="landing-glass-card__cta-button"
-              onClick={() => navigate('/')}
+              onClick={() => handleEnterStudio('/')}
             >
               <span>Launch Studio</span>
               <ArrowRight size={16} />
@@ -442,7 +454,7 @@ export default function LandingScreen() {
         <button
           type="button"
           className="landing-screen__floating-cta"
-          onClick={() => navigate('/')}
+          onClick={() => handleEnterStudio('/')}
         >
           <span>Launch Studio</span>
           <ArrowRight size={16} />
