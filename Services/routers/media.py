@@ -37,13 +37,15 @@ async def download_youtube(req: DownloadRequest, background_tasks: BackgroundTas
         
         ydl_opts = {
             'outtmpl': output_template,
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            'format': 'b[ext=mp4]/best[ext=mp4]/bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b/best',
             'merge_output_format': 'mp4',
             'quiet': True,
             'no_warnings': True,
+            'nocheckcertificate': True,
+            'ignoreerrors': False,
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'web', 'ios'],
+                    'player_client': ['android_creator', 'ios', 'mweb', 'web', 'tv_embedded'],
                 }
             },
             'http_headers': {

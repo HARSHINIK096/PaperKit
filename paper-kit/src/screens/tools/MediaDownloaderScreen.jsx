@@ -70,10 +70,13 @@ export default function MediaDownloaderScreen() {
     return null;
   }
 
-  // Multi-instance Cobalt Stream Resolver (for audio/media)
+  // Multi-instance Cobalt Stream Resolver (for YouTube video & Spotify audio)
   async function resolveWithCobalt(targetUrl, isAudioOnly = false) {
     const cobaltInstances = [
       'https://cobalt-api.kwiatekm.com',
+      'https://cobalt.hyonsu.com',
+      'https://api.cobalt.tools',
+      'https://dl.khub.win/api/json',
       'https://cobalt.xy2401.com',
       'https://api.wuk.sh'
     ];
@@ -81,8 +84,9 @@ export default function MediaDownloaderScreen() {
     for (const instance of cobaltInstances) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 7000);
-        const res = await fetch(instance, {
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const endpoint = instance.endsWith('/api/json') ? instance : instance.replace(/\/+$/, '');
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -92,7 +96,7 @@ export default function MediaDownloaderScreen() {
             url: targetUrl,
             downloadMode: isAudioOnly ? 'audio' : 'auto',
             audioFormat: 'mp3',
-            videoQuality: '1080'
+            videoQuality: '720'
           }),
           signal: controller.signal
         });
@@ -100,7 +104,7 @@ export default function MediaDownloaderScreen() {
 
         if (res.ok) {
           const data = await res.json();
-          if (data && (data.url || data.audio || data.status === 'tunnel' || data.status === 'redirect')) {
+          if (data && (data.url || data.audio || data.status === 'tunnel' || data.status === 'redirect' || data.status === 'stream')) {
             return data.url || data.audio;
           }
         }
@@ -278,10 +282,10 @@ export default function MediaDownloaderScreen() {
         }
       }
 
-      // ── Stage 3: Cobalt Stream Engine Fallback for Spotify / Audio ──
-      if (!downloadBlob && !isYouTube) {
-        setStatusMessage('Resolving audio stream from cobalt network…');
-        const resolvedDirectUrl = await resolveWithCobalt(trimmed, true);
+      // ── Stage 3: Cobalt Stream Engine Fallback (YouTube & Spotify) ──
+      if (!downloadBlob) {
+        setStatusMessage(isYouTube ? 'Resolving video stream from cobalt engine…' : 'Resolving audio stream from cobalt network…');
+        const resolvedDirectUrl = await resolveWithCobalt(trimmed, !isYouTube);
         
         if (resolvedDirectUrl) {
           try {
@@ -290,7 +294,7 @@ export default function MediaDownloaderScreen() {
               downloadBlob = await streamRes.blob();
               const mediaTitle = await fetchMediaTitle(trimmed);
               if (mediaTitle) {
-                downloadFilename = `${mediaTitle}.mp3`;
+                downloadFilename = `${mediaTitle}.${isYouTube ? 'mp4' : 'mp3'}`;
               }
             }
           } catch (err) {

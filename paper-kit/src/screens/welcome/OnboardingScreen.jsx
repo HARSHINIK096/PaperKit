@@ -32,7 +32,7 @@ import './OnboardingScreen.css';
 
 export default function OnboardingScreen({ onFinish = null }) {
   const navigate = useNavigate();
-  const { t, lang, setLang, supportedLanguages } = useI18n();
+  const { t, lang } = useI18n();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState(null);
   const autoPlayTimerRef = useRef(null);
@@ -370,7 +370,6 @@ export default function OnboardingScreen({ onFinish = null }) {
   }
 
   const progressPercent = Math.round(((currentSlideIndex + 1) / totalPages) * 100);
-  const currentLanguageObj = supportedLanguages.find(l => l.code === lang) || supportedLanguages[0];
 
   return (
     <div
@@ -384,46 +383,6 @@ export default function OnboardingScreen({ onFinish = null }) {
       {/* Ambient lighting */}
       <div className="onboarding-screen__glow-1" style={{ background: currentPage.bgColor }} />
       <div className="onboarding-screen__glow-2" />
-
-      {/* Top Header Bar with Language Selector & Brand */}
-      <header className="onboarding-screen__topbar">
-        <div className="onboarding-screen__brand-pill">
-          <img src="/icon-48.png" alt="PaperKit Logo" width="22" height="22" style={{ borderRadius: '6px' }} />
-          <span className="onboarding-screen__brand-name">PaperKit</span>
-          <span className="onboarding-screen__brand-badge">{t('ob_badge_tour')}</span>
-        </div>
-
-        <div className="onboarding-screen__top-actions">
-          {/* Language Selector Dropdown */}
-          <div className="onboarding-screen__lang-pill">
-            <Globe size={14} color="#2563EB" />
-            <select
-              value={lang}
-              onChange={e => setLang(e.target.value)}
-              className="onboarding-screen__lang-select"
-              aria-label="Select Language"
-              id="onboarding-language-selector"
-            >
-              {supportedLanguages.map(l => (
-                <option key={l.code} value={l.code}>
-                  {l.flag} {l.nativeName} ({l.name})
-                </option>
-              ))}
-            </select>
-            <span className="onboarding-screen__active-lang-code">{currentLanguageObj.flag}</span>
-          </div>
-
-          {/* Quick Skip button */}
-          <button
-            type="button"
-            className="onboarding-screen__skip-btn"
-            onClick={handleFinish}
-            title={t('ob_skip')}
-          >
-            {t('ob_skip')}
-          </button>
-        </div>
-      </header>
 
       {/* Top Visual Progress Line */}
       <div className="onboarding-screen__progress-container">

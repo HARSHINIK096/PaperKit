@@ -234,7 +234,7 @@ export async function applyPdfEditsLocal(fileBlobOrBuffer, editsPayload) {
   const fontCache = {};
   async function getFont(fontName = 'Helvetica', isBold = false, isItalic = false) {
     const fn = (fontName || '').toLowerCase();
-    let stdFont = StandardFonts.Helvetica;
+    let stdFont;
     if (fn.includes('times') || fn.includes('serif') || fn.includes('roman')) {
       if (isBold && isItalic) stdFont = StandardFonts.TimesRomanBoldItalic;
       else if (isBold) stdFont = StandardFonts.TimesRomanBold;

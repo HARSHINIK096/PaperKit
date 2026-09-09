@@ -32,7 +32,6 @@ export default function ProfileScreen() {
 
   // Real dynamic stats
   const [storageStats, setStorageStats] = useState({ totalMB: '0.00', fileCount: 0 });
-  const [historyCount, setHistoryCount] = useState(0);
   const [avgSpeed, setAvgSpeed] = useState('0.8s');
 
   // Sync state with user context & i18n
@@ -56,7 +55,6 @@ export default function ProfileScreen() {
           setStorageStats(storage);
         }
         if (Array.isArray(history)) {
-          setHistoryCount(history.length);
           if (history.length > 0) {
             const validDurations = history.filter(h => h.duration_ms || h.processing_time_ms);
             if (validDurations.length > 0) {

@@ -1,5 +1,4 @@
 /* eslint-disable react-refresh/only-export-components */
-/* eslint-disable react-hooks/purity */
 import { createContext, useContext, useState, useCallback } from 'react';
 import { execute, determineRoute, DEFAULT_ROUTER_CONFIG } from '../services/processingRouter';
 import './ProcessingOverlay.css';

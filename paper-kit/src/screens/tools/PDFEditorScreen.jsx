@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   FileUp, Download, ChevronLeft, ChevronRight, 
-  CheckCircle2, AlertTriangle, ShieldCheck, Sparkles, X,
+  CheckCircle2, ShieldCheck, Sparkles, X,
   Palette, Minus, Plus
 } from 'lucide-react';
 import { applyPdfEdits } from '../../services/tools';
@@ -15,9 +15,9 @@ export default function PDFEditorScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 640) {
-      return Math.min(0.75, Math.max(0.48, (window.innerWidth - 32) / 595));
+      return Math.min(0.68, Math.max(0.43, ((window.innerWidth - 32) / 595) * 0.9));
     }
-    return 0.65;
+    return 0.585;
   });
   const [textSpans, setTextSpans] = useState([]);
   const [pageViewport, setPageViewport] = useState(null);
@@ -26,9 +26,9 @@ export default function PDFEditorScreen() {
   useEffect(() => {
     function handleResize() {
       if (window.innerWidth < 640) {
-        setScale(Math.min(0.75, Math.max(0.48, (window.innerWidth - 32) / 595)));
+        setScale(Math.min(0.68, Math.max(0.43, ((window.innerWidth - 32) / 595) * 0.9)));
       } else {
-        setScale(0.65);
+        setScale(0.585);
       }
     }
     window.addEventListener('resize', handleResize);
@@ -47,7 +47,7 @@ export default function PDFEditorScreen() {
   const [editIsBold, setEditIsBold] = useState(false);
   const [editIsItalic, setEditIsItalic] = useState(false);
 
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -113,13 +113,12 @@ export default function PDFEditorScreen() {
   const loadPdfFile = async (selectedFile) => {
     if (!selectedFile) return;
     setLoading(true);
-    setRateLimitError(null);
     setSuccessMsg('');
     try {
       const pdfjsLib = await import('pdfjs-dist');
       try {
         pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
-      } catch (e) {
+      } catch {
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version || '4.0.379'}/pdf.worker.min.mjs`;
       }
 
@@ -170,10 +169,12 @@ export default function PDFEditorScreen() {
         const fontSize = Math.abs(transform[3]) || Math.abs(transform[0]) || 12;
 
         const pdfX0 = transform[4];
-        // PDF Y coordinate origin is bottom-left, invert for top-left screen orientation
-        const pdfY0 = pageHeight - transform[5] - fontSize;
-        const pdfWidth = item.width > 0 ? item.width : (item.str.length * fontSize * 0.5);
-        const pdfHeight = item.height > 0 ? item.height : fontSize;
+        // PDF Y coordinate origin is bottom-left, invert for top-left screen orientation (aligning with cap-height)
+        const pdfY0 = pageHeight - transform[5] - (fontSize * 0.85);
+        const rawWidth = item.width > 0 ? item.width : (item.str.length * fontSize * 0.5);
+        const rawHeight = item.height > 0 ? item.height : fontSize;
+        const pdfWidth = rawWidth * 0.90;
+        const pdfHeight = rawHeight * 0.90;
 
         const pdfX1 = pdfX0 + pdfWidth;
         const pdfY1 = pdfY0 + pdfHeight;
@@ -334,7 +335,6 @@ export default function PDFEditorScreen() {
     }
 
     setExporting(true);
-    setRateLimitError(null);
     setSuccessMsg('');
 
     try {
@@ -416,7 +416,7 @@ export default function PDFEditorScreen() {
             <button 
               className="toolbar-btn btn-primary" 
               onClick={handleApplyEdits} 
-              disabled={exporting || totalEditsCount === 0 || limits.remaining === 0}
+              disabled={exporting || totalEditsCount === 0}
             >
               <Download size={16} />
               {exporting ? 'Processing...' : `Apply & Download (${totalEditsCount})`}
@@ -485,8 +485,8 @@ export default function PDFEditorScreen() {
                     const isBeingEdited = activeSpan?.id === span.id;
                     const screenX = span.pdfX0 * scale;
                     const screenY = span.pdfY0 * scale;
-                    const screenW = Math.max(12, span.pdfWidth * scale);
-                    const screenH = Math.max(14, span.pdfHeight * scale);
+                    const screenW = Math.max(6, span.pdfWidth * scale);
+                    const screenH = Math.max(8, span.pdfHeight * scale);
 
                     return (
                       <div
@@ -749,6 +749,20 @@ export default function PDFEditorScreen() {
                         <CheckCircle2 size={14} />
                         <span>Save Edit</span>
                       </button>
+                      {activeSpan?.id?.startsWith('edit-') && (
+                        <button
+                          type="button"
+                          className="toolbar-btn inline-editor-action-btn"
+                          style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                          onClick={() => {
+                            deleteEdit(currentPage, activeSpan.id);
+                            setActiveSpan(null);
+                          }}
+                          title="Delete this edit"
+                        >
+                          Delete
+                        </button>
+                      )}
                       <button 
                         type="button" 
                         className="toolbar-btn inline-editor-action-btn" 
