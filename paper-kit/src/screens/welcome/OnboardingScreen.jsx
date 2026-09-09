@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
@@ -26,249 +26,14 @@ import {
   Info
 } from 'lucide-react';
 import ParticleBackground from '../../components/ui/ParticleBackground';
+import { useI18n } from '../../context/I18nContext';
 import { probeBothRenderServices } from '../../services/backendHealth';
 import './OnboardingScreen.css';
 
-const ONBOARDING_PAGES = [
-  {
-    id: 1,
-    badge: 'Welcome to PaperKit',
-    title: 'Your Ultimate PDF & Document Studio',
-    subtitle: 'All-in-one document intelligence, local WebAssembly tools, and deep AI capabilities built for modern workflows.',
-    icon: Sparkles,
-    iconColor: '#2563EB',
-    bgColor: 'rgba(37, 99, 235, 0.12)',
-    highlightColor: '#2563EB',
-    features: [
-      'Universal PDF processing suite with 20+ specialized tools',
-      'Instant document conversion, compression, & editing',
-      'Deep AI intelligence for summaries & Q&A analysis'
-    ]
-  },
-  {
-    id: 2,
-    badge: '100% Private Processing',
-    title: 'Offline Client-Side WASM Core',
-    subtitle: 'Your documents never leave your browser memory. Processing runs locally on your device with complete privacy.',
-    icon: ShieldCheck,
-    iconColor: '#059669',
-    bgColor: 'rgba(5, 150, 105, 0.12)',
-    highlightColor: '#059669',
-    features: [
-      'Zero server upload requirement for standard PDF tools',
-      'Bank-grade privacy for confidential & proprietary documents',
-      'Lightning-fast execution directly on your CPU/GPU'
-    ]
-  },
-  {
-    id: 3,
-    badge: 'Document Merging',
-    title: 'Combine & Stack Multi-Format Files',
-    subtitle: 'Merge hundreds of PDFs, CAD drawings, lab manuals, and image files into one structured document in seconds.',
-    icon: Layers,
-    iconColor: '#7C3AED',
-    bgColor: 'rgba(124, 58, 237, 0.12)',
-    highlightColor: '#7C3AED',
-    features: [
-      'Drag-and-drop page ordering & document stacking',
-      'Preserve original bookmarks, vector fonts, and layout',
-      'Instant preview before generating final compilation'
-    ]
-  },
-  {
-    id: 4,
-    badge: 'Smart Compression',
-    title: 'Reduce File Size up to 90%',
-    subtitle: 'Intelligent vector and image compression shrinks heavy PDFs for quick email sharing and portal uploads.',
-    icon: Zap,
-    iconColor: '#D97706',
-    bgColor: 'rgba(217, 119, 6, 0.12)',
-    highlightColor: '#D97706',
-    features: [
-      'Multiple compression levels: Extreme, Recommended, & Light',
-      'Retains sharp text and vector diagrams at high DPI',
-      'Real-time estimated file size reduction preview'
-    ]
-  },
-  {
-    id: 5,
-    badge: 'Ask PDF AI',
-    title: 'Interactive AI Document Q&A',
-    subtitle: 'Chat directly with long textbooks, research papers, and technical manuals with instant accurate page citations.',
-    icon: MessageSquare,
-    iconColor: '#2563EB',
-    bgColor: 'rgba(37, 99, 235, 0.12)',
-    highlightColor: '#2563EB',
-    features: [
-      'Context-aware answers with exact page reference quotes',
-      'Multi-document chat for comparing multiple sources',
-      'Export Q&A transcripts into study notes or summaries'
-    ]
-  },
-  {
-    id: 6,
-    badge: 'AI Table Extraction',
-    title: 'Convert Document Data to CSV/Excel',
-    subtitle: 'Automatically detect and extract complex tables, lab datasets, and financial statements with zero manual typing.',
-    icon: Table,
-    iconColor: '#059669',
-    bgColor: 'rgba(5, 150, 105, 0.12)',
-    highlightColor: '#059669',
-    features: [
-      'Detects structured & unbordered table boundaries',
-      'One-click export to clean CSV, JSON, or Excel sheets',
-      'Automatic mathematical & numerical format validation'
-    ]
-  },
-  {
-    id: 7,
-    badge: 'OCR Recognition',
-    title: 'Turn Scans into Searchable Text',
-    subtitle: 'High-precision optical character recognition converts paper scans and images into copyable, searchable text.',
-    icon: ScanText,
-    iconColor: '#7C3AED',
-    bgColor: 'rgba(124, 58, 237, 0.12)',
-    highlightColor: '#7C3AED',
-    features: [
-      'Multi-language OCR engine supporting 20+ languages',
-      'Preserves original document layout and paragraphing',
-      'Generates searchable PDF/A overlay layers'
-    ]
-  },
-  {
-    id: 8,
-    badge: 'Smart Redaction',
-    title: 'Permanent PII & Data Sanitization',
-    subtitle: 'Blackout sensitive names, social security numbers, passwords, and addresses permanently before distribution.',
-    icon: ShieldAlert,
-    iconColor: '#DC2626',
-    bgColor: 'rgba(220, 38, 38, 0.12)',
-    highlightColor: '#DC2626',
-    features: [
-      'Automated regex pattern scanning (Emails, SSNs, Phones)',
-      'Destroys underlying vector text data — zero recovery',
-      'Sanitizes hidden metadata & revision histories'
-    ]
-  },
-  {
-    id: 9,
-    badge: 'Signatures & Watermarks',
-    title: 'Digital Signing & Document Protection',
-    subtitle: 'Add cryptographic signatures, visual stamp signatures, watermarks, and password encryption in seconds.',
-    icon: PenTool,
-    iconColor: '#2563EB',
-    bgColor: 'rgba(37, 99, 235, 0.12)',
-    highlightColor: '#2563EB',
-    features: [
-      'Draw, type, or upload custom e-signatures',
-      'Custom text or image watermarks with opacity control',
-      'AES-256 password protection & permission restriction'
-    ]
-  },
-  {
-    id: 10,
-    badge: 'ISO PDF/A Archiving',
-    title: 'Long-Term Preserved Compliance',
-    subtitle: 'Convert standard documents into ISO 19005 compliant PDF/A format required for legal and government records.',
-    icon: Archive,
-    iconColor: '#D97706',
-    bgColor: 'rgba(217, 119, 6, 0.12)',
-    highlightColor: '#D97706',
-    features: [
-      'Embeds all fonts, color profiles, & metadata standards',
-      'Ensures document renders identically 50 years from now',
-      'Built-in compliance checking & validation report'
-    ]
-  },
-  {
-    id: 11,
-    badge: 'Visual Page Organizer',
-    title: 'Reorder, Rotate, Split & Duplicate',
-    subtitle: 'Visual thumbnail grid lets you manage individual PDF pages with simple drag-and-drop actions.',
-    icon: Grid,
-    iconColor: '#059669',
-    bgColor: 'rgba(5, 150, 105, 0.12)',
-    highlightColor: '#059669',
-    features: [
-      'Rotate upside-down pages by 90°, 180°, or 270°',
-      'Extract custom page ranges into standalone PDFs',
-      'Delete blank pages or duplicate important slides'
-    ]
-  },
-  {
-    id: 12,
-    badge: 'Multi-Language Compactability',
-    title: 'Native Mobile & Offline App',
-    subtitle: 'Full interface translation across 10+ languages with native desktop & mobile app experience via PWA.',
-    icon: Globe,
-    iconColor: '#7C3AED',
-    bgColor: 'rgba(124, 58, 237, 0.12)',
-    highlightColor: '#7C3AED',
-    features: [
-      'Seamless multi-language switching (English, Spanish, Hindi, etc.)',
-      'Installable on Android, iOS, Windows & macOS',
-      'Offline-first architecture — works without active internet'
-    ]
-  },
-  {
-    id: 13,
-    badge: 'Cloud AI Intelligence',
-    title: 'Deep Document Analytics & Cloud Engine',
-    subtitle: 'Real-time cloud sync powers semantic document comparison, vector similarity matrices, and automatic classification.',
-    icon: Cpu,
-    iconColor: '#2563EB',
-    bgColor: 'rgba(37, 99, 235, 0.12)',
-    highlightColor: '#2563EB',
-    features: [
-      'Semantic document comparison highlighting hidden structural changes',
-      'AI Document classification and auto-tagging system',
-      'High-throughput vector search across massive document archives'
-    ]
-  },
-  {
-    id: 14,
-    type: 'rate-limits',
-    badge: 'Fair Use Policy',
-    title: 'Usage Limits & Fair Access',
-    subtitle: 'To keep performance fast and reliable for everyone, fair usage limits apply on shared cloud infrastructure.',
-    icon: Gauge,
-    iconColor: '#EA580C',
-    bgColor: 'rgba(234, 88, 12, 0.10)',
-    highlightColor: '#EA580C',
-    limits: [
-      {
-        category: 'PDF Manipulation Tools',
-        icon: 'pdf',
-        color: '#DC2626',
-        softColor: 'rgba(220,38,38,0.10)',
-        borderColor: 'rgba(220,38,38,0.22)',
-        rule: '≤ 15 pages per document',
-        note: 'Merge, Split, Compress, Rotate, Watermark, Edit & all PDF tools.',
-        tip: 'Split large PDFs into chunks under 15 pages before processing.',
-      },
-      {
-        category: 'AI Intelligence Features',
-        icon: 'ai',
-        color: '#7C3AED',
-        softColor: 'rgba(124,58,237,0.10)',
-        borderColor: 'rgba(124,58,237,0.22)',
-        rule: '5 requests per 1–4 hours',
-        note: 'Summarize, Ask PDF, OCR, Translate, Tables & all AI tools.',
-        tip: 'Limits reset automatically. Each AI tool category has an independent counter.',
-      },
-    ],
-    features: [
-      'Limits reset automatically — no account required',
-      'Client-side WASM PDF tools are always unlimited'
-    ]
-
-  }
-];
-
 export default function OnboardingScreen({ onFinish = null }) {
   const navigate = useNavigate();
+  const { t, lang, setLang, supportedLanguages } = useI18n();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [touchStartX, setTouchStartX] = useState(null);
   const autoPlayTimerRef = useRef(null);
 
@@ -299,8 +64,243 @@ export default function OnboardingScreen({ onFinish = null }) {
     };
   }, []);
 
-  const totalPages = ONBOARDING_PAGES.length;
-  const currentPage = ONBOARDING_PAGES[currentSlideIndex];
+  const onboardingPages = useMemo(() => [
+    {
+      id: 1,
+      badge: t('ob_s1_badge'),
+      title: t('ob_s1_title'),
+      subtitle: t('ob_s1_sub'),
+      icon: Sparkles,
+      iconColor: '#2563EB',
+      bgColor: 'rgba(37, 99, 235, 0.12)',
+      highlightColor: '#2563EB',
+      features: [
+        t('ob_s1_f1'),
+        t('ob_s1_f2'),
+        t('ob_s1_f3')
+      ]
+    },
+    {
+      id: 2,
+      badge: t('ob_s2_badge'),
+      title: t('ob_s2_title'),
+      subtitle: t('ob_s2_sub'),
+      icon: ShieldCheck,
+      iconColor: '#059669',
+      bgColor: 'rgba(5, 150, 105, 0.12)',
+      highlightColor: '#059669',
+      features: [
+        t('ob_s2_f1'),
+        t('ob_s2_f2'),
+        t('ob_s2_f3')
+      ]
+    },
+    {
+      id: 3,
+      badge: t('ob_s3_badge'),
+      title: t('ob_s3_title'),
+      subtitle: t('ob_s3_sub'),
+      icon: Layers,
+      iconColor: '#7C3AED',
+      bgColor: 'rgba(124, 58, 237, 0.12)',
+      highlightColor: '#7C3AED',
+      features: [
+        t('ob_s3_f1'),
+        t('ob_s3_f2'),
+        t('ob_s3_f3')
+      ]
+    },
+    {
+      id: 4,
+      badge: t('ob_s4_badge'),
+      title: t('ob_s4_title'),
+      subtitle: t('ob_s4_sub'),
+      icon: Zap,
+      iconColor: '#D97706',
+      bgColor: 'rgba(217, 119, 6, 0.12)',
+      highlightColor: '#D97706',
+      features: [
+        t('ob_s4_f1'),
+        t('ob_s4_f2'),
+        t('ob_s4_f3')
+      ]
+    },
+    {
+      id: 5,
+      badge: t('ob_s5_badge'),
+      title: t('ob_s5_title'),
+      subtitle: t('ob_s5_sub'),
+      icon: MessageSquare,
+      iconColor: '#2563EB',
+      bgColor: 'rgba(37, 99, 235, 0.12)',
+      highlightColor: '#2563EB',
+      features: [
+        t('ob_s5_f1'),
+        t('ob_s5_f2'),
+        t('ob_s5_f3')
+      ]
+    },
+    {
+      id: 6,
+      badge: t('ob_s6_badge'),
+      title: t('ob_s6_title'),
+      subtitle: t('ob_s6_sub'),
+      icon: Table,
+      iconColor: '#059669',
+      bgColor: 'rgba(5, 150, 105, 0.12)',
+      highlightColor: '#059669',
+      features: [
+        t('ob_s6_f1'),
+        t('ob_s6_f2'),
+        t('ob_s6_f3')
+      ]
+    },
+    {
+      id: 7,
+      badge: t('ob_s7_badge'),
+      title: t('ob_s7_title'),
+      subtitle: t('ob_s7_sub'),
+      icon: ScanText,
+      iconColor: '#7C3AED',
+      bgColor: 'rgba(124, 58, 237, 0.12)',
+      highlightColor: '#7C3AED',
+      features: [
+        t('ob_s7_f1'),
+        t('ob_s7_f2'),
+        t('ob_s7_f3')
+      ]
+    },
+    {
+      id: 8,
+      badge: t('ob_s8_badge'),
+      title: t('ob_s8_title'),
+      subtitle: t('ob_s8_sub'),
+      icon: ShieldAlert,
+      iconColor: '#DC2626',
+      bgColor: 'rgba(220, 38, 38, 0.12)',
+      highlightColor: '#DC2626',
+      features: [
+        t('ob_s8_f1'),
+        t('ob_s8_f2'),
+        t('ob_s8_f3')
+      ]
+    },
+    {
+      id: 9,
+      badge: t('ob_s9_badge'),
+      title: t('ob_s9_title'),
+      subtitle: t('ob_s9_sub'),
+      icon: PenTool,
+      iconColor: '#2563EB',
+      bgColor: 'rgba(37, 99, 235, 0.12)',
+      highlightColor: '#2563EB',
+      features: [
+        t('ob_s9_f1'),
+        t('ob_s9_f2'),
+        t('ob_s9_f3')
+      ]
+    },
+    {
+      id: 10,
+      badge: t('ob_s10_badge'),
+      title: t('ob_s10_title'),
+      subtitle: t('ob_s10_sub'),
+      icon: Archive,
+      iconColor: '#D97706',
+      bgColor: 'rgba(217, 119, 6, 0.12)',
+      highlightColor: '#D97706',
+      features: [
+        t('ob_s10_f1'),
+        t('ob_s10_f2'),
+        t('ob_s10_f3')
+      ]
+    },
+    {
+      id: 11,
+      badge: t('ob_s11_badge'),
+      title: t('ob_s11_title'),
+      subtitle: t('ob_s11_sub'),
+      icon: Grid,
+      iconColor: '#059669',
+      bgColor: 'rgba(5, 150, 105, 0.12)',
+      highlightColor: '#059669',
+      features: [
+        t('ob_s11_f1'),
+        t('ob_s11_f2'),
+        t('ob_s11_f3')
+      ]
+    },
+    {
+      id: 12,
+      badge: t('ob_s12_badge'),
+      title: t('ob_s12_title'),
+      subtitle: t('ob_s12_sub'),
+      icon: Globe,
+      iconColor: '#7C3AED',
+      bgColor: 'rgba(124, 58, 237, 0.12)',
+      highlightColor: '#7C3AED',
+      features: [
+        t('ob_s12_f1'),
+        t('ob_s12_f2'),
+        t('ob_s12_f3')
+      ]
+    },
+    {
+      id: 13,
+      badge: t('ob_s13_badge'),
+      title: t('ob_s13_title'),
+      subtitle: t('ob_s13_sub'),
+      icon: Cpu,
+      iconColor: '#2563EB',
+      bgColor: 'rgba(37, 99, 235, 0.12)',
+      highlightColor: '#2563EB',
+      features: [
+        t('ob_s13_f1'),
+        t('ob_s13_f2'),
+        t('ob_s13_f3')
+      ]
+    },
+    {
+      id: 14,
+      type: 'rate-limits',
+      badge: t('ob_s14_badge'),
+      title: t('ob_s14_title'),
+      subtitle: t('ob_s14_sub'),
+      icon: Gauge,
+      iconColor: '#EA580C',
+      bgColor: 'rgba(234, 88, 12, 0.10)',
+      highlightColor: '#EA580C',
+      limits: [
+        {
+          category: t('ob_s14_pdf_cat'),
+          icon: 'pdf',
+          color: '#DC2626',
+          softColor: 'rgba(220,38,38,0.10)',
+          borderColor: 'rgba(220,38,38,0.22)',
+          rule: t('ob_s14_pdf_rule'),
+          note: t('ob_s14_pdf_note'),
+          tip: t('ob_s14_pdf_tip'),
+        },
+        {
+          category: t('ob_s14_ai_cat'),
+          icon: 'ai',
+          color: '#7C3AED',
+          softColor: 'rgba(124,58,237,0.10)',
+          borderColor: 'rgba(124,58,237,0.22)',
+          rule: t('ob_s14_ai_rule'),
+          note: t('ob_s14_ai_note'),
+          tip: t('ob_s14_ai_tip'),
+        },
+      ],
+      features: [
+        t('ob_s14_f1'),
+        t('ob_s14_f2')
+      ]
+    }
+  ], [t]);
+
+  const totalPages = onboardingPages.length;
+  const currentPage = onboardingPages[currentSlideIndex];
   const IconComponent = currentPage.icon;
   const isLastPage = currentSlideIndex === totalPages - 1;
 
@@ -339,12 +339,12 @@ export default function OnboardingScreen({ onFinish = null }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext, handlePrev, handleFinish, isLastPage]);
 
-  /* Continuous 4-second automatic slide transition (14 slides * ~4s = ~56s covering Render 50s boot) */
+  /* Automatic slide transition (pause if user moves) */
   useEffect(() => {
     if (!isLastPage) {
       autoPlayTimerRef.current = setTimeout(() => {
         handleNext();
-      }, 4000);
+      }, 5000);
     }
     return () => {
       if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
@@ -370,6 +370,7 @@ export default function OnboardingScreen({ onFinish = null }) {
   }
 
   const progressPercent = Math.round(((currentSlideIndex + 1) / totalPages) * 100);
+  const currentLanguageObj = supportedLanguages.find(l => l.code === lang) || supportedLanguages[0];
 
   return (
     <div
@@ -380,9 +381,49 @@ export default function OnboardingScreen({ onFinish = null }) {
       {/* Dynamic Animated Particle Background */}
       <ParticleBackground />
 
-      {/* Background ambient lighting */}
+      {/* Ambient lighting */}
       <div className="onboarding-screen__glow-1" style={{ background: currentPage.bgColor }} />
       <div className="onboarding-screen__glow-2" />
+
+      {/* Top Header Bar with Language Selector & Brand */}
+      <header className="onboarding-screen__topbar">
+        <div className="onboarding-screen__brand-pill">
+          <img src="/icon-48.png" alt="PaperKit Logo" width="22" height="22" style={{ borderRadius: '6px' }} />
+          <span className="onboarding-screen__brand-name">PaperKit</span>
+          <span className="onboarding-screen__brand-badge">{t('ob_badge_tour')}</span>
+        </div>
+
+        <div className="onboarding-screen__top-actions">
+          {/* Language Selector Dropdown */}
+          <div className="onboarding-screen__lang-pill">
+            <Globe size={14} color="#2563EB" />
+            <select
+              value={lang}
+              onChange={e => setLang(e.target.value)}
+              className="onboarding-screen__lang-select"
+              aria-label="Select Language"
+              id="onboarding-language-selector"
+            >
+              {supportedLanguages.map(l => (
+                <option key={l.code} value={l.code}>
+                  {l.flag} {l.nativeName} ({l.name})
+                </option>
+              ))}
+            </select>
+            <span className="onboarding-screen__active-lang-code">{currentLanguageObj.flag}</span>
+          </div>
+
+          {/* Quick Skip button */}
+          <button
+            type="button"
+            className="onboarding-screen__skip-btn"
+            onClick={handleFinish}
+            title={t('ob_skip')}
+          >
+            {t('ob_skip')}
+          </button>
+        </div>
+      </header>
 
       {/* Top Visual Progress Line */}
       <div className="onboarding-screen__progress-container">
@@ -397,7 +438,7 @@ export default function OnboardingScreen({ onFinish = null }) {
 
       {/* Main Slide Card Container */}
       <main className="onboarding-screen__main">
-        <div className="onboarding-screen__card" key={currentPage.id}>
+        <div className="onboarding-screen__card" key={`${currentPage.id}-${lang}`}>
           {/* Badge & Icon Header */}
           <div className="onboarding-screen__card-header">
             <div
@@ -507,7 +548,7 @@ export default function OnboardingScreen({ onFinish = null }) {
       <footer className="onboarding-screen__footer">
         {/* Slide Dots Indicator */}
         <div className="onboarding-screen__dots">
-          {ONBOARDING_PAGES.map((page, index) => (
+          {onboardingPages.map((page, index) => (
             <button
               key={page.id}
               type="button"
@@ -517,7 +558,7 @@ export default function OnboardingScreen({ onFinish = null }) {
                 backgroundColor:
                   index === currentSlideIndex
                     ? currentPage.highlightColor
-                    : 'rgba(255, 255, 255, 0.2)'
+                    : 'rgba(255, 255, 255, 0.3)'
               }}
               onClick={() => setCurrentSlideIndex(index)}
               aria-label={`Go to slide ${index + 1}`}
@@ -534,7 +575,7 @@ export default function OnboardingScreen({ onFinish = null }) {
               onClick={handlePrev}
             >
               <ChevronLeft size={18} />
-              <span>Previous</span>
+              <span>{t('ob_prev')}</span>
             </button>
           )}
 
@@ -545,7 +586,7 @@ export default function OnboardingScreen({ onFinish = null }) {
               style={{ backgroundColor: currentPage.highlightColor }}
               onClick={handleNext}
             >
-              <span>Next</span>
+              <span>{t('ob_next')}</span>
               <ChevronRight size={18} />
             </button>
           ) : (
@@ -555,7 +596,7 @@ export default function OnboardingScreen({ onFinish = null }) {
               onClick={handleFinish}
               id="onboarding-enter-studio-btn"
             >
-              <span>Get Started / Enter Studio</span>
+              <span>{t('ob_finish')}</span>
               <ArrowRight size={18} />
             </button>
           )}

@@ -50,15 +50,15 @@ export default function LandingScreen({ onFinish = null }) {
   const stats = [
     { value: '50,000+', label: t('files_processed_stat'), icon: FileText, color: '#2563EB' },
     { value: '< 2.4s', label: t('avg_latency_stat'), icon: Zap, color: '#059669' },
-    { value: '20+', label: 'PDF Tools', icon: Cpu, color: '#7C3AED' },
+    { value: '20+', label: t('native_tools_stat'), icon: Cpu, color: '#7C3AED' },
     { value: '100%', label: t('private_wasm_stat'), icon: Lock, color: '#D97706' },
   ];
 
   const quickShowcaseTools = [
-    { id: 'merge-pdf', name: 'Merge PDF', category: 'PDF', desc: 'Combine multiple files', path: '/tools/merge' },
-    { id: 'compress-pdf', name: 'Compress PDF', category: 'PDF', desc: 'Reduce file size', path: '/tools/compress' },
-    { id: 'ai-ask', name: 'Ask PDF AI', category: 'AI Intelligence', desc: 'Instant QA on docs', path: '/ai/ask' },
-    { id: 'split-pdf', name: 'Split PDF', category: 'PDF', desc: 'Extract or split pages', path: '/tools/split' },
+    { id: 'merge-pdf', name: t('tool_merge_name'), category: 'PDF', desc: t('tool_merge_desc'), path: '/tools/merge' },
+    { id: 'compress-pdf', name: t('tool_compress_name'), category: 'PDF', desc: t('tool_compress_desc'), path: '/tools/compress' },
+    { id: 'ai-ask', name: t('tool_ai_ask_name'), category: 'AI Intelligence', desc: t('tool_ai_ask_desc'), path: '/ai/ask' },
+    { id: 'split-pdf', name: t('tool_split_name'), category: 'PDF', desc: t('tool_split_desc'), path: '/tools/split' },
   ];
 
   const filteredShowcase = activeCategory === 'All' 
@@ -159,7 +159,7 @@ export default function LandingScreen({ onFinish = null }) {
         {/* Left Hero Card */}
         <div className="landing-glass-card landing-glass-card--left">
           <div className="landing-glass-card__top-pill">
-            <span>Open Source PDF Studio ✦</span>
+            <span>{t('open_source_tag')}</span>
           </div>
 
           <div className="landing-glass-card__media-box">
@@ -236,7 +236,7 @@ export default function LandingScreen({ onFinish = null }) {
           </div>
 
           <div className="landing-glass-card__bottom-badge">
-            <span>20+ PDF Tools Ready ✦</span>
+            <span>{t('tools_ready_badge')}</span>
           </div>
         </div>
 
@@ -286,7 +286,7 @@ export default function LandingScreen({ onFinish = null }) {
               className="landing-glass-card__cta-button"
               onClick={() => handleEnterStudio('/')}
             >
-              <span>Launch Studio</span>
+              <span>{t('launch_studio')}</span>
               <ArrowRight size={16} />
             </button>
           </div>
@@ -419,7 +419,7 @@ export default function LandingScreen({ onFinish = null }) {
           className="landing-screen__floating-cta"
           onClick={() => handleEnterStudio('/')}
         >
-          <span>Launch Studio</span>
+          <span>{t('launch_studio')}</span>
           <ArrowRight size={16} />
         </button>
       </div>

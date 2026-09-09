@@ -47,118 +47,98 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px 12px;
+  padding: 0 clamp(12px, 3vw, 24px) 12px;
   padding-top: max(1cm, env(safe-area-inset-top, 0px));
   z-index: 10;
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  gap: 12px;
 }
 
+.onboarding-screen__brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  padding: 4px 12px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
 
-.onboarding-screen__brand {
+.onboarding-screen__brand-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.3px;
+}
+
+.onboarding-screen__brand-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2563EB;
+  background: rgba(37, 99, 235, 0.1);
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.onboarding-screen__top-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.onboarding-screen__brand-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #0F172A;
-}
-
-.onboarding-screen__cloud-pill {
+.onboarding-screen__lang-pill {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 0.78rem;
-  font-weight: 700;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
   padding: 5px 12px;
   border-radius: 9999px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: all 0.3s ease;
-  user-select: none;
-}
-
-.onboarding-screen__cloud-pill--ready {
-  color: #059669;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1.5px solid rgba(16, 185, 129, 0.3);
-}
-
-.onboarding-screen__cloud-pill--booting {
-  color: #D97706;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1.5px solid rgba(245, 158, 11, 0.3);
-}
-
-.onboarding-screen__cloud-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 6px currentColor;
-  animation: obCloudPulse 1.8s infinite ease-in-out;
-}
-
-@keyframes obCloudPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.35; transform: scale(0.8); }
-}
-
-.onboarding-screen__page-pill {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: rgba(37, 99, 235, 0.08);
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  color: #1D4ED8;
-  margin-left: 6px;
-}
-
-.onboarding-screen__top-right-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.onboarding-screen__autoplay-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  background: rgba(37, 99, 235, 0.08);
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  color: #1E40AF;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
+  border: 1.5px solid rgba(37, 99, 235, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
   transition: all 0.2s ease;
 }
 
-.onboarding-screen__autoplay-btn:hover {
-  background: rgba(37, 99, 235, 0.15);
-  color: #1D4ED8;
+.onboarding-screen__lang-pill:hover {
+  background: #FFFFFF;
+  border-color: #2563EB;
+}
+
+.onboarding-screen__lang-select {
+  border: none;
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1E293B;
+  outline: none;
+  cursor: pointer;
+  max-width: 120px;
+}
+
+.onboarding-screen__active-lang-code {
+  font-size: 13px;
 }
 
 .onboarding-screen__skip-btn {
-  background: transparent;
-  border: none;
-  color: #64748B;
-  font-size: 0.85rem;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 700;
   cursor: pointer;
-  padding: 6px 14px;
-  border-radius: 8px;
+  padding: 5px 14px;
+  border-radius: 9999px;
   transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
 }
 
 .onboarding-screen__skip-btn:hover {
   color: #0F172A;
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(37, 99, 235, 0.1);
+  border-color: #2563EB;
 }
 
 /* Progress line */

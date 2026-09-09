@@ -41,7 +41,7 @@ export default function NavigationDrawer({ isOpen, onClose }) {
 
   const menuItems = [
     { id: 'home', label: t('home') || 'Home Dashboard', icon: Home, path: '/' },
-    { id: 'welcome', label: 'Welcome & Feature Tour', icon: Sparkles, path: '/welcome', highlight: true },
+    { id: 'welcome', label: t('welcome_tour') || 'Welcome & Feature Tour', icon: Sparkles, path: '/welcome', highlight: true },
     { id: 'my-files', label: t('files') || 'My Files', icon: Files, path: '/files' },
     { id: 'recent', label: t('recent') || 'Recent Files', icon: Clock, path: '/files?filter=recent' },
     { id: 'favorites', label: t('favorites') || 'Favorites', icon: Star, path: '/files?filter=favorites' },
@@ -101,7 +101,7 @@ export default function NavigationDrawer({ isOpen, onClose }) {
         <nav className="nav-drawer__menu">
           {/* Exclusive Available Tools Section */}
           <div style={{ padding: '0.5rem 1rem 0.25rem 1rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Exclusive Available Tools
+            {t('exclusive_tools') || 'Exclusive Available Tools'}
           </div>
           {exclusiveTools.map((item) => {
             const Icon = item.icon;

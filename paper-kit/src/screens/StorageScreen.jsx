@@ -49,7 +49,7 @@ export default function StorageScreen() {
     try {
       const downloadUrl = await getFileDownloadUrl(file._id);
       const url = downloadUrl.startsWith('http') ? downloadUrl : `${import.meta.env.VITE_API_URL || 'https://paperkit-backend.onrender.com'}${downloadUrl}`;
-      window.open(url, '_blank');
+      await downloadAndOpenFile(url, file.original_filename, file.content_type);
     } catch (err) {
       setError(err?.message || 'Preview failed');
     }

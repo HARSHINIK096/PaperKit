@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Video, Music, Download, Zap, HardDrive, ShieldCheck, DownloadCloud } from 'lucide-react';
+import { Video, Music, Download, Zap, HardDrive, ShieldCheck, DownloadCloud, AlertCircle, RefreshCw } from 'lucide-react';
 import Toast from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import { downloadAndOpenFile } from '../../services/native';
@@ -16,25 +16,24 @@ const TOOL_TIPS = [
   {
     icon: <HardDrive size={20} />,
     title: 'Save Offline',
-    description: 'Store files locally for offline enjoyment.'
+    description: 'Store files locally on your device for offline enjoyment.'
   },
   {
     icon: <Music size={20} />,
     title: 'Audio Extraction',
-    description: 'Rip high-bitrate MP3s from videos.'
+    description: 'Rip high-bitrate MP3s directly from video or track links.'
   },
   {
     icon: <Zap size={20} />,
-    title: 'Fast Speeds',
-    description: 'Multi-threaded downloads for maximum speed.'
+    title: 'Fast Processing',
+    description: 'High throughput streaming engine.'
   },
   {
     icon: <ShieldCheck size={20} />,
     title: 'No Tracking',
-    description: '100% private and secure downloads.'
+    description: '100% private and secure processing.'
   },
 ];
-
 
 export default function MediaDownloaderScreen() {
   const [searchParams] = useSearchParams();
@@ -43,6 +42,7 @@ export default function MediaDownloaderScreen() {
   const [url, setUrl] = useState('');
   const [downloading, setDownloading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Fetching & Downloading…');
+  const [errorMessage, setErrorMessage] = useState(null);
   const { toast, showToast, dismissToast } = useToast();
 
   const isYouTube = typeParam === 'youtube';
@@ -70,7 +70,7 @@ export default function MediaDownloaderScreen() {
     return null;
   }
 
-  // Multi-instance Cobalt Stream Resolver (for non-YouTube audio/media)
+  // Multi-instance Cobalt Stream Resolver (for audio/media)
   async function resolveWithCobalt(targetUrl, isAudioOnly = false) {
     const cobaltInstances = [
       'https://cobalt-api.kwiatekm.com',
@@ -81,7 +81,7 @@ export default function MediaDownloaderScreen() {
     for (const instance of cobaltInstances) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
         const res = await fetch(instance, {
           method: 'POST',
           headers: {
@@ -124,7 +124,7 @@ export default function MediaDownloaderScreen() {
     for (const endpoint of invidiousInstances) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
         const res = await fetch(endpoint, { signal: controller.signal });
         clearTimeout(timeoutId);
 
@@ -159,7 +159,7 @@ export default function MediaDownloaderScreen() {
     for (const instance of pipedInstances) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
         const res = await fetch(instance, { signal: controller.signal });
         clearTimeout(timeoutId);
 
@@ -181,13 +181,6 @@ export default function MediaDownloaderScreen() {
     return null;
   }
 
-  function getFallbackPortalUrl(targetUrl, isYt) {
-    if (isYt) {
-      return `https://ssyoutube.com/en795/?url=${encodeURIComponent(targetUrl)}`;
-    }
-    return `https://spotifydown.com/?url=${encodeURIComponent(targetUrl)}`;
-  }
-
   async function handleDownload() {
     const trimmed = url.trim();
     if (!trimmed) {
@@ -196,12 +189,13 @@ export default function MediaDownloaderScreen() {
     }
     
     setDownloading(true);
+    setErrorMessage(null);
     setStatusMessage('Connecting to media engine…');
 
     try {
       let downloadBlob = null;
       let downloadFilename = isYouTube ? 'youtube_video.mp4' : 'spotify_track.mp3';
-      let downloadUrl = null;
+      let downloadMime = isYouTube ? 'video/mp4' : 'audio/mpeg';
 
       // ── Stage 1: Try Primary Backend API (Local / Render) ──
       try {
@@ -213,12 +207,14 @@ export default function MediaDownloaderScreen() {
 
         for (const targetBase of apiTargets) {
           try {
+            setStatusMessage('Processing media on server engine… (this may take 20–40s for HD video)');
             const endpoint = isYouTube 
               ? `${targetBase}/api/media/download-youtube` 
               : `${targetBase}/api/media/download-spotify`;
               
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            // 120s timeout to allow Render cold-start + yt-dlp download & merge
+            const timeoutId = setTimeout(() => controller.abort(), 120000);
             const response = await fetch(endpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -235,93 +231,94 @@ export default function MediaDownloaderScreen() {
               }
               downloadBlob = await response.blob();
               if (downloadBlob) break;
+            } else {
+              const errorText = await response.text();
+              console.warn(`Backend returned ${response.status}:`, errorText);
             }
           } catch (targetErr) {
             console.debug(`Backend target ${targetBase} error:`, targetErr.message);
           }
         }
       } catch (backendErr) {
-        console.debug('Backend download endpoint error, falling back to public stream resolver:', backendErr.message);
+        console.debug('Backend download endpoint error, falling back to stream resolvers:', backendErr.message);
       }
 
-      // ── Stage 2: Invidious / Piped Resolver for YouTube ──
+      // ── Stage 2: Direct Stream Resolvers (Invidious / Piped) for YouTube ──
       if (!downloadBlob && isYouTube) {
         setStatusMessage('Extracting direct HD video stream…');
         const ytId = extractYouTubeId(trimmed);
         if (ytId) {
           const invidiousData = await resolveWithInvidious(ytId);
           if (invidiousData && invidiousData.streamUrl) {
-            downloadUrl = invidiousData.streamUrl;
-            downloadFilename = `${invidiousData.title.replace(/[^\w\s.-]/gi, '').trim() || 'youtube_video'}.mp4`;
-          } else {
+            try {
+              const streamRes = await fetch(invidiousData.streamUrl);
+              if (streamRes.ok) {
+                downloadBlob = await streamRes.blob();
+                downloadFilename = `${invidiousData.title.replace(/[^\w\s.-]/gi, '').trim() || 'youtube_video'}.mp4`;
+              }
+            } catch (err) {
+              console.debug('Invidious stream fetch error:', err);
+            }
+          }
+          
+          if (!downloadBlob) {
             const pipedData = await resolveWithPiped(ytId);
             if (pipedData && pipedData.streamUrl) {
-              downloadUrl = pipedData.streamUrl;
-              downloadFilename = `${pipedData.title.replace(/[^\w\s.-]/gi, '').trim() || 'youtube_video'}.mp4`;
+              try {
+                const streamRes = await fetch(pipedData.streamUrl);
+                if (streamRes.ok) {
+                  downloadBlob = await streamRes.blob();
+                  downloadFilename = `${pipedData.title.replace(/[^\w\s.-]/gi, '').trim() || 'youtube_video'}.mp4`;
+                }
+              } catch (err) {
+                console.debug('Piped stream fetch error:', err);
+              }
             }
           }
         }
       }
 
       // ── Stage 3: Cobalt Stream Engine Fallback for Spotify / Audio ──
-      if (!downloadBlob && !downloadUrl && !isYouTube) {
-        setStatusMessage('Resolving audio stream…');
+      if (!downloadBlob && !isYouTube) {
+        setStatusMessage('Resolving audio stream from cobalt network…');
         const resolvedDirectUrl = await resolveWithCobalt(trimmed, true);
         
         if (resolvedDirectUrl) {
-          downloadUrl = resolvedDirectUrl;
-          const mediaTitle = await fetchMediaTitle(trimmed);
-          if (mediaTitle) {
-            downloadFilename = `${mediaTitle}.mp3`;
+          try {
+            const streamRes = await fetch(resolvedDirectUrl);
+            if (streamRes.ok) {
+              downloadBlob = await streamRes.blob();
+              const mediaTitle = await fetchMediaTitle(trimmed);
+              if (mediaTitle) {
+                downloadFilename = `${mediaTitle}.mp3`;
+              }
+            }
+          } catch (err) {
+            console.debug('Cobalt stream fetch error:', err);
           }
         }
       }
 
-      // ── Stage 4: Trigger File Delivery ──
+      // ── Stage 4: Trigger In-App Delivery ──
       if (downloadBlob) {
+        setStatusMessage('Saving file to your device…');
         const objectUrl = URL.createObjectURL(downloadBlob);
-        downloadAndOpenFile(objectUrl, downloadFilename, downloadBlob.type);
+        await downloadAndOpenFile(objectUrl, downloadFilename, downloadMime);
         showToast('Download started successfully!', 'success');
         setUrl('');
-      } else if (downloadUrl) {
-        try {
-          const streamFetch = await fetch(downloadUrl);
-          if (streamFetch.ok) {
-            const blob = await streamFetch.blob();
-            const objectUrl = URL.createObjectURL(blob);
-            downloadAndOpenFile(objectUrl, downloadFilename, blob.type);
-            showToast('Download started successfully!', 'success');
-            setUrl('');
-            return;
-          }
-        } catch (corsErr) {
-          console.debug('Direct stream download via Anchor:', corsErr);
-        }
-
-        // Anchor download fallback
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = downloadFilename;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        showToast('Media stream opened for download!', 'success');
-        setUrl('');
       } else {
-        // Direct web portal fallback
-        const fallbackPortal = getFallbackPortalUrl(trimmed, isYouTube);
-        window.open(fallbackPortal, '_blank');
-        showToast('Opening high-speed media stream portal…', 'info');
+        throw new Error(
+          isYouTube 
+            ? 'Unable to extract video stream. The video may be age-restricted, copyrighted, or private. Please verify the link and try again.'
+            : 'Unable to extract audio track. Please ensure the Spotify track URL is valid and public.'
+        );
       }
       
     } catch (err) {
       console.error('Media download error:', err);
-      showToast(err.message || 'Failed to download media. Opening portal…', 'error');
-      const fallbackPortal = getFallbackPortalUrl(trimmed, isYouTube);
-      window.open(fallbackPortal, '_blank');
+      const friendlyMsg = err.message || 'Failed to download media. Please check your connection and link.';
+      setErrorMessage(friendlyMsg);
+      showToast(friendlyMsg, 'error');
     } finally {
       setDownloading(false);
     }
@@ -343,8 +340,8 @@ export default function MediaDownloaderScreen() {
         </p>
         <p className="ai-screen__unavailable-sub">
           {isYouTube 
-            ? 'Paste a YouTube link below to download the highest quality MP4 video.' 
-            : 'Paste a Spotify track link below to download it as an MP3 audio file.'}
+            ? 'Paste a YouTube link below to download the highest quality MP4 video directly to your device.' 
+            : 'Paste a Spotify track link below to download it as an MP3 audio file directly to your device.'}
         </p>
       </div>
 
@@ -355,7 +352,10 @@ export default function MediaDownloaderScreen() {
         <input 
           type="url" 
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            if (errorMessage) setErrorMessage(null);
+          }}
           placeholder={isYouTube ? "https://www.youtube.com/watch?v=..." : "https://open.spotify.com/track/..."}
           style={{ 
             width: '100%', padding: '10px 12px', borderRadius: '10px', 
@@ -366,6 +366,28 @@ export default function MediaDownloaderScreen() {
           disabled={downloading}
         />
       </div>
+
+      {errorMessage && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '10px',
+          padding: '12px 14px',
+          borderRadius: '10px',
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.25)',
+          color: '#DC2626',
+          fontSize: '12.5px',
+          marginBottom: '14px',
+          lineHeight: '1.4'
+        }}>
+          <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div style={{ flex: 1 }}>
+            <strong>Download Failed</strong>
+            <p style={{ margin: '4px 0 0 0', color: '#B91C1C' }}>{errorMessage}</p>
+          </div>
+        </div>
+      )}
 
       <div className="ai-screen__submit-area">
         <button
@@ -381,8 +403,8 @@ export default function MediaDownloaderScreen() {
             </>
           ) : (
             <>
-              <Download size={17} />
-              Download Now
+              {errorMessage ? <RefreshCw size={17} /> : <Download size={17} />}
+              {errorMessage ? 'Try Again' : 'Download Now'}
             </>
           )}
         </button>
@@ -397,7 +419,6 @@ export default function MediaDownloaderScreen() {
           <p className="ai-screen__loading-sub">Connecting to fast media streaming network</p>
         </div>
       )}
-
 
       <FeatureTipsSwipeStack tips={TOOL_TIPS} />
       <Toast key={toast?.key} message={toast?.message} type={toast?.type} onDismiss={dismissToast} />

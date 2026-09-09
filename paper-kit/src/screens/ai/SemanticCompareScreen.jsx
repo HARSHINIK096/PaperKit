@@ -5,6 +5,7 @@ import { Sparkles, FileText, Download, Scale, Bot, RefreshCw, FileCheck } from '
 import { uploadFile } from '../../services/files';
 import { compareDocuments } from '../../services/ai';
 import api from '../../services/api';
+import { downloadAndOpenFile } from '../../services/native';
 import Toast from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import './ai-screen.css';
@@ -132,7 +133,7 @@ ${(comparisonResult.changes || []).map((c, i) => `
         ? res.data.download_url
         : `${import.meta.env.VITE_API_URL || 'https://paperkit-backend.onrender.com'}${res.data.download_url}`;
 
-      window.open(downloadUrl, '_blank');
+      await downloadAndOpenFile(downloadUrl, 'Semantic_Difference_Report.pdf', 'application/pdf');
       showToast('Difference PDF generated and opened!', 'success');
     } catch (err) {
       showToast(err.message || 'Failed to generate Difference PDF', 'error');

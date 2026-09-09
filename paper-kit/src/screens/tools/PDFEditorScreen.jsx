@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   FileUp, Download, ChevronLeft, ChevronRight, 
   CheckCircle2, AlertTriangle, ShieldCheck, Sparkles, X,

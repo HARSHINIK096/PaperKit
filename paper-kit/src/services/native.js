@@ -246,6 +246,26 @@ export function getMimeType(filename = '') {
     case 'jpg':
     case 'jpeg': return 'image/jpeg';
     case 'png': return 'image/png';
+    case 'webp': return 'image/webp';
+    case 'svg': return 'image/svg+xml';
+    case 'mp4': return 'video/mp4';
+    case 'webm': return 'video/webm';
+    case 'avi': return 'video/x-msvideo';
+    case 'mkv': return 'video/x-matroska';
+    case 'mov': return 'video/quicktime';
+    case 'mp3': return 'audio/mpeg';
+    case 'm4a': return 'audio/mp4';
+    case 'wav': return 'audio/wav';
+    case 'ogg': return 'audio/ogg';
+    case 'flac': return 'audio/flac';
+    case 'aac': return 'audio/aac';
+    case 'zip': return 'application/zip';
+    case 'rar': return 'application/vnd.rar';
+    case '7z': return 'application/x-7z-compressed';
+    case 'tar': return 'application/x-tar';
+    case 'gz': return 'application/gzip';
+    case 'csv': return 'text/csv';
+    case 'json': return 'application/json';
     default: return 'application/octet-stream';
   }
 }
@@ -333,65 +353,89 @@ export async function downloadAndOpenFile(fileUrl, filename = 'document.pdf', mi
       const { Filesystem, Directory } = await import('@capacitor/filesystem');
       await requestStoragePermissionsIfNeeded();
 
-      const response = await fetch(fullUrl, { headers: fetchHeaders });
-      if (!response.ok) {
-        throw new Error(`Server returned status ${response.status} when fetching document.`);
-      }
+      let targetUri = null;
 
-      const blob = await response.blob();
-      
-      // Binary PDF validation check
-      if (filename.toLowerCase().endsWith('.pdf') || resolvedMime === 'application/pdf') {
-        const headerSlice = await blob.slice(0, 10).text();
-        if (!headerSlice.startsWith('%PDF-')) {
-          console.error('[Download Error] Unexpected non-PDF payload received:', headerSlice);
-          throw new Error('Downloaded content is not a valid PDF document (%PDF- header missing).');
+      if (!isBlob && fullUrl.startsWith('http')) {
+        // Direct native download streaming (avoids base64 memory overhead for large video/PDF files)
+        try {
+          const downloadRes = await Filesystem.downloadFile({
+            url: fullUrl,
+            path: filename,
+            directory: Directory.Cache,
+            headers: fetchHeaders
+          });
+          targetUri = downloadRes.path || downloadRes.uri;
+        } catch (dlErr) {
+          console.warn('[Native Download] downloadFile fallback to fetch:', dlErr);
         }
       }
 
-      const base64Data = await blobToBase64(blob);
+      if (!targetUri) {
+        const response = await fetch(fullUrl, { headers: fetchHeaders });
+        if (!response.ok) {
+          throw new Error(`Server returned status ${response.status} when fetching file.`);
+        }
 
-      let result;
-      try {
-        result = await Filesystem.writeFile({
-          path: filename,
-          data: base64Data,
-          directory: Directory.Documents,
-          recursive: true
-        });
-      } catch (writeErr) {
-        // Directory.Documents may be restricted on Android 10+ without MANAGE_EXTERNAL_STORAGE.
-        // Fall back to Directory.Cache which is always writable.
-        console.warn('[Download] Documents write failed, retrying with Cache directory:', writeErr);
-        result = await Filesystem.writeFile({
-          path: filename,
-          data: base64Data,
-          directory: Directory.Cache,
-          recursive: true
-        });
+        const blob = await response.blob();
+        
+        // Binary PDF validation check
+        if (filename.toLowerCase().endsWith('.pdf') || resolvedMime === 'application/pdf') {
+          const headerSlice = await blob.slice(0, 10).text();
+          if (!headerSlice.startsWith('%PDF-')) {
+            console.error('[Download Error] Unexpected non-PDF payload received:', headerSlice);
+            throw new Error('Downloaded content is not a valid PDF document (%PDF- header missing).');
+          }
+        }
+
+        const base64Data = await blobToBase64(blob);
+
+        let result;
+        try {
+          result = await Filesystem.writeFile({
+            path: filename,
+            data: base64Data,
+            directory: Directory.Cache,
+            recursive: true
+          });
+          targetUri = result.uri;
+        } catch (cacheErr) {
+          console.warn('[Download] Cache write failed, retrying with Documents directory:', cacheErr);
+          result = await Filesystem.writeFile({
+            path: filename,
+            data: base64Data,
+            directory: Directory.Documents,
+            recursive: true
+          });
+          targetUri = result.uri;
+        }
       }
 
+      if (!targetUri) {
+        throw new Error('Failed to resolve native storage URI for downloaded file.');
+      }
+
+      showNativeToast('File saved to device!');
+
+      // Open file via default handler or present system share/save sheet
       try {
         const { FileOpener } = await import('@capacitor-community/file-opener');
         await FileOpener.open({
-          filePath: result.uri,
+          filePath: targetUri,
           contentType: resolvedMime,
           openWithDefault: true
         });
       } catch (openerErr) {
-        console.warn('FileOpener unavailable or failed, falling back to Share:', openerErr);
+        console.warn('FileOpener unavailable or no default app found, falling back to Share sheet:', openerErr);
         const { Share } = await import('@capacitor/share');
         await Share.share({
           title: filename,
-          url: result.uri
+          url: targetUri,
+          dialogTitle: `Open ${filename}`
         });
       }
     } catch (err) {
       console.error('Failed to download and open file natively:', err);
       showNativeToast('Error opening file: ' + err.message);
-      if (typeof window !== 'undefined' && window.alert) {
-        window.alert('Download Error: ' + err.message);
-      }
       throw err;
     }
   } else {

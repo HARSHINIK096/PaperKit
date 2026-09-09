@@ -5,6 +5,7 @@ import { Scan, Sparkles, Copy, Download, Upload, Check, FileText, Bot, Search, F
 import { ocrDocument } from '../../services/ai';
 import { uploadFile } from '../../services/files';
 import api from '../../services/api';
+import { downloadAndOpenFile } from '../../services/native';
 import Toast from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import './ai-screen.css';
@@ -93,7 +94,7 @@ export default function OCRScreen() {
         : `${import.meta.env.VITE_API_URL || 'https://paperkit-backend.onrender.com'}${res.data.download_url}`;
       
       setSearchablePdfResult(downloadUrl);
-      window.open(downloadUrl, '_blank');
+      await downloadAndOpenFile(downloadUrl, 'Searchable_OCR.pdf', 'application/pdf');
       showToast('Searchable PDF created and opened!', 'success');
     } catch (err) {
       showToast(err.message || 'Failed to create Searchable PDF', 'error');

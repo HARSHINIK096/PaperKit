@@ -9,6 +9,7 @@ import Toggle from '../../components/ui/Toggle';
 import Toast from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import { useProcessing } from '../../context/ProcessingContext';
+import { downloadAndOpenFile } from '../../services/native';
 import './RotatePDFScreen.css';
 
 const TOOL_TIPS = [
@@ -133,15 +134,15 @@ export default function RotatePDFScreen() {
     try {
       const result = await runProcessing('rotate-pdf', { file: selectedFile, degrees, targetPages });
       
-      setTimeout(() => {
+      setTimeout(async () => {
         if (result.download_url) {
           const url = result.download_url.startsWith('http') || result.download_url.startsWith('blob:')
             ? result.download_url
             : `${import.meta.env.VITE_API_URL || 'https://paperkit-backend.onrender.com'}${result.download_url}`;
-          window.open(url, '_blank');
+          await downloadAndOpenFile(url, `rotated_${selectedFile.name || 'document.pdf'}`, 'application/pdf');
         }
         navigate('/files', { replace: true });
-      }, 500);
+      }, 300);
     } catch (err) {
       showToast(err.message, 'error');
     } finally {

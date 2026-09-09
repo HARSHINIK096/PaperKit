@@ -7,6 +7,7 @@ import { useToast } from "../../hooks/useToast";
 import ReactMarkdown from 'react-markdown';
 import { useProcessing } from "../../context/ProcessingContext";
 import { summarizePDF } from "../../services/ai";
+import { downloadAndOpenFile } from "../../services/native";
 import api from "../../services/api";
 import "../ai/ai-screen.css";
 import "../../components/common/CommonResultScreen.css";
@@ -132,7 +133,7 @@ export default function SummarizePDFScreen() {
         ? res.data.download_url
         : `${import.meta.env.VITE_API_URL || 'https://paperkit-backend.onrender.com'}${res.data.download_url}`;
 
-      window.open(downloadUrl, '_blank');
+      await downloadAndOpenFile(downloadUrl, `${docTitle}_Summary.pdf`, 'application/pdf');
       showToast('PDF Summary Report generated!', 'success');
     } catch (err) {
       showToast(err.message || 'Failed to generate PDF Report', 'error');

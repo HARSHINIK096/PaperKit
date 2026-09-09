@@ -9,6 +9,7 @@ import { PrimaryButton } from '../../components/ui/Button';
 import Toast from '../../components/ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import { useProcessing } from '../../context/ProcessingContext';
+import { downloadAndOpenFile } from '../../services/native';
 import './WatermarkScreen.css';
 
 const TOOL_TIPS = [
@@ -95,7 +96,7 @@ export default function WatermarkScreen() {
         const url = result.download_url.startsWith('http') || result.download_url.startsWith('blob:')
           ? result.download_url
           : `${import.meta.env.VITE_API_URL || 'https://paperkit-backend.onrender.com'}${result.download_url}`;
-        window.open(url, '_blank');
+        await downloadAndOpenFile(url, `watermarked_${selectedFile.name || 'document.pdf'}`, 'application/pdf');
       }
       navigate('/files', { replace: true });
     } catch (err) {
