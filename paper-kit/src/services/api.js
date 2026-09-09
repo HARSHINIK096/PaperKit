@@ -1,6 +1,5 @@
 /* api.js — Axios instance with auth interceptor, cold-start retries, and error normalization */
 import axios from 'axios';
-import { Capacitor } from '@capacitor/core';
 
 export const REMOTE_API_BASE = 'https://paperkit-backend.onrender.com';
 
@@ -73,15 +72,11 @@ api.interceptors.response.use(
  */
 export function prewarmBackend() {
   const backendUrl = API_BASE.replace(/\/+$/, '');
-  const webUrl = import.meta.env.VITE_WEB_URL || 'https://paperkit-web.onrender.com';
   try {
     fetch(`${backendUrl}/health`, { cache: 'no-store' }).catch(() => {});
-    fetch(webUrl, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
   } catch {
     // Ignore background network errors
   }
-
-  api.get('/health', { timeout: 8000, _fast: true }).catch(() => {});
 }
 
 /**

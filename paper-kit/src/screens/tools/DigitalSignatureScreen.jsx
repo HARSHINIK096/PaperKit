@@ -1,7 +1,7 @@
 /* DigitalSignatureScreen — Draw, Type, or Upload Digital Signatures with Interactive PDF Visual Placement */
 import { useState, useRef, useEffect, useCallback } from 'react';
 import FeatureTipsSwipeStack from '../../components/ui/FeatureTipsSwipeStack';
-import { PenTool, Type, Image as ImageIcon, Download, Check, Trash2, Lock, Users, ShieldCheck, Clock, ChevronLeft, ChevronRight, Move, Sparkles } from 'lucide-react';
+import { PenTool, Type, Image as ImageIcon, Download, Check, Trash2, Lock, Users, ShieldCheck, ChevronLeft, ChevronRight, Move, Sparkles } from 'lucide-react';
 import { uploadFile } from '../../services/files';
 import { signPDF } from '../../services/tools';
 import { downloadAndOpenFile } from '../../services/native';

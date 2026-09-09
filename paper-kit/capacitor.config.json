@@ -12,10 +12,6 @@
     ]
   },
   "plugins": {
-    "FirebaseAuthentication": {
-      "skipNativeAuth": false,
-      "providers": ["google.com"]
-    },
     "SplashScreen": {
       "launchShowDuration": 1800,
       "launchAutoHide": true,

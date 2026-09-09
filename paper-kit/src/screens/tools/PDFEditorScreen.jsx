@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   FileUp, Download, ChevronLeft, ChevronRight, 
-  CheckCircle2, AlertTriangle, ShieldAlert, Sparkles, X,
-  Type, Palette, Minus, Plus
+  CheckCircle2, AlertTriangle, ShieldCheck, Sparkles, X,
+  Palette, Minus, Plus
 } from 'lucide-react';
-import { getEditorLimits, applyPdfEdits } from '../../services/tools';
+import { applyPdfEdits } from '../../services/tools';
 import { triggerHaptic, downloadAndOpenFile, showNativeToast } from '../../services/native';
 import './PDFEditorScreen.css';
 
@@ -34,10 +34,6 @@ export default function PDFEditorScreen() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Remaining daily edits rate limit state
-  const [limits, setLimits] = useState({ remaining: 3, limit: 3 });
-  const [rateLimitError, setRateLimitError] = useState(null);
 
   // Active edits per page: { [pageNum]: [ { id, type, bbox, new_text, font_name, font_size, color, new_image_base64 } ] }
   const [pageEdits, setPageEdits] = useState({});
@@ -112,22 +108,6 @@ export default function PDFEditorScreen() {
     touchStateRef.current = { initialDist: 0, initialZoom: 1 };
     setIsPinching(false);
   };
-
-  // Fetch daily rate limits on mount
-  const refreshLimits = useCallback(async () => {
-    try {
-      const data = await getEditorLimits();
-      if (data && typeof data.remaining === 'number') {
-        setLimits(data);
-      }
-    } catch (e) {
-      console.warn('Failed to fetch editor limits:', e);
-    }
-  }, []);
-
-  useEffect(() => {
-    refreshLimits();
-  }, [refreshLimits]);
 
   // Load PDF file into pdfjs-dist
   const loadPdfFile = async (selectedFile) => {
@@ -379,19 +359,10 @@ export default function PDFEditorScreen() {
       setSuccessMsg('PDF edited & saved successfully!');
       triggerHaptic('success');
       showNativeToast('PDF saved successfully!');
-      
-      // Update rate limits count
-      refreshLimits();
     } catch (err) {
       console.error('Error applying PDF edits:', err);
       triggerHaptic('error');
-      if (err.response && err.response.status === 429) {
-        const errorDetail = err.response.data?.detail || 'Daily free limit reached (3/3). Resets at midnight.';
-        setRateLimitError(errorDetail);
-        refreshLimits();
-      } else {
-        alert('Failed to process PDF edits: ' + (err.message || 'Please check your connection and try again.'));
-      }
+      alert('Failed to process PDF edits: ' + (err.message || 'Please try again.'));
     } finally {
       setExporting(false);
     }
@@ -409,9 +380,9 @@ export default function PDFEditorScreen() {
             PDF Editor
           </div>
 
-          <div className={`limit-badge ${limits.remaining === 0 ? 'exhausted' : limits.remaining === 1 ? 'low' : ''}`}>
-            <ShieldAlert size={15} />
-            Remaining edits today: {limits.remaining} / {limits.limit}
+          <div className="limit-badge" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+            <ShieldCheck size={15} />
+            100% Private Client-Side Engine
           </div>
         </div>
 
@@ -454,16 +425,7 @@ export default function PDFEditorScreen() {
         </div>
       </div>
 
-      {/* Rate Limit Blocked Alert Banner */}
-      {rateLimitError && (
-        <div className="rate-limit-alert">
-          <AlertTriangle size={18} style={{ flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>{rateLimitError}</div>
-          <button onClick={() => setRateLimitError(null)} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}>
-            <X size={16} />
-          </button>
-        </div>
-      )}
+
 
       {/* Success Notification Banner */}
       {successMsg && (
@@ -477,14 +439,14 @@ export default function PDFEditorScreen() {
       )}
 
       {/* Main Work Area */}
-      <div className="editor-main-area">
+      <div className={`editor-main-area ${!file ? 'editor-main-area--empty' : ''}`}>
         {!file ? (
           <div className="upload-placeholder" onClick={() => fileInputRef.current?.click()}>
-            <FileUp size={48} color="#818cf8" style={{ marginBottom: '1rem' }} />
-            <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem 0', color: '#f8fafc' }}>
+            <FileUp size={44} color="#818cf8" style={{ marginBottom: '0.85rem' }} />
+            <h3 style={{ fontSize: '1.15rem', margin: '0 0 0.4rem 0', color: 'var(--text-main, #f8fafc)' }}>
               Upload PDF to Edit Text & Objects
             </h3>
-            <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>
+            <p style={{ margin: 0, color: 'var(--text-muted, #94a3b8)', fontSize: '0.875rem' }}>
               Click or drag and drop a PDF file to begin in-place editing
             </p>
             <input 
@@ -662,7 +624,7 @@ export default function PDFEditorScreen() {
                   <div className="inline-text-editor">
                     <div className="inline-text-editor__header">
                       <div className="inline-text-editor__title">
-                        <Sparkles size={15} color="#818cf8" />
+                        <Sparkles size={13} color="#818cf8" />
                         <span>Edit Text Element</span>
                       </div>
                       <button 
@@ -671,7 +633,7 @@ export default function PDFEditorScreen() {
                         onClick={() => setActiveSpan(null)}
                         aria-label="Close edit"
                       >
-                        <X size={16} />
+                        <X size={14} />
                       </button>
                     </div>
 
@@ -687,14 +649,14 @@ export default function PDFEditorScreen() {
                     <div className="editor-controls-row">
                       {/* Font Size Stepper */}
                       <div className="editor-control-item">
-                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Size:</span>
+                        <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Size:</span>
                         <div className="editor-stepper">
                           <button
                             type="button"
                             className="stepper-btn"
                             onClick={() => setEditFontSize(prev => Math.max(6, (parseFloat(prev) || 12) - 1))}
                           >
-                            <Minus size={12} />
+                            <Minus size={11} />
                           </button>
                           <span className="stepper-val">{editFontSize}</span>
                           <button
@@ -702,7 +664,7 @@ export default function PDFEditorScreen() {
                             className="stepper-btn"
                             onClick={() => setEditFontSize(prev => Math.min(72, (parseFloat(prev) || 12) + 1))}
                           >
-                            <Plus size={12} />
+                            <Plus size={11} />
                           </button>
                         </div>
                       </div>
@@ -711,8 +673,8 @@ export default function PDFEditorScreen() {
                       <div className="editor-btn-group">
                         <button
                           type="button"
-                          className={`toolbar-btn ${editIsBold ? 'active' : ''}`}
-                          style={{ padding: '0.2rem 0.5rem', fontWeight: 'bold', minWidth: '32px', height: '32px', fontSize: '0.9rem' }}
+                          className={`toolbar-btn inline-editor-style-btn ${editIsBold ? 'active' : ''}`}
+                          style={{ fontWeight: 'bold' }}
                           onClick={() => {
                             triggerHaptic('light');
                             setEditIsBold(!editIsBold);
@@ -723,8 +685,8 @@ export default function PDFEditorScreen() {
                         </button>
                         <button
                           type="button"
-                          className={`toolbar-btn ${editIsItalic ? 'active' : ''}`}
-                          style={{ padding: '0.2rem 0.5rem', fontStyle: 'italic', minWidth: '32px', height: '32px', fontSize: '0.9rem' }}
+                          className={`toolbar-btn inline-editor-style-btn ${editIsItalic ? 'active' : ''}`}
+                          style={{ fontStyle: 'italic' }}
                           onClick={() => {
                             triggerHaptic('light');
                             setEditIsItalic(!editIsItalic);
@@ -749,7 +711,7 @@ export default function PDFEditorScreen() {
 
                     {/* Quick Color Palette Swatches */}
                     <div className="editor-color-swatches-row">
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Color:</span>
+                      <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Color:</span>
                       <div className="color-swatches-list">
                         {['#000000', '#1e293b', '#2563eb', '#dc2626', '#16a34a', '#d97706', '#7c3aed'].map(c => (
                           <button
@@ -765,7 +727,7 @@ export default function PDFEditorScreen() {
                           />
                         ))}
                         <label className="color-picker-label" title="Custom color">
-                          <Palette size={14} color="#94a3b8" />
+                          <Palette size={12} color="#94a3b8" />
                           <input
                             type="color"
                             value={editColor}
@@ -780,17 +742,16 @@ export default function PDFEditorScreen() {
                     <div className="editor-actions-row">
                       <button 
                         type="button" 
-                        className="toolbar-btn btn-primary" 
-                        style={{ flex: 1, height: '38px', fontWeight: 700 }} 
+                        className="toolbar-btn btn-primary inline-editor-action-btn" 
+                        style={{ flex: 1 }} 
                         onClick={saveActiveSpanEdit}
                       >
-                        <CheckCircle2 size={16} />
+                        <CheckCircle2 size={14} />
                         <span>Save Edit</span>
                       </button>
                       <button 
                         type="button" 
-                        className="toolbar-btn" 
-                        style={{ height: '38px' }}
+                        className="toolbar-btn inline-editor-action-btn" 
                         onClick={() => setActiveSpan(null)}
                       >
                         Cancel

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Sliders, Image as ImageIcon, Download, RotateCw, FlipHorizontal, FlipVertical, 
-  RefreshCw, Sun, Contrast as ContrastIcon, Eye, Sparkles, Upload 
+  RefreshCw, Sun, Sparkles, Upload 
 } from 'lucide-react';
 import './ImageManipulatorScreen.css';
 
@@ -137,7 +137,7 @@ export default function ImageManipulatorScreen() {
       </div>
 
       {/* Main Container */}
-      <div className="manipulator-main">
+      <div className={`manipulator-main ${!imageElement ? 'manipulator-main--empty' : ''}`}>
         {!imageElement ? (
           <div className="upload-placeholder" onClick={() => fileInputRef.current?.click()}>
             <ImageIcon className="w-16 h-16 text-indigo-400 mb-4" />

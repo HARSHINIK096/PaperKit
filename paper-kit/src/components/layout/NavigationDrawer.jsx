@@ -9,7 +9,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../context/I18nContext';
 import { shareUrl } from '../../services/native';
 import { endSessionAndClearStorage } from '../../services/auth';
-import api from '../../services/api';
 import './NavigationDrawer.css';
 
 export default function NavigationDrawer({ isOpen, onClose }) {

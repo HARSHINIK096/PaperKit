@@ -43,24 +43,7 @@ export default function HomeScreen() {
     }
   }
 
-  async function handlePreview(file) {
-    if (!file) return;
-    setMoreSheetOpen(false);
-    try {
-      const fid = file._id || file.id;
-      const downloadUrl = await getFileDownloadUrl(fid);
-      setPreviewTarget({
-        url: downloadUrl,
-        name: file.original_filename || file.filename || 'Document',
-        size: file.size,
-        mimeType: file.content_type || file.mime_type,
-        fileId: fid,
-      });
-      setPreviewModalOpen(true);
-    } catch (err) {
-      console.error('Preview error:', err);
-    }
-  }
+
 
   function handlePreviewDropped() {
     if (!droppedFile) return;

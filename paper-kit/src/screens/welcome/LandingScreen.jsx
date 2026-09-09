@@ -4,7 +4,7 @@ import {
   Sparkles, ArrowRight, ShieldCheck, Zap, Star, 
   ChevronDown, ChevronUp, FileText, Upload, CheckCircle2,
   Lock, Globe, Cpu, Search, Sliders, Play,
-  ArrowLeft, MoreHorizontal, User, Cloud
+  ArrowLeft, MoreHorizontal, User
 } from 'lucide-react';
 import { useI18n } from '../../context/I18nContext';
 import { probeBothRenderServices } from '../../services/backendHealth';
@@ -28,39 +28,19 @@ export default function LandingScreen({ onFinish = null }) {
     navigate(targetPath);
   }
   
-  // Real-time Render services health state on landing page
-  const [servicesHealth, setServicesHealth] = useState({
-    backend: false,
-    web: false,
-    probing: true,
-  });
-
   useEffect(() => {
-    let isMounted = true;
     async function checkHealth() {
       try {
-        const res = await probeBothRenderServices(6000);
-        if (isMounted) {
-          setServicesHealth({
-            backend: Boolean(res.backendOk),
-            web: Boolean(res.webOk),
-            probing: false,
-          });
-        }
+        await probeBothRenderServices(6000);
       } catch {
-        if (isMounted) {
-          setServicesHealth(prev => ({ ...prev, probing: false }));
-        }
+        // Ignore probing errors
       }
     }
 
     checkHealth();
     // Periodically keep Render instances warm while on landing page
     const interval = setInterval(checkHealth, 30000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
   // Interactive Live Demo state on landing page
@@ -151,19 +131,9 @@ export default function LandingScreen({ onFinish = null }) {
         <div className="landing-screen__brand-pill">
           <img src="/icon-48.png" alt="PaperKit Logo" width="24" height="24" style={{ borderRadius: '6px' }} />
           <span className="landing-screen__brand-name">PaperKit</span>
-          <span className="landing-screen__brand-tag">PDF Suite</span>
         </div>
 
         <div className="landing-screen__top-actions">
-          {/* Real-time Render cloud health badge */}
-          <div
-            className={`landing-screen__cloud-pill ${servicesHealth.backend ? 'landing-screen__cloud-pill--online' : 'landing-screen__cloud-pill--syncing'}`}
-            title={`Render Backend: ${servicesHealth.backend ? 'Online (200 OK)' : 'Connecting / Waking...'} | Render Web: ${servicesHealth.web ? 'Online' : 'Syncing...'}`}
-          >
-            <span className="landing-screen__cloud-dot" />
-            <span>{servicesHealth.backend ? 'Cloud Ready' : 'Syncing Cloud...'}</span>
-          </div>
-
           <div className="landing-screen__lang-pill">
             <Globe size={14} color="#2563EB" />
             <select
@@ -181,13 +151,6 @@ export default function LandingScreen({ onFinish = null }) {
             </select>
             <span className="landing-screen__active-lang-code">{currentLanguageObj.flag}</span>
           </div>
-          <button
-            type="button"
-            className="landing-screen__signin-btn"
-            onClick={() => handleEnterStudio('/')}
-          >
-            Open Studio
-          </button>
         </div>
       </header>
 

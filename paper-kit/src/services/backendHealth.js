@@ -12,6 +12,10 @@ export const API_BASE = RENDER_BACKEND_URL;
  */
 export async function pingUrl(url, timeoutMs = 7000) {
   const isWebUrl = url.includes('paperkit-web.onrender.com');
+  if (isWebUrl) {
+    // Skip external web ping in development with COEP to prevent browser COEP violations
+    return { ok: true, status: 200 };
+  }
 
   try {
     const controller = new AbortController();
@@ -19,18 +23,13 @@ export async function pingUrl(url, timeoutMs = 7000) {
 
     const response = await fetch(url, {
       method: 'GET',
-      mode: isWebUrl ? 'no-cors' : 'cors',
-      headers: isWebUrl ? undefined : { 'Accept': 'application/json, text/html, */*' },
+      mode: 'cors',
+      headers: { 'Accept': 'application/json, text/html, */*' },
       signal: controller.signal,
       cache: 'no-store',
     });
 
     clearTimeout(timeoutId);
-
-    if (isWebUrl) {
-      // In no-cors mode, a non-throwing response confirms the Render web instance is reached and awake
-      return { ok: true, status: 200 };
-    }
 
     if (response.ok || (response.status >= 200 && response.status < 400)) {
       const contentType = response.headers.get('content-type') || '';

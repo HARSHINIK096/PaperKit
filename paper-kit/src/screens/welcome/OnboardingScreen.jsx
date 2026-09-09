@@ -21,12 +21,9 @@ import {
   ChevronRight,
   ChevronLeft,
   ArrowRight,
-  Play,
-  Pause,
   CheckCircle2,
   AlertTriangle,
-  Info,
-  Cloud
+  Info
 } from 'lucide-react';
 import ParticleBackground from '../../components/ui/ParticleBackground';
 import { probeBothRenderServices } from '../../services/backendHealth';
