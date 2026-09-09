@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     groq_vision_model: str = ""
 
     # Frontend
-    frontend_url: str = "http://localhost:5173"
+    frontend_url: str = "https://paperkit-web.onrender.com"
 
     # PDF Rectification & Positional Engine Configuration
     pdf_editor_engine: str = "positional"

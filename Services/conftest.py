@@ -24,7 +24,7 @@ os.environ["ALGORITHM"] = "HS256"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "120"
 os.environ["GEMINI_API_KEY"] = "mock-gemini-key"
 os.environ["GROQ_API_KEY"] = "mock-groq-key"
-os.environ["FRONTEND_URL"] = "http://localhost:5173"
+os.environ["FRONTEND_URL"] = "https://paperkit-web.onrender.com"
 
 from config import get_settings
 get_settings.cache_clear()
