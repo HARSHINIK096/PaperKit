@@ -256,7 +256,7 @@ class PdfEngine {
     return PdfFontFamily.helvetica;
   }
 
-  // Extract Text Lines with Bounding Boxes and full font attributes for in-place selection and editing
+  // Extract Text Words/Spans with exact Bounding Boxes and full font attributes for in-place selection and editing
   static Future<List<PdfExistingTextSpan>> extractPageTextSpans({
     required File inputFile,
     required int pageIndex,
@@ -278,53 +278,107 @@ class PdfEngine {
         final seenRects = <Rect>[];
         int idx = 0;
         for (final line in lines) {
-          final trimmed = line.text.trim();
-          if (trimmed.isEmpty) continue;
+          final words = line.wordCollection;
+          if (words.isNotEmpty) {
+            for (final word in words) {
+              final trimmed = word.text.trim();
+              if (trimmed.isEmpty) continue;
 
-          final bounds = line.bounds;
-          // Deduplicate overlapping bounding boxes with identical coordinates
-          bool isDuplicate = false;
-          for (final prev in seenRects) {
-            if ((prev.left - bounds.left).abs() < 2.0 &&
-                (prev.top - bounds.top).abs() < 2.0 &&
-                (prev.width - bounds.width).abs() < 4.0) {
-              isDuplicate = true;
-              break;
+              final bounds = word.bounds;
+              bool isDuplicate = false;
+              for (final prev in seenRects) {
+                if ((prev.left - bounds.left).abs() < 1.0 &&
+                    (prev.top - bounds.top).abs() < 1.0 &&
+                    (prev.width - bounds.width).abs() < 2.0) {
+                  isDuplicate = true;
+                  break;
+                }
+              }
+              if (isDuplicate) continue;
+              seenRects.add(bounds);
+
+              final normLeft = (bounds.left / pageSize.width).clamp(0.0, 1.0);
+              final normTop = (bounds.top / pageSize.height).clamp(0.0, 1.0);
+              final normWidth = (bounds.width / pageSize.width).clamp(0.001, 1.0);
+              final normHeight = (bounds.height / pageSize.height).clamp(0.001, 1.0);
+
+              final rawFontName = word.glyphs.isNotEmpty ? word.glyphs.first.fontName : line.fontName;
+              final fontSize = (word.glyphs.isNotEmpty && word.glyphs.first.fontSize > 0)
+                  ? word.glyphs.first.fontSize
+                  : (line.fontSize > 0 ? line.fontSize : 12.0);
+              final fontStyle = word.glyphs.isNotEmpty ? word.glyphs.first.fontStyle : line.fontStyle;
+
+              final fnLower = rawFontName.toLowerCase();
+              final isBold = fontStyle.contains(PdfFontStyle.bold) ||
+                  anySubstring(fnLower, ['bold', 'black', 'heavy', 'semibold', 'medium', 'tibo', 'hebo', 'cobo', 'bd']);
+              final isItalic = fontStyle.contains(PdfFontStyle.italic) ||
+                  anySubstring(fnLower, ['italic', 'oblique', 'slanted', 'tiit', 'heit', 'coit', 'it']);
+              final resolvedFamily = resolveFontFamily(rawFontName);
+
+              spans.add(
+                PdfExistingTextSpan(
+                  id: 'span_${pageIndex}_$idx',
+                  originalText: word.text,
+                  currentText: word.text,
+                  pdfBounds: bounds,
+                  normalizedRect: Rect.fromLTWH(normLeft, normTop, normWidth, normHeight),
+                  originalPageSize: Size(pageSize.width, pageSize.height),
+                  fontSize: fontSize,
+                  fontName: rawFontName,
+                  fontFamily: resolvedFamily,
+                  isBold: isBold,
+                  isItalic: isItalic,
+                ),
+              );
+              idx++;
             }
+          } else {
+            final trimmed = line.text.trim();
+            if (trimmed.isEmpty) continue;
+
+            final bounds = line.bounds;
+            bool isDuplicate = false;
+            for (final prev in seenRects) {
+              if ((prev.left - bounds.left).abs() < 2.0 &&
+                  (prev.top - bounds.top).abs() < 2.0 &&
+                  (prev.width - bounds.width).abs() < 4.0) {
+                isDuplicate = true;
+                break;
+              }
+            }
+            if (isDuplicate) continue;
+            seenRects.add(bounds);
+
+            final normLeft = (bounds.left / pageSize.width).clamp(0.0, 1.0);
+            final normTop = (bounds.top / pageSize.height).clamp(0.0, 1.0);
+            final normWidth = (bounds.width / pageSize.width).clamp(0.005, 1.0);
+            final normHeight = (bounds.height / pageSize.height).clamp(0.005, 1.0);
+
+            final rawFontName = line.fontName;
+            final fnLower = rawFontName.toLowerCase();
+            final isBold = line.fontStyle.contains(PdfFontStyle.bold) ||
+                anySubstring(fnLower, ['bold', 'black', 'heavy', 'semibold', 'medium', 'tibo', 'hebo', 'cobo', 'bd']);
+            final isItalic = line.fontStyle.contains(PdfFontStyle.italic) ||
+                anySubstring(fnLower, ['italic', 'oblique', 'slanted', 'tiit', 'heit', 'coit', 'it']);
+            final resolvedFamily = resolveFontFamily(rawFontName);
+
+            spans.add(
+              PdfExistingTextSpan(
+                id: 'span_${pageIndex}_$idx',
+                originalText: line.text,
+                currentText: line.text,
+                pdfBounds: bounds,
+                normalizedRect: Rect.fromLTWH(normLeft, normTop, normWidth, normHeight),
+                originalPageSize: Size(pageSize.width, pageSize.height),
+                fontSize: line.fontSize > 0 ? line.fontSize : 12.0,
+                fontName: rawFontName,
+                fontFamily: resolvedFamily,
+                isBold: isBold,
+                isItalic: isItalic,
+              ),
+            );
+            idx++;
           }
-          if (isDuplicate) continue;
-          seenRects.add(bounds);
-
-          // Normalize coordinates relative to page size (0.0 to 1.0)
-          final normLeft = (bounds.left / pageSize.width).clamp(0.0, 1.0);
-          final normTop = (bounds.top / pageSize.height).clamp(0.0, 1.0);
-          final normWidth = (bounds.width / pageSize.width).clamp(0.005, 1.0);
-          final normHeight = (bounds.height / pageSize.height).clamp(0.005, 1.0);
-
-          final rawFontName = line.fontName;
-          final fnLower = rawFontName.toLowerCase();
-          final isBold = line.fontStyle.contains(PdfFontStyle.bold) ||
-              anySubstring(fnLower, ['bold', 'black', 'heavy', 'semibold', 'medium', 'tibo', 'hebo', 'cobo']);
-          final isItalic = line.fontStyle.contains(PdfFontStyle.italic) ||
-              anySubstring(fnLower, ['italic', 'oblique', 'slanted', 'tiit', 'heit', 'coit']);
-          final resolvedFamily = resolveFontFamily(rawFontName);
-
-          spans.add(
-            PdfExistingTextSpan(
-              id: 'span_${pageIndex}_$idx',
-              originalText: line.text,
-              currentText: line.text,
-              pdfBounds: bounds,
-              normalizedRect: Rect.fromLTWH(normLeft, normTop, normWidth, normHeight),
-              originalPageSize: Size(pageSize.width, pageSize.height),
-              fontSize: line.fontSize > 0 ? line.fontSize : 12.0,
-              fontName: rawFontName,
-              fontFamily: resolvedFamily,
-              isBold: isBold,
-              isItalic: isItalic,
-            ),
-          );
-          idx++;
         }
       }
     } catch (e) {

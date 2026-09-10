@@ -1156,7 +1156,7 @@ class _PdfPageCanvasPainter extends CustomPainter {
     final docWidth = docPageSize.width > 0 ? docPageSize.width : 595.28;
     final fontScale = (size.width / docWidth).clamp(0.1, 4.0);
 
-    // 2. Render Existing Extracted Text Spans
+    // 2. Render Existing Extracted Text Spans (Words)
     for (final span in existingSpans) {
       final rect = Rect.fromLTWH(
         span.normalizedRect.left * size.width,
@@ -1168,95 +1168,51 @@ class _PdfPageCanvasPainter extends CustomPainter {
       // Scaled font size accurately matching document page width
       final scaledFontSize = (span.fontSize * fontScale).clamp(3.0, 72.0);
 
-      // If modified, draw white background cover-up and replacement text
+      // If modified, cover only the exact word/letter bounding box with white
       if (span.isModified) {
         final coverPaint = Paint()..color = Colors.white;
-        canvas.drawRect(Rect.fromLTWH(rect.left - 2, rect.top - 2, rect.width + 8, rect.height + 4), coverPaint);
-
-        final tp = TextPainter(
-          text: TextSpan(
-            text: span.currentText,
-            style: TextStyle(
-              color: span.color,
-              fontSize: scaledFontSize,
-              fontWeight: span.isBold ? FontWeight.bold : FontWeight.normal,
-              fontStyle: span.isItalic ? FontStyle.italic : FontStyle.normal,
-              fontFamilyFallback: span.flutterFontFamilyFallback,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        tp.paint(canvas, rect.topLeft);
-
-        // Micro "Edited" indicator badge
-        final badgeBg = Paint()..color = AppColors.primary.withOpacity(0.15);
-        canvas.drawRRect(RRect.fromRectAndRadius(rect.inflate(2), const Radius.circular(3)), badgeBg);
-      } else {
-        // Draw clean extracted text line without artificial ellipsis truncation
-        final tp = TextPainter(
-          text: TextSpan(
-            text: span.currentText,
-            style: TextStyle(
-              color: const Color(0xFF1E293B),
-              fontSize: scaledFontSize,
-              fontWeight: span.isBold ? FontWeight.bold : FontWeight.normal,
-              fontStyle: span.isItalic ? FontStyle.italic : FontStyle.normal,
-              fontFamilyFallback: span.flutterFontFamilyFallback,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        tp.paint(canvas, rect.topLeft);
-
-        // If Select tool is active, draw subtle soft bounding box
-        if (isSelectTool) {
-          final boxPaint = Paint()
-            ..color = AppColors.primary.withOpacity(0.12)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 0.8;
-          final drawW = tp.width > rect.width ? tp.width : rect.width;
-          final drawH = tp.height > rect.height ? tp.height : rect.height;
-          final outlineRect = Rect.fromLTWH(rect.left - 2, rect.top - 1, drawW + 4, drawH + 2);
-          canvas.drawRRect(RRect.fromRectAndRadius(outlineRect, const Radius.circular(2)), boxPaint);
-        }
+        canvas.drawRect(Rect.fromLTWH(rect.left - 0.5, rect.top - 0.5, rect.width + 1.0, rect.height + 1.0), coverPaint);
       }
 
-      // If this span is the actively selected object, draw glowing selection frame wrapping full text
+      // Draw word with exact typography matching original document
+      final tp = TextPainter(
+        text: TextSpan(
+          text: span.currentText,
+          style: TextStyle(
+            color: span.color,
+            fontSize: scaledFontSize,
+            fontWeight: span.isBold ? FontWeight.bold : FontWeight.normal,
+            fontStyle: span.isItalic ? FontStyle.italic : FontStyle.normal,
+            fontFamilyFallback: span.flutterFontFamilyFallback,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, rect.topLeft);
+
+      // If this span is the actively selected word, draw glowing selection frame
       if (selectedSpan != null && selectedSpan!.id == span.id) {
         final selPaint = Paint()
           ..color = AppColors.primary
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0;
+          ..strokeWidth = 1.8;
         final selFill = Paint()
           ..color = AppColors.primary.withOpacity(0.12)
           ..style = PaintingStyle.fill;
 
-        final tpMeasure = TextPainter(
-          text: TextSpan(
-            text: span.currentText,
-            style: TextStyle(
-              fontSize: scaledFontSize,
-              fontWeight: span.isBold ? FontWeight.bold : FontWeight.normal,
-              fontStyle: span.isItalic ? FontStyle.italic : FontStyle.normal,
-              fontFamilyFallback: span.flutterFontFamilyFallback,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
+        final effectiveW = tp.width > rect.width ? tp.width : rect.width;
+        final effectiveH = tp.height > rect.height ? tp.height : rect.height;
+        final selRect = Rect.fromLTWH(rect.left - 2, rect.top - 1, effectiveW + 4, effectiveH + 2);
 
-        final effectiveW = tpMeasure.width > rect.width ? tpMeasure.width : rect.width;
-        final effectiveH = tpMeasure.height > rect.height ? tpMeasure.height : rect.height;
-        final selRect = Rect.fromLTWH(rect.left - 3, rect.top - 2, effectiveW + 6, effectiveH + 4);
-
-        canvas.drawRRect(RRect.fromRectAndRadius(selRect, const Radius.circular(4)), selFill);
-        canvas.drawRRect(RRect.fromRectAndRadius(selRect, const Radius.circular(4)), selPaint);
+        canvas.drawRRect(RRect.fromRectAndRadius(selRect, const Radius.circular(3)), selFill);
+        canvas.drawRRect(RRect.fromRectAndRadius(selRect, const Radius.circular(3)), selPaint);
 
         // Corner handles
         final handlePaint = Paint()..color = AppColors.primary;
-        canvas.drawCircle(selRect.topLeft, 3.5, handlePaint);
-        canvas.drawCircle(selRect.topRight, 3.5, handlePaint);
-        canvas.drawCircle(selRect.bottomLeft, 3.5, handlePaint);
-        canvas.drawCircle(selRect.bottomRight, 3.5, handlePaint);
+        canvas.drawCircle(selRect.topLeft, 3.0, handlePaint);
+        canvas.drawCircle(selRect.topRight, 3.0, handlePaint);
+        canvas.drawCircle(selRect.bottomLeft, 3.0, handlePaint);
+        canvas.drawCircle(selRect.bottomRight, 3.0, handlePaint);
       }
     }
 
