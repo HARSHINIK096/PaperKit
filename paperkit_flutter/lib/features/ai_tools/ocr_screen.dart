@@ -11,6 +11,7 @@ import '../../core/services/pdf_engine.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/markdown_viewer.dart';
 
 class OCRScreen extends StatefulWidget {
   const OCRScreen({super.key});
@@ -168,43 +169,9 @@ class _OCRScreenState extends State<OCRScreen> {
 
           if (_extractedText.isNotEmpty) ...[
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Extracted Text',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: _copyToClipboard,
-                  icon: const Icon(LucideIcons.copy, size: 16),
-                  label: const Text('Copy Text'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                ),
-              ),
-              child: SelectableText(
-                _extractedText,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.5,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                ),
-              ),
+            MarkdownViewer(
+              markdown: _extractedText,
+              title: 'OCR Extracted Content',
             ),
           ],
         ],

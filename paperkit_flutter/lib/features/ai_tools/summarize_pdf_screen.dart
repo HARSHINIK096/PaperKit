@@ -10,6 +10,7 @@ import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/markdown_viewer.dart';
 
 class SummarizePDFScreen extends StatefulWidget {
   const SummarizePDFScreen({super.key});
@@ -174,48 +175,9 @@ class _SummarizePDFScreenState extends State<SummarizePDFScreen> {
 
           if (_summaryResult.isNotEmpty) ...[
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Summary Result',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: _summaryResult));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Summary copied to clipboard!')),
-                    );
-                  },
-                  icon: const Icon(LucideIcons.copy, size: 16),
-                  label: const Text('Copy'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                ),
-              ),
-              child: SelectableText(
-                _summaryResult,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.55,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                ),
-              ),
+            MarkdownViewer(
+              markdown: _summaryResult,
+              title: 'AI Summary (${_summaryLength.toUpperCase()})',
             ),
           ],
         ],

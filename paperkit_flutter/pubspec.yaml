@@ -60,6 +60,7 @@ dependencies:
   image: ^4.5.3
   archive: ^4.0.2
   crypto: ^3.0.6
+  flutter_markdown: ^0.7.7+1
 
 dev_dependencies:
   flutter_test:

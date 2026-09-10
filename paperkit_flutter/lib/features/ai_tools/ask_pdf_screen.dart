@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_shell.dart';
@@ -168,16 +169,33 @@ class _AskPDFScreenState extends State<AskPDFScreen> {
                             ? null
                             : Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
                       ),
-                      child: Text(
-                        msg.text,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: msg.isUser
-                              ? Colors.white
-                              : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
-                          height: 1.45,
-                        ),
-                      ),
+                      child: msg.isUser
+                          ? Text(
+                              msg.text,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white,
+                                height: 1.45,
+                              ),
+                            )
+                          : MarkdownBody(
+                              data: msg.text,
+                              selectable: true,
+                              styleSheet: MarkdownStyleSheet(
+                                p: TextStyle(
+                                  fontSize: 14,
+                                  height: 1.5,
+                                  color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
+                                ),
+                                strong: const TextStyle(fontWeight: FontWeight.w700),
+                                code: TextStyle(
+                                  fontSize: 12.5,
+                                  fontFamily: 'monospace',
+                                  color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                                  backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                                ),
+                              ),
+                            ),
                     ),
                   );
                 },

@@ -5,6 +5,7 @@ import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/markdown_viewer.dart';
 
 class WritingAssistantScreen extends StatefulWidget {
   const WritingAssistantScreen({super.key});
@@ -88,33 +89,9 @@ class _WritingAssistantScreenState extends State<WritingAssistantScreen> {
 
           if (_polishedText.isNotEmpty) ...[
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Polished Output', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight)),
-                TextButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: _polishedText));
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied polished text!')));
-                  },
-                  icon: const Icon(LucideIcons.copy, size: 16),
-                  label: const Text('Copy'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-              ),
-              child: SelectableText(
-                _polishedText,
-                style: TextStyle(fontSize: 14, height: 1.5, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
-              ),
+            MarkdownViewer(
+              markdown: _polishedText,
+              title: 'AI Polished Content (${_mode.toUpperCase()})',
             ),
           ],
         ],
