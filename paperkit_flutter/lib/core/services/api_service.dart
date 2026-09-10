@@ -62,7 +62,7 @@ class ApiService {
     dio.options.baseUrl = url;
   }
 
-  Future<bool> checkHealth({int timeoutMs = 3000}) async {
+  Future<bool> checkHealth({int timeoutMs = 6000}) async {
     final candidateUrls = <String>{
       dio.options.baseUrl.replaceAll(RegExp(r'/+$'), ''),
       defaultBaseUrl.replaceAll(RegExp(r'/+$'), ''),

@@ -354,21 +354,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               maxSpeed: 0.7,
             ),
 
-            // Animated Cloud Light Orbs
+            // 1. Right Bottom Cloud Glow Orb
             Positioned(
-              top: -80,
-              right: -60,
+              bottom: -60,
+              right: -50,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 1400),
-                width: 260,
-                height: 260,
+                width: 280,
+                height: 280,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: slide.accentColor.withValues(alpha: 0.18),
+                  color: slide.accentColor.withValues(alpha: 0.22),
                   boxShadow: [
                     BoxShadow(
-                      color: slide.accentColor.withValues(alpha: 0.3),
-                      blurRadius: 90,
+                      color: slide.accentColor.withValues(alpha: 0.35),
+                      blurRadius: 110,
+                      spreadRadius: 25,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // 2. Left Center Cloud Glow Orb
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.35,
+              left: -70,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 1400),
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: slide.cloudColor2.withValues(alpha: 0.30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: slide.cloudColor2.withValues(alpha: 0.40),
+                      blurRadius: 100,
                       spreadRadius: 20,
                     ),
                   ],

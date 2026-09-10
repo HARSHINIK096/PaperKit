@@ -1071,6 +1071,9 @@ class _PdfPageCanvasPainter extends CustomPainter {
     )..layout();
     textPainter.paint(canvas, Offset((size.width - textPainter.width) / 2, 10));
 
+    // Calculate viewport font scale relative to standard PDF page width (595.28 pt)
+    final fontScale = (size.width / 595.0).clamp(0.4, 1.4);
+
     // 2. Render Existing Extracted Text Spans
     for (final span in existingSpans) {
       final rect = Rect.fromLTWH(
@@ -1080,49 +1083,55 @@ class _PdfPageCanvasPainter extends CustomPainter {
         span.normalizedRect.height * size.height,
       );
 
+      final scaledFontSize = (span.fontSize * fontScale).clamp(7.0, 28.0);
+
       // If modified, draw white background cover-up and replacement text
       if (span.isModified) {
         final coverPaint = Paint()..color = Colors.white;
-        canvas.drawRect(rect.inflate(2), coverPaint);
+        canvas.drawRect(Rect.fromLTWH(rect.left - 2, rect.top - 2, rect.width + 8, rect.height + 4), coverPaint);
 
         final tp = TextPainter(
           text: TextSpan(
             text: span.currentText,
             style: TextStyle(
               color: span.color,
-              fontSize: span.fontSize,
+              fontSize: scaledFontSize,
               fontWeight: span.isBold ? FontWeight.bold : FontWeight.normal,
             ),
           ),
           textDirection: TextDirection.ltr,
-        )..layout(maxWidth: size.width - rect.left);
+          maxLines: 1,
+          ellipsis: '...',
+        )..layout(maxWidth: (size.width - rect.left).clamp(10.0, size.width));
         tp.paint(canvas, rect.topLeft);
 
         // Micro "Edited" indicator badge
-        final badgeBg = Paint()..color = AppColors.primary.withOpacity(0.12);
-        canvas.drawRRect(RRect.fromRectAndRadius(rect.inflate(3), const Radius.circular(4)), badgeBg);
+        final badgeBg = Paint()..color = AppColors.primary.withOpacity(0.15);
+        canvas.drawRRect(RRect.fromRectAndRadius(rect.inflate(2), const Radius.circular(3)), badgeBg);
       } else {
-        // Draw normal extracted text line
+        // Draw clean extracted text line without overlapping
         final tp = TextPainter(
           text: TextSpan(
             text: span.currentText,
             style: TextStyle(
               color: const Color(0xFF1E293B),
-              fontSize: span.fontSize,
+              fontSize: scaledFontSize,
               fontWeight: span.isBold ? FontWeight.bold : FontWeight.normal,
             ),
           ),
           textDirection: TextDirection.ltr,
-        )..layout(maxWidth: size.width - rect.left);
+          maxLines: 1,
+          ellipsis: '...',
+        )..layout(maxWidth: (size.width - rect.left).clamp(10.0, size.width));
         tp.paint(canvas, rect.topLeft);
 
         // If Select tool is active, draw subtle dotted/soft bounding box
         if (isSelectTool) {
           final boxPaint = Paint()
-            ..color = AppColors.primary.withOpacity(0.08)
+            ..color = AppColors.primary.withOpacity(0.12)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1.0;
-          canvas.drawRRect(RRect.fromRectAndRadius(rect.inflate(2), const Radius.circular(3)), boxPaint);
+          canvas.drawRRect(RRect.fromRectAndRadius(rect.inflate(1.5), const Radius.circular(2)), boxPaint);
         }
       }
 

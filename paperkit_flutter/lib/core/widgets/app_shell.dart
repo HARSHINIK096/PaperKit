@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../constants/app_tools.dart';
 import '../theme/app_colors.dart';
 import 'app_drawer.dart';
 
@@ -9,7 +10,7 @@ class AppShell extends StatelessWidget {
   final Widget child;
   final String? title;
   final bool showAppBar;
-  final bool showBottomNav;
+  final bool? showBottomNav;
   final List<Widget>? actions;
 
   const AppShell({
@@ -17,45 +18,116 @@ class AppShell extends StatelessWidget {
     required this.child,
     this.title,
     this.showAppBar = true,
-    this.showBottomNav = true,
+    this.showBottomNav,
     this.actions,
   });
 
-  int _calculateSelectedIndex(BuildContext context) {
+  bool _isIndividualToolRoute(String path) {
+    // Check if the path is an individual tool execution screen
+    const toolPrefixes = [
+      '/tools/merge',
+      '/tools/split',
+      '/tools/compress',
+      '/tools/convert',
+      '/tools/rotate',
+      '/tools/watermark',
+      '/tools/organize',
+      '/tools/extract',
+      '/tools/pdf-to-pdfa',
+      '/tools/pdf-editor',
+      '/tools/protect',
+      '/tools/smart-redaction',
+      '/tools/digital-signature',
+      '/tools/metadata',
+      '/tools/image-converter',
+      '/tools/image-compressor',
+      '/tools/image-manipulator',
+      '/tools/media-downloader',
+      '/tools/audio-converter',
+      '/tools/video-converter',
+      '/tools/video-compressor',
+      '/tools/archive-studio',
+      '/ai/ask',
+      '/ai/summarize',
+      '/ai/ocr',
+      '/ai/compare',
+      '/ai/similarity-matrix',
+      '/ai/search',
+      '/ai/classify',
+      '/ai/extract-info',
+      '/ai/translate',
+      '/ai/writing-assistant',
+      '/ai/quality-checker',
+      '/ai/extract-tables',
+      '/ai/image-enhancer',
+    ];
+
+    for (final prefix in toolPrefixes) {
+      if (path.startsWith(prefix)) return true;
+    }
+    return false;
+  }
+
+  String? _detectActiveCategory(String path) {
+    if (path.startsWith('/category/') || path.startsWith('/tools/category/')) {
+      final segments = Uri.parse(path).pathSegments;
+      if (segments.isNotEmpty) {
+        return segments.last;
+      }
+    }
+    if (path == '/ai' || path == '/ai/hub') return 'ai';
+    return null;
+  }
+
+  String _safeGetLocation(BuildContext context) {
     try {
-      final String location = GoRouterState.of(context).uri.path;
-      if (location.startsWith('/tools') || location.startsWith('/category')) return 1;
-      if (location.startsWith('/scanner')) return 2;
-      if (location.startsWith('/files')) return 3;
-      if (location.startsWith('/profile') || location.startsWith('/history') || location.startsWith('/storage')) return 4;
-    } catch (_) {}
+      return GoRouterState.of(context).uri.path;
+    } catch (_) {
+      return '/';
+    }
+  }
+
+  int _calculateSelectedIndex(BuildContext context) {
+    final location = _safeGetLocation(context);
+    if (location.startsWith('/tools') || location.startsWith('/category')) return 1;
+    if (location.startsWith('/scanner')) return 2;
+    if (location.startsWith('/files')) return 3;
+    if (location.startsWith('/profile') || location.startsWith('/history') || location.startsWith('/storage')) return 4;
     return 0; // Home
   }
 
   void _onItemTapped(int index, BuildContext context) {
     HapticFeedback.selectionClick();
-    switch (index) {
-      case 0:
-        context.go('/');
-        break;
-      case 1:
-        context.go('/tools');
-        break;
-      case 2:
-        context.go('/scanner');
-        break;
-      case 3:
-        context.go('/files');
-        break;
-      case 4:
-        context.go('/profile');
-        break;
-    }
+    try {
+      switch (index) {
+        case 0:
+          context.go('/');
+          break;
+        case 1:
+          context.go('/tools');
+          break;
+        case 2:
+          context.go('/scanner');
+          break;
+        case 3:
+          context.go('/files');
+          break;
+        case 4:
+          context.go('/profile');
+          break;
+      }
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final location = _safeGetLocation(context);
+    final isTool = _isIndividualToolRoute(location);
+    final activeCategory = _detectActiveCategory(location);
+
+    // Bottom nav bar hides automatically when inside any individual tool workflow
+    final effectiveShowBottomNav = showBottomNav ?? (!isTool);
     final selectedIndex = _calculateSelectedIndex(context);
 
     return Scaffold(
@@ -85,12 +157,77 @@ class AppShell extends StatelessWidget {
           : null,
       body: SafeArea(
         top: !showAppBar,
-        bottom: !showBottomNav,
+        bottom: !effectiveShowBottomNav,
         child: child,
       ),
-      bottomNavigationBar: showBottomNav
-          ? _buildCustomBottomNav(context, selectedIndex, isDark)
+      bottomNavigationBar: effectiveShowBottomNav
+          ? (activeCategory != null
+              ? _buildCategoryContextualNav(context, activeCategory, isDark)
+              : _buildCustomBottomNav(context, selectedIndex, isDark))
           : null,
+    );
+  }
+
+  // Dynamic Contextual Bottom Navigation Bar for Category Suites (Top 4 Tools)
+  Widget _buildCategoryContextualNav(BuildContext context, String categoryKey, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : Colors.white;
+    const activeColor = Color(0xFF2563EB);
+    const inactiveColor = Color(0xFF64748B);
+    final topTools = AppTools.getTopToolsForCategory(categoryKey);
+
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        color: bgColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.borderDark : const Color(0xFFF1F5F9),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          // 4 Contextual Tools from this Suite
+          ...topTools.map((tool) {
+            return Expanded(
+              child: _buildNavItem(
+                icon: tool.icon,
+                label: tool.label,
+                isSelected: false,
+                activeColor: activeColor,
+                inactiveColor: inactiveColor,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  context.push(tool.route);
+                },
+              ),
+            );
+          }),
+
+          // 5. Exit / All Tools Tab
+          Expanded(
+            child: _buildNavItem(
+              icon: LucideIcons.layoutGrid,
+              label: 'All Tools',
+              isSelected: false,
+              activeColor: activeColor,
+              inactiveColor: AppColors.primary,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                context.go('/tools');
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -158,7 +295,7 @@ class AppShell extends StatelessWidget {
                   onTap: () => _onItemTapped(3, context),
                 ),
               ),
-              // 5. Settings
+              // 5. Settings / Profile
               Expanded(
                 child: _buildNavItem(
                   icon: LucideIcons.settings,

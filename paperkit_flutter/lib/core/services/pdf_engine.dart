@@ -236,12 +236,26 @@ class PdfEngine {
           endPageIndex: pageIndex,
         );
 
+        final seenRects = <Rect>[];
         int idx = 0;
         for (final line in lines) {
           final trimmed = line.text.trim();
           if (trimmed.isEmpty) continue;
 
           final bounds = line.bounds;
+          // Deduplicate overlapping bounding boxes with identical coordinates
+          bool isDuplicate = false;
+          for (final prev in seenRects) {
+            if ((prev.left - bounds.left).abs() < 2.0 &&
+                (prev.top - bounds.top).abs() < 2.0 &&
+                (prev.width - bounds.width).abs() < 4.0) {
+              isDuplicate = true;
+              break;
+            }
+          }
+          if (isDuplicate) continue;
+          seenRects.add(bounds);
+
           // Normalize coordinates relative to page size (0.0 to 1.0)
           final normLeft = (bounds.left / pageSize.width).clamp(0.0, 1.0);
           final normTop = (bounds.top / pageSize.height).clamp(0.0, 1.0);

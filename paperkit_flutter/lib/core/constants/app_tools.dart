@@ -760,4 +760,229 @@ class AppTools {
       return null;
     }
   }
+
+  // Returns the top 4 tools for any category to dynamically populate the contextual bottom navigation bar
+  static List<ToolItem> getTopToolsForCategory(String categoryKey) {
+    final key = categoryKey.toLowerCase().trim();
+    if (key == 'ai' || key == 'intelligence') {
+      return [
+        const ToolItem(
+          id: 'ask-pdf',
+          label: 'Ask PDF',
+          description: 'Document Chat & RAG',
+          route: '/ai/ask',
+          icon: LucideIcons.messageSquare,
+          color: AppColors.toolPurple,
+          softColor: AppColors.toolPurpleSoft,
+          category: ToolCategory.ai,
+          isAi: true,
+        ),
+        const ToolItem(
+          id: 'summarize-pdf',
+          label: 'Summary',
+          description: 'AI Document Summarizer',
+          route: '/ai/summarize',
+          icon: LucideIcons.sparkles,
+          color: AppColors.toolPurple,
+          softColor: AppColors.toolPurpleSoft,
+          category: ToolCategory.ai,
+          isAi: true,
+        ),
+        const ToolItem(
+          id: 'ocr-document',
+          label: 'OCR Scan',
+          description: 'Vision text extraction',
+          route: '/ai/ocr',
+          icon: LucideIcons.scanLine,
+          color: AppColors.toolBlue,
+          softColor: AppColors.toolBlueSoft,
+          category: ToolCategory.ai,
+          isAi: true,
+        ),
+        const ToolItem(
+          id: 'extract-tables',
+          label: 'Tables',
+          description: 'Detect & export tables',
+          route: '/ai/extract-tables',
+          icon: LucideIcons.table,
+          color: AppColors.toolGreen,
+          softColor: AppColors.toolGreenSoft,
+          category: ToolCategory.ai,
+          isAi: true,
+        ),
+      ];
+    } else if (key == 'pdf') {
+      return [
+        const ToolItem(
+          id: 'pdf-editor',
+          label: 'Editor',
+          description: 'Edit PDF in place',
+          route: '/tools/pdf-editor',
+          icon: LucideIcons.fileSignature,
+          color: AppColors.toolPurple,
+          softColor: AppColors.toolPurpleSoft,
+          category: ToolCategory.pdf,
+        ),
+        const ToolItem(
+          id: 'merge-pdf',
+          label: 'Merge',
+          description: 'Combine multiple PDFs',
+          route: '/tools/merge',
+          icon: LucideIcons.files,
+          color: AppColors.toolBlue,
+          softColor: AppColors.toolBlueSoft,
+          category: ToolCategory.pdf,
+        ),
+        const ToolItem(
+          id: 'split-pdf',
+          label: 'Split',
+          description: 'Split pages',
+          route: '/tools/split',
+          icon: LucideIcons.scissors,
+          color: AppColors.toolRed,
+          softColor: AppColors.toolRedSoft,
+          category: ToolCategory.pdf,
+        ),
+        const ToolItem(
+          id: 'compress-pdf',
+          label: 'Compress',
+          description: 'Reduce file size',
+          route: '/tools/compress',
+          icon: LucideIcons.minimize2,
+          color: AppColors.toolOrange,
+          softColor: AppColors.toolOrangeSoft,
+          category: ToolCategory.pdf,
+        ),
+      ];
+    } else if (key == 'media' || key == 'image' || key == 'images' || key == 'audio' || key == 'video') {
+      return [
+        const ToolItem(
+          id: 'image-converter',
+          label: 'Convert Img',
+          description: 'Transform image formats',
+          route: '/tools/image-converter',
+          icon: LucideIcons.image,
+          color: AppColors.toolBlue,
+          softColor: AppColors.toolBlueSoft,
+          category: ToolCategory.image,
+        ),
+        const ToolItem(
+          id: 'media-downloader',
+          label: 'Downloader',
+          description: 'YouTube & Spotify',
+          route: '/tools/media-downloader',
+          icon: LucideIcons.downloadCloud,
+          color: AppColors.toolRed,
+          softColor: AppColors.toolRedSoft,
+          category: ToolCategory.media,
+        ),
+        const ToolItem(
+          id: 'video-converter',
+          label: 'Convert Video',
+          description: 'MP4, WebM, MOV',
+          route: '/tools/video-converter',
+          icon: LucideIcons.video,
+          color: AppColors.toolPurple,
+          softColor: AppColors.toolPurpleSoft,
+          category: ToolCategory.video,
+        ),
+        const ToolItem(
+          id: 'audio-converter',
+          label: 'Audio Studio',
+          description: 'MP3, WAV, AAC',
+          route: '/tools/audio-converter',
+          icon: LucideIcons.music,
+          color: AppColors.toolGreen,
+          softColor: AppColors.toolGreenSoft,
+          category: ToolCategory.audio,
+        ),
+      ];
+    } else if (key == 'security' || key == 'privacy') {
+      return [
+        const ToolItem(
+          id: 'protect-pdf',
+          label: 'Protect',
+          description: 'AES-256 password lock',
+          route: '/tools/protect-pdf',
+          icon: LucideIcons.lock,
+          color: AppColors.toolRed,
+          softColor: AppColors.toolRedSoft,
+          category: ToolCategory.security,
+        ),
+        const ToolItem(
+          id: 'smart-redaction',
+          label: 'Redact',
+          description: 'Permanent blackout',
+          route: '/tools/smart-redaction',
+          icon: LucideIcons.eyeOff,
+          color: AppColors.toolOrange,
+          softColor: AppColors.toolOrangeSoft,
+          category: ToolCategory.security,
+        ),
+        const ToolItem(
+          id: 'digital-signature',
+          label: 'Sign PDF',
+          description: 'E-signatures & stamps',
+          route: '/tools/digital-signature',
+          icon: LucideIcons.penTool,
+          color: AppColors.toolBlue,
+          softColor: AppColors.toolBlueSoft,
+          category: ToolCategory.security,
+        ),
+        const ToolItem(
+          id: 'metadata-cleaner',
+          label: 'Sanitize',
+          description: 'Metadata wipe',
+          route: '/tools/metadata',
+          icon: LucideIcons.fileKey,
+          color: AppColors.toolPurple,
+          softColor: AppColors.toolPurpleSoft,
+          category: ToolCategory.security,
+        ),
+      ];
+    } else {
+      return [
+        const ToolItem(
+          id: 'convert-pdf',
+          label: 'Convert Doc',
+          description: 'Word, Excel, PPT',
+          route: '/tools/convert',
+          icon: LucideIcons.refreshCw,
+          color: AppColors.toolBlue,
+          softColor: AppColors.toolBlueSoft,
+          category: ToolCategory.convert,
+        ),
+        const ToolItem(
+          id: 'pdf-to-pdfa',
+          label: 'PDF/A Archive',
+          description: 'ISO archiving standard',
+          route: '/tools/pdf-to-pdfa',
+          icon: LucideIcons.archive,
+          color: AppColors.toolOrange,
+          softColor: AppColors.toolOrangeSoft,
+          category: ToolCategory.pdf,
+        ),
+        const ToolItem(
+          id: 'organize-pages',
+          label: 'Organize',
+          description: 'Reorder & delete',
+          route: '/tools/organize-pages',
+          icon: LucideIcons.grid,
+          color: AppColors.toolGreen,
+          softColor: AppColors.toolGreenSoft,
+          category: ToolCategory.pdf,
+        ),
+        const ToolItem(
+          id: 'extract-pages',
+          label: 'Extract',
+          description: 'Extract page ranges',
+          route: '/tools/extract-pages',
+          icon: LucideIcons.fileOutput,
+          color: AppColors.toolPurple,
+          softColor: AppColors.toolPurpleSoft,
+          category: ToolCategory.pdf,
+        ),
+      ];
+    }
+  }
 }
