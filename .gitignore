@@ -50,17 +50,11 @@ paperkit_flutter/lib/core/constants/api_config.dart
 !**/api_config.dart.example
 
 # ==============================================================================
-# Node.js & Web App (paper-kit)
+# Legacy React JS & Capacitor Codebase (paper-kit)
 # ==============================================================================
+paper-kit/
 node_modules/
-paper-kit/node_modules/
-npm-debug.log
-npm-debug.log.*
-yarn-error.log
-yarn-debug.log*
-.pnpm-debug.log
 dist/
-paper-kit/dist/
 dist-ssr/
 *.local
 
