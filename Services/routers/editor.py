@@ -182,8 +182,9 @@ async def apply_pdf_in_place_edits(
             if edit_type == "text":
                 new_text = edit.get("new_text", edit.get("text", ""))
 
-                # Extract original font attributes directly from PDF span in clip rect
-                clip_dict = page.get_text("dict", clip=rect)
+                # Extract original font attributes directly from PDF span in clip rect (slightly expanded for sub-pixel boundary tolerances)
+                search_rect = fitz.Rect(x0 - 3, y0 - 3, x1 + 3, y1 + 3)
+                clip_dict = page.get_text("dict", clip=search_rect)
                 orig_spans = []
                 for b in clip_dict.get("blocks", []):
                     for l in b.get("lines", []):

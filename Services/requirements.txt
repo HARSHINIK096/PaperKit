@@ -23,7 +23,5 @@ beautifulsoup4
 # Archive tools
 py7zr>=0.20.0
 rarfile>=4.0
-# Image tools (background removal - optional, downloads model on first use)
-rembg>=2.0.0
 # Video processing requires FFmpeg binary installed on system
 yt-dlp>=2025.1.15

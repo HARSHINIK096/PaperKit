@@ -94,6 +94,7 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
     
     prefix = f"{job_id}_" if job_id else ""
     out_tmpl = os.path.join(output_dir, f"{prefix}%(title)s.%(ext)s")
+    ffmpeg_bin = find_ffmpeg_path()
     
     cookie_file = os.getenv("YOUTUBE_COOKIES_FILE") or os.getenv("COOKIES_FILE")
     cookie_content = os.getenv("YOUTUBE_COOKIES")
@@ -105,37 +106,55 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
         except Exception:
             cookie_file = None
 
-    ydl_opts = {
-        "outtmpl": out_tmpl,
-        "format": "bestaudio/best",
-        "postprocessors": [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": "192",
-        }],
-        "quiet": False,
-        "no_warnings": True,
-        "nocheckcertificate": True,
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["ios", "mweb", "android"],
-                "player_skip": ["configs", "webpage"],
+    client_strategies = [
+        ["ios", "mweb", "android"],
+        ["tv_embedded", "ios"],
+        ["android", "ios", "web"],
+    ]
+
+    last_error = None
+    for clients in client_strategies:
+        ydl_opts = {
+            "outtmpl": out_tmpl,
+            "format": "bestaudio/best",
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }],
+            "quiet": False,
+            "no_warnings": True,
+            "nocheckcertificate": True,
+            "extractor_args": {
+                "youtube": {
+                    "player_client": clients,
+                    "player_skip": ["configs", "webpage"],
+                }
+            },
+            "http_headers": {
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+                "Accept-Language": "en-US,en;q=0.9",
             }
-        },
-        "http_headers": {
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
-            "Accept-Language": "en-US,en;q=0.9",
         }
-    }
-    
-    if ffmpeg_bin:
-        ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin)
-    if cookie_file and os.path.exists(cookie_file):
-        ydl_opts["cookiefile"] = cookie_file
         
-    print(f"Searching and downloading audio stream for: '{search_query}'...")
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([f"ytsearch1:{search_query}"])
+        if ffmpeg_bin:
+            ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin)
+        if cookie_file and os.path.exists(cookie_file):
+            ydl_opts["cookiefile"] = cookie_file
+            
+        print(f"Searching and downloading audio stream for: '{search_query}' (clients: {clients})...")
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([f"ytsearch1:{search_query}"])
+            last_error = None
+            break
+        except Exception as e:
+            last_error = e
+            print(f"yt-dlp search attempt failed with clients {clients}: {e}. Retrying with next client...")
+            continue
+
+    if last_error:
+        print(f"Warning: yt-dlp returned error during download: {last_error}")
         
     # Locate output file
     matching_files = [

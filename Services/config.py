@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
-load_dotenv(dotenv_path=ENV_PATH, override=True)
+load_dotenv(dotenv_path=ENV_PATH, override=False)
 
 
 class Settings(BaseSettings):

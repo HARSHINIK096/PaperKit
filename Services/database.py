@@ -244,7 +244,13 @@ def get_client():
             db_path = os.path.join(storage_dir, "mock_db.json")
             _client = MockDatabaseClient(db_path)
         else:
-            _client = AsyncIOMotorClient(settings.mongodb_url)
+            _client = AsyncIOMotorClient(
+                settings.mongodb_url,
+                serverSelectionTimeoutMS=5000,
+                connectTimeoutMS=5000,
+                maxPoolSize=10,
+                minPoolSize=1,
+            )
     return _client
 
 def get_db():

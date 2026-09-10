@@ -217,7 +217,46 @@ class PdfEngine {
     return outputFile;
   }
 
-  // Extract Text Lines with Bounding Boxes for in-place selection and editing
+  // Helper to resolve font family from PDF embedded font name
+  static PdfFontFamily resolveFontFamily(String? fontName) {
+    if (fontName == null || fontName.isEmpty) return PdfFontFamily.helvetica;
+    final fn = fontName.toLowerCase();
+    if (fn.contains('times') ||
+        fn.contains('serif') ||
+        fn.contains('roman') ||
+        fn.contains('georgia') ||
+        fn.contains('cambria') ||
+        fn.contains('garamond') ||
+        fn.contains('minion') ||
+        fn.contains('baskerville') ||
+        fn.contains('palatino') ||
+        fn.contains('century') ||
+        fn.contains('bookman') ||
+        fn.contains('tiro') ||
+        fn.contains('tibo')) {
+      return PdfFontFamily.timesRoman;
+    }
+    if (fn.contains('courier') ||
+        fn.contains('mono') ||
+        fn.contains('consolas') ||
+        fn.contains('menlo') ||
+        fn.contains('code') ||
+        fn.contains('typewriter') ||
+        fn.contains('source code') ||
+        fn.contains('cour') ||
+        fn.contains('cobo')) {
+      return PdfFontFamily.courier;
+    }
+    if (fn.contains('symbol')) {
+      return PdfFontFamily.symbol;
+    }
+    if (fn.contains('zapf') || fn.contains('dingbat')) {
+      return PdfFontFamily.zapfDingbats;
+    }
+    return PdfFontFamily.helvetica;
+  }
+
+  // Extract Text Lines with Bounding Boxes and full font attributes for in-place selection and editing
   static Future<List<PdfExistingTextSpan>> extractPageTextSpans({
     required File inputFile,
     required int pageIndex,
@@ -262,6 +301,14 @@ class PdfEngine {
           final normWidth = (bounds.width / pageSize.width).clamp(0.005, 1.0);
           final normHeight = (bounds.height / pageSize.height).clamp(0.005, 1.0);
 
+          final rawFontName = line.fontName;
+          final fnLower = rawFontName.toLowerCase();
+          final isBold = line.fontStyle.contains(PdfFontStyle.bold) ||
+              anySubstring(fnLower, ['bold', 'black', 'heavy', 'semibold', 'medium', 'tibo', 'hebo', 'cobo']);
+          final isItalic = line.fontStyle.contains(PdfFontStyle.italic) ||
+              anySubstring(fnLower, ['italic', 'oblique', 'slanted', 'tiit', 'heit', 'coit']);
+          final resolvedFamily = resolveFontFamily(rawFontName);
+
           spans.add(
             PdfExistingTextSpan(
               id: 'span_${pageIndex}_$idx',
@@ -269,8 +316,12 @@ class PdfEngine {
               currentText: line.text,
               pdfBounds: bounds,
               normalizedRect: Rect.fromLTWH(normLeft, normTop, normWidth, normHeight),
+              originalPageSize: Size(pageSize.width, pageSize.height),
               fontSize: line.fontSize > 0 ? line.fontSize : 12.0,
-              isBold: line.fontStyle.contains(PdfFontStyle.bold),
+              fontName: rawFontName,
+              fontFamily: resolvedFamily,
+              isBold: isBold,
+              isItalic: isItalic,
             ),
           );
           idx++;
@@ -283,6 +334,13 @@ class PdfEngine {
     }
 
     return spans;
+  }
+
+  static bool anySubstring(String str, List<String> needles) {
+    for (final n in needles) {
+      if (str.contains(n)) return true;
+    }
+    return false;
   }
 
   // Apply In-Place Annotations, Freehand Drawings, Text Overlays, and Existing Text Replacements
@@ -305,33 +363,51 @@ class PdfEngine {
       for (final span in modifiedSpans) {
         if (!span.isModified) continue;
 
+        // Use exact PDF points bounding box for sub-pixel accuracy with normalized fallback
+        final hasExactBounds = span.pdfBounds.width > 0 && span.pdfBounds.height > 0;
+        final coverLeft = hasExactBounds ? (span.pdfBounds.left - 1.5) : (span.normalizedRect.left * pageSize.width - 2);
+        final coverTop = hasExactBounds ? (span.pdfBounds.top - 1.0) : (span.normalizedRect.top * pageSize.height - 1);
+        final coverWidth = hasExactBounds ? (span.pdfBounds.width + 3.0) : (span.normalizedRect.width * pageSize.width + 4);
+        final coverHeight = hasExactBounds ? (span.pdfBounds.height + 2.0) : (span.normalizedRect.height * pageSize.height + 2);
+
         // Cover / redact original text with crisp white background
         final coverBrush = PdfSolidBrush(PdfColor(255, 255, 255));
-        final coverBounds = Rect.fromLTWH(
-          span.normalizedRect.left * pageSize.width - 2,
-          span.normalizedRect.top * pageSize.height - 1,
-          span.normalizedRect.width * pageSize.width + 4,
-          span.normalizedRect.height * pageSize.height + 2,
+        page.graphics.drawRectangle(
+          brush: coverBrush,
+          bounds: Rect.fromLTWH(coverLeft, coverTop, coverWidth, coverHeight),
         );
-        page.graphics.drawRectangle(brush: coverBrush, bounds: coverBounds);
 
-        // Draw the new updated text exactly in place
-        final font = PdfStandardFont(
-          PdfFontFamily.helvetica,
-          span.fontSize,
-          style: span.isBold ? PdfFontStyle.bold : PdfFontStyle.regular,
-        );
+        // Draw the new updated text exactly in place preserving font family, style, and size
+        final family = span.fontFamily;
+        final isBold = span.isBold;
+        final isItalic = span.isItalic;
+
+        PdfStandardFont font;
+        if (isBold && isItalic) {
+          font = PdfStandardFont(family, span.fontSize, multiStyle: [PdfFontStyle.bold, PdfFontStyle.italic]);
+        } else if (isBold) {
+          font = PdfStandardFont(family, span.fontSize, style: PdfFontStyle.bold);
+        } else if (isItalic) {
+          font = PdfStandardFont(family, span.fontSize, style: PdfFontStyle.italic);
+        } else {
+          font = PdfStandardFont(family, span.fontSize, style: PdfFontStyle.regular);
+        }
+
         final textBrush = PdfSolidBrush(
           PdfColor(span.color.red, span.color.green, span.color.blue),
         );
+
+        final textLeft = hasExactBounds ? span.pdfBounds.left : (span.normalizedRect.left * pageSize.width);
+        final textTop = hasExactBounds ? span.pdfBounds.top : (span.normalizedRect.top * pageSize.height);
+
         page.graphics.drawString(
           span.currentText,
           font,
           brush: textBrush,
           bounds: Rect.fromLTWH(
-            span.normalizedRect.left * pageSize.width,
-            span.normalizedRect.top * pageSize.height,
-            pageSize.width - (span.normalizedRect.left * pageSize.width),
+            textLeft,
+            textTop,
+            pageSize.width - textLeft,
             span.fontSize * 2.5,
           ),
         );
@@ -415,9 +491,13 @@ class PdfExistingTextSpan {
   String currentText;
   final Rect pdfBounds;
   final Rect normalizedRect;
+  final Size originalPageSize;
   double fontSize;
   Color color;
   bool isBold;
+  bool isItalic;
+  String fontName;
+  PdfFontFamily fontFamily;
   bool isModified;
 
   PdfExistingTextSpan({
@@ -426,17 +506,53 @@ class PdfExistingTextSpan {
     required this.currentText,
     required this.pdfBounds,
     required this.normalizedRect,
+    this.originalPageSize = const Size(595.28, 841.89),
     required this.fontSize,
     this.color = const Color(0xFF000000),
+    this.fontName = 'Helvetica',
+    this.fontFamily = PdfFontFamily.helvetica,
     this.isBold = false,
+    this.isItalic = false,
     this.isModified = false,
   });
+
+  String get fontFamilyDisplayName {
+    switch (fontFamily) {
+      case PdfFontFamily.timesRoman:
+        return 'Times Roman (Serif)';
+      case PdfFontFamily.courier:
+        return 'Courier (Monospace)';
+      case PdfFontFamily.symbol:
+        return 'Symbol';
+      case PdfFontFamily.zapfDingbats:
+        return 'ZapfDingbats';
+      case PdfFontFamily.helvetica:
+      default:
+        return 'Helvetica / Arial (Sans)';
+    }
+  }
+
+  List<String> get flutterFontFamilyFallback {
+    switch (fontFamily) {
+      case PdfFontFamily.timesRoman:
+        return const ['Times New Roman', 'Times', 'Georgia', 'serif'];
+      case PdfFontFamily.courier:
+        return const ['Courier New', 'Courier', 'Menlo', 'monospace'];
+      case PdfFontFamily.helvetica:
+      default:
+        return const ['Helvetica', 'Arial', 'sans-serif'];
+    }
+  }
 
   PdfExistingTextSpan copyWith({
     String? currentText,
     double? fontSize,
     Color? color,
     bool? isBold,
+    bool? isItalic,
+    String? fontName,
+    PdfFontFamily? fontFamily,
+    Size? originalPageSize,
     bool? isModified,
   }) {
     return PdfExistingTextSpan(
@@ -445,9 +561,13 @@ class PdfExistingTextSpan {
       currentText: currentText ?? this.currentText,
       pdfBounds: pdfBounds,
       normalizedRect: normalizedRect,
+      originalPageSize: originalPageSize ?? this.originalPageSize,
       fontSize: fontSize ?? this.fontSize,
       color: color ?? this.color,
+      fontName: fontName ?? this.fontName,
+      fontFamily: fontFamily ?? this.fontFamily,
       isBold: isBold ?? this.isBold,
+      isItalic: isItalic ?? this.isItalic,
       isModified: isModified ?? this.isModified,
     );
   }

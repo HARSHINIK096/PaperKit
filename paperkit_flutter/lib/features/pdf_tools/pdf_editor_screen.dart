@@ -34,6 +34,9 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
   final double _strokeWidth = 3.5;
   final double _fontSize = 16.0;
 
+  // Original PDF page dimensions per page index
+  final Map<int, Size> _pageSizes = {};
+
   // Extracted text spans per page
   final Map<int, List<PdfExistingTextSpan>> _pageTextSpans = {};
   bool _isLoadingSpans = false;
@@ -74,6 +77,11 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
         final bytes = await file.readAsBytes();
         final doc = PdfDocument(inputBytes: bytes);
         final count = doc.pages.count;
+        _pageSizes.clear();
+        for (int i = 0; i < count; i++) {
+          final pSize = doc.pages[i].size;
+          _pageSizes[i] = Size(pSize.width, pSize.height);
+        }
         doc.dispose();
 
         setState(() {
@@ -142,6 +150,8 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
     double curFontSize = span.fontSize;
     Color curColor = span.color;
     bool curBold = span.isBold;
+    bool curItalic = span.isItalic;
+    PdfFontFamily curFamily = span.fontFamily;
 
     showModalBottomSheet(
       context: context,
@@ -165,13 +175,26 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(LucideIcons.fileEdit, size: 20, color: AppColors.primary),
-                      SizedBox(width: 8),
-                      Text(
-                        'Edit PDF Text Object',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                      const Icon(LucideIcons.fileEdit, size: 20, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Edit PDF Text Object',
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                          ),
+                          Text(
+                            'Detected Font: ${span.fontFamilyDisplayName}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -204,17 +227,72 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                   const Text('Font Size: ', style: TextStyle(fontWeight: FontWeight.w600)),
                   Expanded(
                     child: Slider(
-                      value: curFontSize.clamp(8.0, 36.0),
-                      min: 8,
-                      max: 36,
-                      divisions: 14,
-                      label: '${curFontSize.round()} pt',
+                      value: curFontSize.clamp(6.0, 48.0),
+                      min: 6,
+                      max: 48,
+                      label: '${curFontSize.toStringAsFixed(1)} pt',
                       onChanged: (val) => setSheetState(() => curFontSize = val),
                     ),
                   ),
-                  Text('${curFontSize.round()} pt', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text('${curFontSize.toStringAsFixed(1)} pt', style: const TextStyle(fontWeight: FontWeight.w700)),
                 ],
               ),
+              Row(
+                children: [
+                  const Text('Style: ', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 6),
+                  FilterChip(
+                    label: const Text('Bold'),
+                    selected: curBold,
+                    onSelected: (val) => setSheetState(() => curBold = val),
+                    selectedColor: AppColors.primary.withOpacity(0.15),
+                    labelStyle: TextStyle(
+                      color: curBold ? AppColors.primary : Colors.black87,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  FilterChip(
+                    label: const Text('Italic'),
+                    selected: curItalic,
+                    onSelected: (val) => setSheetState(() => curItalic = val),
+                    selectedColor: AppColors.primary.withOpacity(0.15),
+                    labelStyle: TextStyle(
+                      color: curItalic ? AppColors.primary : Colors.black87,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const Spacer(),
+                  // Font family quick selector
+                  DropdownButton<PdfFontFamily>(
+                    value: curFamily,
+                    underline: const SizedBox(),
+                    isDense: true,
+                    style: const TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600),
+                    items: const [
+                      DropdownMenuItem(
+                        value: PdfFontFamily.timesRoman,
+                        child: Text('Serif (Times)'),
+                      ),
+                      DropdownMenuItem(
+                        value: PdfFontFamily.helvetica,
+                        child: Text('Sans (Helvetica)'),
+                      ),
+                      DropdownMenuItem(
+                        value: PdfFontFamily.courier,
+                        child: Text('Mono (Courier)'),
+                      ),
+                    ],
+                    onChanged: (f) {
+                      if (f != null) setSheetState(() => curFamily = f);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   const Text('Color: ', style: TextStyle(fontWeight: FontWeight.w600)),
@@ -235,17 +313,6 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                           ),
                         ),
                       )),
-                  const Spacer(),
-                  FilterChip(
-                    label: const Text('Bold'),
-                    selected: curBold,
-                    onSelected: (val) => setSheetState(() => curBold = val),
-                    selectedColor: AppColors.primary.withOpacity(0.15),
-                    labelStyle: TextStyle(
-                      color: curBold ? AppColors.primary : Colors.black87,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -281,6 +348,8 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                             span.fontSize = curFontSize;
                             span.color = curColor;
                             span.isBold = curBold;
+                            span.isItalic = curItalic;
+                            span.fontFamily = curFamily;
                             span.isModified = true;
                             _activeSelectedSpan = span;
                           });
@@ -853,18 +922,20 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
           padding: const EdgeInsets.all(16),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              // Standard A4 aspect ratio 1 : 1.414
+              final spans = _pageTextSpans[_currentPageIndex] ?? [];
+              final docPageSize = _pageSizes[_currentPageIndex] ??
+                  (spans.isNotEmpty ? spans.first.originalPageSize : const Size(595.28, 841.89));
+              final pageAspect = docPageSize.height / (docPageSize.width > 0 ? docPageSize.width : 595.28);
+
               final maxW = constraints.maxWidth;
               final maxH = constraints.maxHeight;
               double canvasW = maxW;
-              double canvasH = canvasW * 1.414;
+              double canvasH = canvasW * pageAspect;
 
               if (canvasH > maxH) {
                 canvasH = maxH;
-                canvasW = canvasH / 1.414;
+                canvasW = canvasH / pageAspect;
               }
-
-              final spans = _pageTextSpans[_currentPageIndex] ?? [];
 
               return Container(
                 width: canvasW,
@@ -970,6 +1041,7 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                         child: CustomPaint(
                           painter: _PdfPageCanvasPainter(
                             pageNumber: _currentPageIndex + 1,
+                            docPageSize: docPageSize,
                             existingSpans: spans,
                             drawPaths: _drawPathsByPage[_currentPageIndex] ?? [],
                             textEdits: _textEditsByPage[_currentPageIndex] ?? [],
@@ -1028,6 +1100,7 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
 
 class _PdfPageCanvasPainter extends CustomPainter {
   final int pageNumber;
+  final Size docPageSize;
   final List<PdfExistingTextSpan> existingSpans;
   final List<PdfDrawPath> drawPaths;
   final List<PdfTextEdit> textEdits;
@@ -1042,6 +1115,7 @@ class _PdfPageCanvasPainter extends CustomPainter {
 
   _PdfPageCanvasPainter({
     required this.pageNumber,
+    required this.docPageSize,
     required this.existingSpans,
     required this.drawPaths,
     required this.textEdits,
@@ -1071,8 +1145,9 @@ class _PdfPageCanvasPainter extends CustomPainter {
     )..layout();
     textPainter.paint(canvas, Offset((size.width - textPainter.width) / 2, 10));
 
-    // Calculate viewport font scale relative to standard PDF page width (595.28 pt)
-    final fontScale = (size.width / 595.0).clamp(0.4, 1.4);
+    // Calculate viewport font scale relative to true document page width
+    final docWidth = docPageSize.width > 0 ? docPageSize.width : 595.28;
+    final fontScale = (size.width / docWidth).clamp(0.2, 3.0);
 
     // 2. Render Existing Extracted Text Spans
     for (final span in existingSpans) {
@@ -1097,6 +1172,8 @@ class _PdfPageCanvasPainter extends CustomPainter {
               color: span.color,
               fontSize: scaledFontSize,
               fontWeight: span.isBold ? FontWeight.bold : FontWeight.normal,
+              fontStyle: span.isItalic ? FontStyle.italic : FontStyle.normal,
+              fontFamilyFallback: span.flutterFontFamilyFallback,
             ),
           ),
           textDirection: TextDirection.ltr,
@@ -1117,6 +1194,8 @@ class _PdfPageCanvasPainter extends CustomPainter {
               color: const Color(0xFF1E293B),
               fontSize: scaledFontSize,
               fontWeight: span.isBold ? FontWeight.bold : FontWeight.normal,
+              fontStyle: span.isItalic ? FontStyle.italic : FontStyle.normal,
+              fontFamilyFallback: span.flutterFontFamilyFallback,
             ),
           ),
           textDirection: TextDirection.ltr,
