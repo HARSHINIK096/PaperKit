@@ -959,9 +959,16 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                         } else if (_activeTool == EditorActiveTool.select) {
                           final normX = details.localPosition.dx / canvasW;
                           final normY = details.localPosition.dy / canvasH;
-                          // Find closest span under tap
+                          final tapPoint = Offset(normX, normY);
+                          // Find closest span under tap with generous hit padding
                           for (final s in spans) {
-                            if (s.normalizedRect.contains(Offset(normX, normY))) {
+                            final touchRect = Rect.fromLTWH(
+                              s.normalizedRect.left - 0.012,
+                              s.normalizedRect.top - 0.008,
+                              s.normalizedRect.width + 0.024,
+                              s.normalizedRect.height + 0.016,
+                            );
+                            if (touchRect.contains(tapPoint)) {
                               _selectSpanForEditing(s);
                               return;
                             }
@@ -1147,7 +1154,7 @@ class _PdfPageCanvasPainter extends CustomPainter {
 
     // Calculate viewport font scale relative to true document page width
     final docWidth = docPageSize.width > 0 ? docPageSize.width : 595.28;
-    final fontScale = (size.width / docWidth).clamp(0.2, 3.0);
+    final fontScale = (size.width / docWidth).clamp(0.1, 4.0);
 
     // 2. Render Existing Extracted Text Spans
     for (final span in existingSpans) {
@@ -1158,7 +1165,8 @@ class _PdfPageCanvasPainter extends CustomPainter {
         span.normalizedRect.height * size.height,
       );
 
-      final scaledFontSize = (span.fontSize * fontScale).clamp(7.0, 28.0);
+      // Scaled font size accurately matching document page width
+      final scaledFontSize = (span.fontSize * fontScale).clamp(3.0, 72.0);
 
       // If modified, draw white background cover-up and replacement text
       if (span.isModified) {
@@ -1177,16 +1185,14 @@ class _PdfPageCanvasPainter extends CustomPainter {
             ),
           ),
           textDirection: TextDirection.ltr,
-          maxLines: 1,
-          ellipsis: '...',
-        )..layout(maxWidth: (size.width - rect.left).clamp(10.0, size.width));
+        )..layout();
         tp.paint(canvas, rect.topLeft);
 
         // Micro "Edited" indicator badge
         final badgeBg = Paint()..color = AppColors.primary.withOpacity(0.15);
         canvas.drawRRect(RRect.fromRectAndRadius(rect.inflate(2), const Radius.circular(3)), badgeBg);
       } else {
-        // Draw clean extracted text line without overlapping
+        // Draw clean extracted text line without artificial ellipsis truncation
         final tp = TextPainter(
           text: TextSpan(
             text: span.currentText,
@@ -1199,22 +1205,23 @@ class _PdfPageCanvasPainter extends CustomPainter {
             ),
           ),
           textDirection: TextDirection.ltr,
-          maxLines: 1,
-          ellipsis: '...',
-        )..layout(maxWidth: (size.width - rect.left).clamp(10.0, size.width));
+        )..layout();
         tp.paint(canvas, rect.topLeft);
 
-        // If Select tool is active, draw subtle dotted/soft bounding box
+        // If Select tool is active, draw subtle soft bounding box
         if (isSelectTool) {
           final boxPaint = Paint()
             ..color = AppColors.primary.withOpacity(0.12)
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.0;
-          canvas.drawRRect(RRect.fromRectAndRadius(rect.inflate(1.5), const Radius.circular(2)), boxPaint);
+            ..strokeWidth = 0.8;
+          final drawW = tp.width > rect.width ? tp.width : rect.width;
+          final drawH = tp.height > rect.height ? tp.height : rect.height;
+          final outlineRect = Rect.fromLTWH(rect.left - 2, rect.top - 1, drawW + 4, drawH + 2);
+          canvas.drawRRect(RRect.fromRectAndRadius(outlineRect, const Radius.circular(2)), boxPaint);
         }
       }
 
-      // If this span is the actively selected object, draw glowing selection frame
+      // If this span is the actively selected object, draw glowing selection frame wrapping full text
       if (selectedSpan != null && selectedSpan!.id == span.id) {
         final selPaint = Paint()
           ..color = AppColors.primary
@@ -1224,7 +1231,23 @@ class _PdfPageCanvasPainter extends CustomPainter {
           ..color = AppColors.primary.withOpacity(0.12)
           ..style = PaintingStyle.fill;
 
-        final selRect = rect.inflate(4);
+        final tpMeasure = TextPainter(
+          text: TextSpan(
+            text: span.currentText,
+            style: TextStyle(
+              fontSize: scaledFontSize,
+              fontWeight: span.isBold ? FontWeight.bold : FontWeight.normal,
+              fontStyle: span.isItalic ? FontStyle.italic : FontStyle.normal,
+              fontFamilyFallback: span.flutterFontFamilyFallback,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+
+        final effectiveW = tpMeasure.width > rect.width ? tpMeasure.width : rect.width;
+        final effectiveH = tpMeasure.height > rect.height ? tpMeasure.height : rect.height;
+        final selRect = Rect.fromLTWH(rect.left - 3, rect.top - 2, effectiveW + 6, effectiveH + 4);
+
         canvas.drawRRect(RRect.fromRectAndRadius(selRect, const Radius.circular(4)), selFill);
         canvas.drawRRect(RRect.fromRectAndRadius(selRect, const Radius.circular(4)), selPaint);
 
