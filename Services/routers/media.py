@@ -28,10 +28,10 @@ import asyncio
 
 def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
     client_strategies = [
-        ['mweb', 'android_vr', 'ios', 'tv'],
-        ['mweb', 'ios'],
-        ['tv_embedded', 'ios', 'mweb'],
-        ['android', 'ios', 'web'],
+        None,  # Standard auto detection (visionos/web/android)
+        ['android', 'web'],
+        ['tv_embedded', 'web'],
+        ['ios', 'mweb'],
     ]
     
     # Check for cookies from env var (file path or raw Netscape content)
@@ -57,16 +57,17 @@ def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
             'nocheckcertificate': True,
             'ignoreerrors': False,
             'js_runtimes': {'node': {}},
-            'extractor_args': {
-                'youtube': {
-                    'player_client': clients,
-                }
-            },
             'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
                 'Accept-Language': 'en-US,en;q=0.9',
             }
         }
+        if clients is not None:
+            ydl_opts['extractor_args'] = {
+                'youtube': {
+                    'player_client': clients,
+                }
+            }
         if os.path.exists(bin_dir):
             ydl_opts['ffmpeg_location'] = bin_dir
         if cookie_file and os.path.exists(cookie_file):
