@@ -62,12 +62,12 @@ class ApiService {
     dio.options.baseUrl = url;
   }
 
-  Future<bool> checkHealth({int timeoutMs = 6000}) async {
+  Future<bool> checkHealth({int timeoutMs = 7000}) async {
     final candidateUrls = <String>{
       dio.options.baseUrl.replaceAll(RegExp(r'/+$'), ''),
       defaultBaseUrl.replaceAll(RegExp(r'/+$'), ''),
       ApiConfig.defaultBackendUrl.replaceAll(RegExp(r'/+$'), ''),
-    }.toList();
+    }.where((url) => url.isNotEmpty).toList();
 
     for (final base in candidateUrls) {
       for (final endpoint in ['/health', '/']) {
@@ -78,6 +78,9 @@ class ApiService {
               connectTimeout: Duration(milliseconds: timeoutMs),
               receiveTimeout: Duration(milliseconds: timeoutMs),
               headers: {'Accept': 'application/json'},
+              followRedirects: true,
+              maxRedirects: 5,
+              validateStatus: (status) => status != null && status >= 200 && status < 400,
             ),
           );
           final response = await probeDio.get(endpoint);

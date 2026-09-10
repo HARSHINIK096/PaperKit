@@ -123,7 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  backend.isConnected ? 'ONLINE' : 'OFFLINE',
+                  backend.isChecking
+                      ? 'SYNCING...'
+                      : (backend.isConnected ? 'ONLINE' : 'OFFLINE'),
                   style: TextStyle(
                     color: backend.statusColor,
                     fontSize: 11,

@@ -27,7 +27,7 @@ class BackendProvider extends ChangeNotifier {
     });
   }
 
-  Future<bool> checkHealth({bool isSilent = false}) async {
+  Future<bool> checkHealth({bool isSilent = false, int timeoutMs = 7000}) async {
     if (_isDisposed) return false;
     if (!isSilent) {
       _isChecking = true;
@@ -36,7 +36,13 @@ class BackendProvider extends ChangeNotifier {
     }
 
     try {
-      final healthy = await _apiService.checkHealth(timeoutMs: 2500);
+      var healthy = await _apiService.checkHealth(timeoutMs: timeoutMs);
+      
+      // If initial check fails, try a fast secondary check in case of cold spin-up
+      if (!healthy && !isSilent) {
+        healthy = await _apiService.checkHealth(timeoutMs: 4000);
+      }
+
       if (_isDisposed) return healthy;
       _isConnected = healthy;
       _statusMessage = healthy
