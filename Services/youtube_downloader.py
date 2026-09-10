@@ -10,6 +10,16 @@ def download_youtube_video(url, output_path="."):
         'outtmpl': f'{output_path}/%(title)s.%(ext)s',
         'format': 'bestvideo+bestaudio/best',
         'merge_output_format': 'mp4',
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['ios', 'mweb', 'android'],
+                'player_skip': ['configs', 'webpage'],
+            }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+            'Accept-Language': 'en-US,en;q=0.9',
+        }
     }
     
     try:

@@ -95,8 +95,16 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
     prefix = f"{job_id}_" if job_id else ""
     out_tmpl = os.path.join(output_dir, f"{prefix}%(title)s.%(ext)s")
     
-    ffmpeg_bin = find_ffmpeg_path()
-    
+    cookie_file = os.getenv("YOUTUBE_COOKIES_FILE") or os.getenv("COOKIES_FILE")
+    cookie_content = os.getenv("YOUTUBE_COOKIES")
+    if not cookie_file and cookie_content:
+        cookie_file = os.path.join(output_dir, "yt_cookies.txt")
+        try:
+            with open(cookie_file, "w", encoding="utf-8") as f:
+                f.write(cookie_content)
+        except Exception:
+            cookie_file = None
+
     ydl_opts = {
         "outtmpl": out_tmpl,
         "format": "bestaudio/best",
@@ -107,10 +115,23 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
         }],
         "quiet": False,
         "no_warnings": True,
+        "nocheckcertificate": True,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["ios", "mweb", "android"],
+                "player_skip": ["configs", "webpage"],
+            }
+        },
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
     }
     
     if ffmpeg_bin:
         ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin)
+    if cookie_file and os.path.exists(cookie_file):
+        ydl_opts["cookiefile"] = cookie_file
         
     print(f"Searching and downloading audio stream for: '{search_query}'...")
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
