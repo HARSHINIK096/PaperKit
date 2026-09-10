@@ -98,6 +98,15 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
     
     cookie_file = os.getenv("YOUTUBE_COOKIES_FILE") or os.getenv("COOKIES_FILE")
     cookie_content = os.getenv("YOUTUBE_COOKIES")
+    cookie_b64 = os.getenv("YOUTUBE_COOKIES_BASE64")
+
+    if not cookie_file and cookie_b64:
+        import base64
+        try:
+            cookie_content = base64.b64decode(cookie_b64.strip()).decode("utf-8")
+        except Exception as be:
+            print(f"Warning: Failed to decode YOUTUBE_COOKIES_BASE64 in Spotify downloader: {be}")
+
     if not cookie_file and cookie_content:
         cookie_file = os.path.join(output_dir, "yt_cookies.txt")
         try:
@@ -105,6 +114,8 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
                 f.write(cookie_content)
         except Exception:
             cookie_file = None
+
+    proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
 
     client_strategies = [
         ["mweb", "android_vr", "ios", "tv"],
@@ -137,7 +148,8 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
                 "Accept-Language": "en-US,en;q=0.9",
             }
         }
-        
+        if proxy_url:
+            ydl_opts["proxy"] = proxy_url
         if ffmpeg_bin:
             ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin)
         if cookie_file and os.path.exists(cookie_file):
