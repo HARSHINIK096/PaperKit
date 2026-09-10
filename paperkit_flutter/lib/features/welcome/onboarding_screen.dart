@@ -15,235 +15,249 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  late PageController _pageController;
   int _currentIndex = 0;
-  Timer? _autoPlayTimer;
+  Timer? _progressTicker;
   Timer? _cloudBootPoller;
+  double _stepProgress = 0.0;
 
-  final List<_TourSlide> _slides = [
-    const _TourSlide(
+  // 14 Superpower Slides with COC-style vibrant gradient cloud backgrounds
+  final List<_CloudTourSlide> _slides = [
+    const _CloudTourSlide(
       id: 1,
-      badge: 'Welcome to PaperKit',
+      badge: 'Universal PDF Studio',
       title: 'Your Ultimate PDF & Document Studio',
-      subtitle: 'All-in-one document intelligence, local WebAssembly tools, and deep AI capabilities built for modern workflows.',
+      subtitle: 'All-in-one document intelligence, local WebAssembly tools, and deep AI capabilities.',
       icon: LucideIcons.sparkles,
-      iconColor: Color(0xFF2563EB),
-      bgColor: Color(0x1F2563EB),
-      highlightColor: Color(0xFF2563EB),
+      cloudColor1: Color(0xFF0F172A),
+      cloudColor2: Color(0xFF1E3A8A),
+      accentColor: Color(0xFF3B82F6),
       features: [
         'Universal PDF processing suite with 20+ specialized tools',
         'Instant document conversion, compression, & editing',
         'Deep AI intelligence for summaries & Q&A analysis',
       ],
+      tags: ['20+ Tools', 'Instant Convert', 'AI Intelligence'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 2,
       badge: '100% Private Processing',
       title: 'Offline Client-Side WASM Core',
-      subtitle: 'Your documents never leave your device memory. Processing runs locally on your device with complete privacy.',
+      subtitle: 'Your documents never leave your device memory with zero server uploads.',
       icon: LucideIcons.shieldCheck,
-      iconColor: Color(0xFF059669),
-      bgColor: Color(0x1F059669),
-      highlightColor: Color(0xFF059669),
+      cloudColor1: Color(0xFF022C22),
+      cloudColor2: Color(0xFF065F46),
+      accentColor: Color(0xFF10B981),
       features: [
         'Zero server upload requirement for standard PDF tools',
         'Bank-grade privacy for confidential & proprietary documents',
         'Lightning-fast execution directly on your CPU/GPU',
       ],
+      tags: ['Offline WASM', 'Zero Uploads', 'Hardware Speed'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 3,
       badge: 'Document Merging',
       title: 'Combine & Stack Multi-Format Files',
-      subtitle: 'Merge hundreds of PDFs, CAD drawings, lab manuals, and image files into one structured document in seconds.',
+      subtitle: 'Merge hundreds of PDFs, CAD drawings, lab manuals, and image files into one structured document.',
       icon: LucideIcons.layers,
-      iconColor: Color(0xFF7C3AED),
-      bgColor: Color(0x1F7C3AED),
-      highlightColor: Color(0xFF7C3AED),
+      cloudColor1: Color(0xFF2E1065),
+      cloudColor2: Color(0xFF581C87),
+      accentColor: Color(0xFF8B5CF6),
       features: [
         'Drag-and-drop page ordering & document stacking',
         'Preserve original bookmarks, vector fonts, and layout',
         'Instant preview before generating final compilation',
       ],
+      tags: ['Stack Files', 'Keep Bookmarks', 'Lossless Merge'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 4,
       badge: 'Smart Compression',
       title: 'Reduce File Size up to 90%',
-      subtitle: 'Intelligent vector and image compression shrinks heavy PDFs for quick email sharing and portal uploads.',
+      subtitle: 'Intelligent vector and image compression shrinks heavy PDFs for quick portal uploads.',
       icon: LucideIcons.zap,
-      iconColor: Color(0xFFD97706),
-      bgColor: Color(0x1FD97706),
-      highlightColor: Color(0xFFD97706),
+      cloudColor1: Color(0xFF451A03),
+      cloudColor2: Color(0xFF78350F),
+      accentColor: Color(0xFFD97706),
       features: [
         'Multiple compression levels: Extreme, Recommended, & Light',
         'Retains sharp text and vector diagrams at high DPI',
         'Real-time estimated file size reduction preview',
       ],
+      tags: ['90% Smaller', 'Vector Sharpness', 'Instant Shrink'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 5,
       badge: 'Ask PDF AI',
       title: 'Interactive AI Document Q&A',
-      subtitle: 'Chat directly with long textbooks, research papers, and technical manuals with instant accurate page citations.',
+      subtitle: 'Chat directly with long textbooks, research papers, and technical manuals with page citations.',
       icon: LucideIcons.messageSquare,
-      iconColor: Color(0xFF2563EB),
-      bgColor: Color(0x1F2563EB),
-      highlightColor: Color(0xFF2563EB),
+      cloudColor1: Color(0xFF172554),
+      cloudColor2: Color(0xFF1D4ED8),
+      accentColor: Color(0xFF60A5FA),
       features: [
         'Context-aware answers with exact page reference quotes',
         'Multi-document chat for comparing multiple sources',
         'Export Q&A transcripts into study notes or summaries',
       ],
+      tags: ['Document RAG', 'Citation Quotes', 'Study Notes'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 6,
       badge: 'AI Table Extraction',
       title: 'Convert Document Data to CSV/Excel',
-      subtitle: 'Automatically detect and extract complex tables, lab datasets, and financial statements with zero manual typing.',
+      subtitle: 'Automatically detect and extract complex tables, lab datasets, and financial statements.',
       icon: LucideIcons.table,
-      iconColor: Color(0xFF059669),
-      bgColor: Color(0x1F059669),
-      highlightColor: Color(0xFF059669),
+      cloudColor1: Color(0xFF064E3B),
+      cloudColor2: Color(0xFF047857),
+      accentColor: Color(0xFF34D399),
       features: [
         'Detects structured & unbordered table boundaries',
         'One-click export to clean CSV, JSON, or Excel sheets',
         'Automatic mathematical & numerical format validation',
       ],
+      tags: ['CSV / Excel Export', 'Auto Detection', 'Clean Data'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 7,
       badge: 'OCR Recognition',
       title: 'Turn Scans into Searchable Text',
-      subtitle: 'High-precision optical character recognition converts paper scans and images into copyable, searchable text.',
+      subtitle: 'High-precision optical character recognition converts paper scans into searchable text.',
       icon: LucideIcons.scanText,
-      iconColor: Color(0xFF7C3AED),
-      bgColor: Color(0x1F7C3AED),
-      highlightColor: Color(0xFF7C3AED),
+      cloudColor1: Color(0xFF3B0764),
+      cloudColor2: Color(0xFF6D28D9),
+      accentColor: Color(0xFFA78BFA),
       features: [
         'Multi-language OCR engine supporting 20+ languages',
         'Preserves original document layout and paragraphing',
         'Generates searchable PDF/A overlay layers',
       ],
+      tags: ['20+ Languages', 'Searchable PDF', 'Scan to Text'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 8,
       badge: 'Smart Redaction',
       title: 'Permanent PII & Data Sanitization',
-      subtitle: 'Blackout sensitive names, social security numbers, passwords, and addresses permanently before distribution.',
+      subtitle: 'Blackout sensitive names, social security numbers, passwords, and addresses permanently.',
       icon: LucideIcons.shieldAlert,
-      iconColor: Color(0xFFDC2626),
-      bgColor: Color(0x1FDC2626),
-      highlightColor: Color(0xFFDC2626),
+      cloudColor1: Color(0xFF450A0A),
+      cloudColor2: Color(0xFF991B1B),
+      accentColor: Color(0xFFEF4444),
       features: [
         'Automated regex pattern scanning (Emails, SSNs, Phones)',
         'Destroys underlying vector text data — zero recovery',
         'Sanitizes hidden metadata & revision histories',
       ],
+      tags: ['Zero Recovery', 'Regex Redact', 'PII Purge'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 9,
       badge: 'Signatures & Watermarks',
       title: 'Digital Signing & Document Protection',
-      subtitle: 'Add cryptographic signatures, visual stamp signatures, watermarks, and password encryption in seconds.',
+      subtitle: 'Add cryptographic signatures, visual stamp signatures, watermarks, and password encryption.',
       icon: LucideIcons.penTool,
-      iconColor: Color(0xFF2563EB),
-      bgColor: Color(0x1F2563EB),
-      highlightColor: Color(0xFF2563EB),
+      cloudColor1: Color(0xFF1E1B4B),
+      cloudColor2: Color(0xFF3730A3),
+      accentColor: Color(0xFF6366F1),
       features: [
         'Draw, type, or upload custom e-signatures',
         'Custom text or image watermarks with opacity control',
         'AES-256 password protection & permission restriction',
       ],
+      tags: ['e-Signatures', 'Watermark Stamp', 'AES-256 Lock'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 10,
       badge: 'ISO PDF/A Archiving',
       title: 'Long-Term Preserved Compliance',
-      subtitle: 'Convert standard documents into ISO 19005 compliant PDF/A format required for legal and government records.',
+      subtitle: 'Convert standard documents into ISO 19005 compliant PDF/A format for records.',
       icon: LucideIcons.archive,
-      iconColor: Color(0xFFD97706),
-      bgColor: Color(0x1FD97706),
-      highlightColor: Color(0xFFD97706),
+      cloudColor1: Color(0xFF3F2C03),
+      cloudColor2: Color(0xFF854D0E),
+      accentColor: Color(0xFFFBBF24),
       features: [
         'Embeds all fonts, color profiles, & metadata standards',
         'Ensures document renders identically 50 years from now',
         'Built-in compliance checking & validation report',
       ],
+      tags: ['ISO 19005', 'Font Embedding', '50-Year Safe'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 11,
       badge: 'Visual Page Organizer',
       title: 'Reorder, Rotate, Split & Duplicate',
-      subtitle: 'Visual thumbnail grid lets you manage individual PDF pages with simple drag-and-drop actions.',
+      subtitle: 'Visual thumbnail grid lets you manage individual PDF pages with simple drag actions.',
       icon: LucideIcons.grid,
-      iconColor: Color(0xFF059669),
-      bgColor: Color(0x1F059669),
-      highlightColor: Color(0xFF059669),
+      cloudColor1: Color(0xFF064E3B),
+      cloudColor2: Color(0xFF0F766E),
+      accentColor: Color(0xFF14B8A6),
       features: [
         'Rotate upside-down pages by 90°, 180°, or 270°',
         'Extract custom page ranges into standalone PDFs',
         'Delete blank pages or duplicate important slides',
       ],
+      tags: ['Thumbnail Grid', 'Rotate 90°/180°', 'Page Split'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 12,
       badge: 'Multi-Language Compactability',
       title: 'Native Mobile & Offline App',
-      subtitle: 'Full interface translation across 10+ languages with native desktop & mobile app experience.',
+      subtitle: 'Full interface translation across 10+ languages with native mobile app experience.',
       icon: LucideIcons.globe,
-      iconColor: Color(0xFF7C3AED),
-      bgColor: Color(0x1F7C3AED),
-      highlightColor: Color(0xFF7C3AED),
+      cloudColor1: Color(0xFF2E1065),
+      cloudColor2: Color(0xFF5B21B6),
+      accentColor: Color(0xFF8B5CF6),
       features: [
         'Seamless multi-language switching (English, Spanish, Hindi, etc.)',
-        'Installable on Android, iOS, Windows & macOS',
+        'Native hardware performance on Android & iOS',
         'Offline-first architecture — works without active internet',
       ],
+      tags: ['10+ Languages', 'Offline-First', 'Universal App'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 13,
       badge: 'Cloud AI Intelligence',
       title: 'Deep Document Analytics & Cloud Engine',
-      subtitle: 'Real-time cloud sync powers semantic document comparison, vector similarity matrices, and automatic classification.',
+      subtitle: 'Real-time cloud sync powers semantic document comparison and vector similarity matrices.',
       icon: LucideIcons.cpu,
-      iconColor: Color(0xFF2563EB),
-      bgColor: Color(0x1F2563EB),
-      highlightColor: Color(0xFF2563EB),
+      cloudColor1: Color(0xFF1E3A8A),
+      cloudColor2: Color(0xFF2563EB),
+      accentColor: Color(0xFF60A5FA),
       features: [
-        'Semantic document comparison highlighting hidden structural changes',
+        'Semantic document comparison highlighting hidden changes',
         'AI Document classification and auto-tagging system',
-        'High-throughput vector search across massive document archives',
+        'High-throughput vector search across massive archives',
       ],
+      tags: ['Semantic Diff', 'Auto-Tagging', 'Vector Search'],
     ),
-    const _TourSlide(
+    const _CloudTourSlide(
       id: 14,
       isRateLimits: true,
       badge: 'Fair Use Policy',
       title: 'Usage Limits & Fair Access',
       subtitle: 'To keep performance fast and reliable for everyone, fair usage limits apply on shared cloud infrastructure.',
       icon: LucideIcons.gauge,
-      iconColor: Color(0xFFEA580C),
-      bgColor: Color(0x1FEA580C),
-      highlightColor: Color(0xFFEA580C),
+      cloudColor1: Color(0xFF431407),
+      cloudColor2: Color(0xFF9A3412),
+      accentColor: Color(0xFFF97316),
+      features: [
+        'Limits reset automatically — no account required',
+        'Client-side WASM PDF tools are always unlimited',
+      ],
+      tags: ['Fair Use', 'Auto-Reset', '100% Free'],
       pdfRule: '≤ 15 pages per document',
       pdfNote: 'Merge, Split, Compress, Rotate, Watermark, Edit & all PDF tools.',
       pdfTip: 'Split large PDFs into chunks under 15 pages before processing.',
       aiRule: '5 requests per 1–4 hours',
       aiNote: 'Summarize, Ask PDF, OCR, Translate, Tables & all AI tools.',
       aiTip: 'Limits reset automatically. Each AI tool category has an independent counter.',
-      features: [
-        'Limits reset automatically — no account required',
-        'Client-side WASM PDF tools are always unlimited',
-      ],
     ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
-    _startAutoPlay();
+    _startAutoTransition();
     _startCloudBootPoller();
   }
 
@@ -262,48 +276,40 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     });
   }
 
-  void _startAutoPlay() {
-    _autoPlayTimer?.cancel();
-    if (_currentIndex < _slides.length - 1) {
-      _autoPlayTimer = Timer(const Duration(seconds: 6), () {
-        if (mounted && _currentIndex < _slides.length - 1) {
-          _pageController.nextPage(
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOutCubic,
-          );
-        }
+  void _startAutoTransition() {
+    // 5000ms duration per slide (5 seconds permanent auto transition)
+    const slideDurationMs = 5000;
+    const tickIntervalMs = 50;
+    const step = tickIntervalMs / slideDurationMs;
+
+    _progressTicker = Timer.periodic(const Duration(milliseconds: tickIntervalMs), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _stepProgress = (_stepProgress + step).clamp(0.0, 1.0);
       });
-    }
+
+      if (_stepProgress >= 1.0) {
+        _stepProgress = 0.0;
+        if (_currentIndex < _slides.length - 1) {
+          HapticFeedback.lightImpact();
+          setState(() {
+            _currentIndex++;
+          });
+        } else {
+          // Completed all 14 slides (70 seconds total tour showcase)
+          timer.cancel();
+          _finishTour();
+        }
+      }
+    });
   }
 
-  void _handleNext() {
-    _autoPlayTimer?.cancel();
-    HapticFeedback.lightImpact();
-    if (_currentIndex < _slides.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeInOutCubic,
-      );
-    } else {
-      _handleFinish();
-    }
-  }
-
-  void _handlePrev() {
-    _autoPlayTimer?.cancel();
-    HapticFeedback.lightImpact();
-    if (_currentIndex > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeInOutCubic,
-      );
-    }
-  }
-
-  Future<void> _handleFinish() async {
-    _autoPlayTimer?.cancel();
+  Future<void> _finishTour() async {
+    _progressTicker?.cancel();
     _cloudBootPoller?.cancel();
-    HapticFeedback.mediumImpact();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('paperkit_onboarding_done', true);
@@ -315,482 +321,402 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   void dispose() {
-    _autoPlayTimer?.cancel();
+    _progressTicker?.cancel();
     _cloudBootPoller?.cancel();
-    _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentSlide = _slides[_currentIndex];
-    final progressPercent = (_currentIndex + 1) / _slides.length;
+    final slide = _slides[_currentIndex];
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF090D16) : const Color(0xFFF8FAFC),
-      body: Stack(
-        children: [
-          // Dynamic Particle Background
-          ParticleBackground(
-            numberOfParticles: 26,
-            particleColor: currentSlide.highlightColor.withValues(alpha: 0.35),
-            maxSpeed: 0.6,
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 1400),
+        curve: Curves.easeInOutCubic,
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: const Alignment(0, -0.3),
+            radius: 1.35,
+            colors: [
+              slide.cloudColor2,
+              slide.cloudColor1,
+              const Color(0xFF030712),
+            ],
           ),
+        ),
+        child: Stack(
+          children: [
+            // Dynamic Cloud Particle Layer
+            ParticleBackground(
+              numberOfParticles: 35,
+              particleColor: slide.accentColor.withValues(alpha: 0.55),
+              maxSpeed: 0.7,
+            ),
 
-          // Ambient Glow
-          Positioned(
-            top: -120,
-            left: -100,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 700),
-              width: 320,
-              height: 320,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: currentSlide.highlightColor.withValues(alpha: isDark ? 0.18 : 0.10),
-                boxShadow: [
-                  BoxShadow(
-                    color: currentSlide.highlightColor.withValues(alpha: isDark ? 0.25 : 0.15),
-                    blurRadius: 100,
-                    spreadRadius: 20,
-                  ),
-                ],
+            // Animated Cloud Light Orbs
+            Positioned(
+              top: -80,
+              right: -60,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 1400),
+                width: 260,
+                height: 260,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: slide.accentColor.withValues(alpha: 0.18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: slide.accentColor.withValues(alpha: 0.3),
+                      blurRadius: 90,
+                      spreadRadius: 20,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
 
-          SafeArea(
-            child: Column(
-              children: [
-                // Top Progress Bar & Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // PaperKit badge
-                          Row(
-                            children: [
-                              Container(
-                                width: 26,
-                                height: 26,
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Column(
+                  children: [
+                    // Top Progress Bar Track (14-Step Progress)
+                    Row(
+                      children: List.generate(_slides.length, (idx) {
+                        double val = 0.0;
+                        if (idx < _currentIndex) {
+                          val = 1.0;
+                        } else if (idx == _currentIndex) {
+                          val = _stepProgress;
+                        }
+                        return Expanded(
+                          child: Container(
+                            height: 4,
+                            margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: val,
+                              child: Container(
                                 decoration: BoxDecoration(
-                                  color: currentSlide.highlightColor,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Center(
-                                  child: Icon(LucideIcons.sparkles, size: 14, color: Colors.white),
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: slide.accentColor.withValues(alpha: 0.8),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'PaperKit Tour',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+
+                    const Spacer(flex: 2),
+
+                    // Animated Cloud Slide Card
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 700),
+                      transitionBuilder: (child, anim) => FadeTransition(
+                        opacity: anim,
+                        child: ScaleTransition(
+                          scale: Tween<double>(begin: 0.94, end: 1.0).animate(
+                            CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+                          ),
+                          child: child,
+                        ),
+                      ),
+                      child: Container(
+                        key: ValueKey<int>(_currentIndex),
+                        padding: const EdgeInsets.all(26),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(32),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            width: 1.4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: slide.cloudColor2.withValues(alpha: 0.45),
+                              blurRadius: 40,
+                              offset: const Offset(0, 16),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header Orb & Badge
+                            Row(
+                              children: [
+                                Container(
+                                  width: 58,
+                                  height: 58,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.16),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: slide.accentColor.withValues(alpha: 0.5),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: slide.accentColor.withValues(alpha: 0.4),
+                                        blurRadius: 16,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Icon(
+                                      slide.icon,
+                                      size: 30,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: slide.accentColor.withValues(alpha: 0.4),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        slide.badge,
+                                        style: TextStyle(
+                                          color: slide.accentColor,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Title
+                            Text(
+                              slide.title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Subtitle
+                            Text(
+                              slide.subtitle,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 13,
+                                height: 1.45,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+
+                            // Features List
+                            if (!slide.isRateLimits) ...[
+                              ...slide.features.map(
+                                (feat) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        margin: const EdgeInsets.only(top: 2),
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: BoxDecoration(
+                                          color: slide.accentColor.withValues(alpha: 0.25),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          LucideIcons.checkCircle2,
+                                          size: 15,
+                                          color: slide.accentColor,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          feat,
+                                          style: const TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white,
+                                            height: 1.35,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
-                          ),
 
-                          // Skip Button
-                          TextButton(
-                            onPressed: _handleFinish,
-                            style: TextButton.styleFrom(
-                              foregroundColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            ),
-                            child: const Text(
-                              'Skip Tour',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Linear Progress Track
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 350),
-                          height: 4,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-                          ),
-                          child: FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: progressPercent,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 350),
-                              decoration: BoxDecoration(
-                                color: currentSlide.highlightColor,
-                                borderRadius: BorderRadius.circular(4),
+                            // Rate Limits Breakdown (Slide 14)
+                            if (slide.isRateLimits) ...[
+                              _RateLimitCloudCard(
+                                title: 'PDF Manipulation Tools',
+                                rule: slide.pdfRule ?? '≤ 15 pages per document',
+                                note: slide.pdfNote ?? '',
+                                tip: slide.pdfTip ?? '',
+                                accentColor: const Color(0xFFF87171),
+                                icon: LucideIcons.fileText,
                               ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Slide Carousel PageView
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: _slides.length,
-                    onPageChanged: (idx) {
-                      setState(() => _currentIndex = idx);
-                      _startAutoPlay();
-                    },
-                    itemBuilder: (context, index) {
-                      final slide = _slides[index];
-                      return SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        child: _SlideCard(slide: slide, isDark: isDark),
-                      );
-                    },
-                  ),
-                ),
-
-                // Bottom Navigation Controls
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                  child: Column(
-                    children: [
-                      // Slide Dots Indicator
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(_slides.length, (idx) {
-                            final active = idx == _currentIndex;
-                            return GestureDetector(
-                              onTap: () {
-                                _pageController.animateToPage(
-                                  idx,
-                                  duration: const Duration(milliseconds: 350),
-                                  curve: Curves.easeInOutCubic,
-                                );
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 250),
-                                margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
-                                width: active ? 22 : 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: active
-                                      ? currentSlide.highlightColor
-                                      : (isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
-                                  borderRadius: BorderRadius.circular(3),
+                              const SizedBox(height: 10),
+                              _RateLimitCloudCard(
+                                title: 'AI Intelligence Features',
+                                rule: slide.aiRule ?? '5 requests per 1–4 hours',
+                                note: slide.aiNote ?? '',
+                                tip: slide.aiTip ?? '',
+                                accentColor: const Color(0xFFA78BFA),
+                                icon: LucideIcons.brain,
+                              ),
+                              const SizedBox(height: 12),
+                              ...slide.features.map(
+                                (feat) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Row(
+                                    children: [
+                                      const Icon(LucideIcons.checkCircle2, size: 14, color: Color(0xFF34D399)),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          feat,
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white.withValues(alpha: 0.85),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            );
-                          }),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                            ],
 
-                      // Navigation Action Buttons
-                      Row(
-                        children: [
-                          if (_currentIndex > 0)
-                            Expanded(
-                              flex: 1,
-                              child: OutlinedButton.icon(
-                                onPressed: _handlePrev,
-                                icon: const Icon(LucideIcons.chevronLeft, size: 18),
-                                label: const Text('Previous'),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  foregroundColor: isDark ? Colors.white70 : const Color(0xFF475569),
-                                  side: BorderSide(
-                                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                                  ),
-                                  shape: RoundedRectangleBorder(
+                            const SizedBox(height: 14),
+
+                            // Capability Tags
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: slide.tags.map((tag) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.14),
                                     borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.25),
+                                    ),
                                   ),
-                                ),
-                              ),
+                                  child: Text(
+                                    tag,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                             ),
-                          if (_currentIndex > 0) const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: ElevatedButton.icon(
-                              onPressed: _handleNext,
-                              icon: Icon(
-                                _currentIndex == _slides.length - 1
-                                    ? LucideIcons.arrowRight
-                                    : LucideIcons.chevronRight,
-                                size: 18,
-                                color: Colors.white,
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const Spacer(flex: 3),
+
+                    // Continuous Auto-Presentation Cloud Beacon
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: slide.accentColor,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: slide.accentColor.withValues(alpha: 0.8),
+                                blurRadius: 6,
                               ),
-                              label: Text(
-                                _currentIndex == _slides.length - 1
-                                    ? 'Get Started / Enter Studio'
-                                    : 'Next Feature',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                backgroundColor: currentSlide.highlightColor,
-                                elevation: 4,
-                                shadowColor: currentSlide.highlightColor.withValues(alpha: 0.5),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Step ${_currentIndex + 1} of ${_slides.length} • Initializing Cloud Studio...',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SlideCard extends StatelessWidget {
-  final _TourSlide slide;
-  final bool isDark;
-
-  const _SlideCard({required this.slide, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF131C2E) : Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-          width: 1.2,
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: Icon Orb + Badge
-          Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: slide.bgColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: slide.highlightColor.withValues(alpha: 0.3),
-                    width: 1.5,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(slide.icon, size: 28, color: slide.iconColor),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: slide.bgColor,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: slide.highlightColor.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Text(
-                      slide.badge,
-                      style: TextStyle(
-                        color: slide.highlightColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Slide Title
-          Text(
-            slide.title,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.5,
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Subtitle
-          Text(
-            slide.subtitle,
-            style: TextStyle(
-              fontSize: 13.5,
-              height: 1.45,
-              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Standard Slide Bullets
-          if (!slide.isRateLimits) ...[
-            ...slide.features.map(
-              (feat) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: slide.highlightColor.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        LucideIcons.checkCircle2,
-                        size: 16,
-                        color: slide.highlightColor,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        feat,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155),
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-
-          // Special Rate Limits Breakdown Slide
-          if (slide.isRateLimits) ...[
-            // PDF Limits Card
-            _RateLimitItem(
-              category: 'PDF Manipulation Tools',
-              rule: slide.pdfRule ?? '≤ 15 pages per document',
-              note: slide.pdfNote ?? '',
-              tip: slide.pdfTip ?? '',
-              color: const Color(0xFFDC2626),
-              icon: LucideIcons.fileText,
-              badgeText: 'PDF',
-              isDark: isDark,
-            ),
-            const SizedBox(height: 12),
-
-            // AI Limits Card
-            _RateLimitItem(
-              category: 'AI Intelligence Features',
-              rule: slide.aiRule ?? '5 requests per 1–4 hours',
-              note: slide.aiNote ?? '',
-              tip: slide.aiTip ?? '',
-              color: const Color(0xFF7C3AED),
-              icon: LucideIcons.brain,
-              badgeText: 'AI',
-              isDark: isDark,
-            ),
-            const SizedBox(height: 16),
-
-            // Footer note for unlimited WASM tools
-            ...slide.features.map(
-              (feat) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    const Icon(LucideIcons.checkCircle2, size: 14, color: Color(0xFF10B981)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        feat,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }
 }
 
-class _RateLimitItem extends StatelessWidget {
-  final String category;
+class _RateLimitCloudCard extends StatelessWidget {
+  final String title;
   final String rule;
   final String note;
   final String tip;
-  final Color color;
+  final Color accentColor;
   final IconData icon;
-  final String badgeText;
-  final bool isDark;
 
-  const _RateLimitItem({
-    required this.category,
+  const _RateLimitCloudCard({
+    required this.title,
     required this.rule,
     required this.note,
     required this.tip,
-    required this.color,
+    required this.accentColor,
     required this.icon,
-    required this.badgeText,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.12 : 0.06),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: color.withValues(alpha: 0.25),
+          color: accentColor.withValues(alpha: 0.35),
         ),
       ),
       child: Column(
@@ -798,97 +724,52 @@ class _RateLimitItem extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 16, color: color),
-              ),
-              const SizedBox(width: 10),
+              Icon(icon, size: 16, color: accentColor),
+              const SizedBox(width: 8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      category,
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                    Text(
-                      rule,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13.5,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withValues(alpha: 0.3)),
-                ),
                 child: Text(
-                  badgeText,
+                  title,
                   style: TextStyle(
-                    color: color,
+                    color: accentColor,
                     fontWeight: FontWeight.w700,
-                    fontSize: 10,
+                    fontSize: 12,
                   ),
+                ),
+              ),
+              Text(
+                rule,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+          Text(
+            note,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 4),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(LucideIcons.info, size: 12, color: isDark ? Colors.white54 : Colors.black45),
-              const SizedBox(width: 6),
+              const Icon(LucideIcons.alertTriangle, size: 11, color: Color(0xFFFBBF24)),
+              const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  note,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  tip,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFFBBF24),
                   ),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(LucideIcons.alertTriangle, size: 12, color: Color(0xFFD97706)),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    tip,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFD97706),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
@@ -896,16 +777,17 @@ class _RateLimitItem extends StatelessWidget {
   }
 }
 
-class _TourSlide {
+class _CloudTourSlide {
   final int id;
   final String badge;
   final String title;
   final String subtitle;
   final IconData icon;
-  final Color iconColor;
-  final Color bgColor;
-  final Color highlightColor;
+  final Color cloudColor1;
+  final Color cloudColor2;
+  final Color accentColor;
   final List<String> features;
+  final List<String> tags;
   final bool isRateLimits;
   final String? pdfRule;
   final String? pdfNote;
@@ -914,16 +796,17 @@ class _TourSlide {
   final String? aiNote;
   final String? aiTip;
 
-  const _TourSlide({
+  const _CloudTourSlide({
     required this.id,
     required this.badge,
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.iconColor,
-    required this.bgColor,
-    required this.highlightColor,
+    required this.cloudColor1,
+    required this.cloudColor2,
+    required this.accentColor,
     required this.features,
+    required this.tags,
     this.isRateLimits = false,
     this.pdfRule,
     this.pdfNote,

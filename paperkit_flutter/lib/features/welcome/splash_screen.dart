@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/constants/api_config.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -97,38 +96,27 @@ class _SplashScreenState extends State<SplashScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Glowing Logo Container
+                  // Glowing App Icon
                   Container(
-                    width: 104,
-                    height: 104,
+                    width: 108,
+                    height: 108,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.45),
-                          blurRadius: 32,
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.5),
+                          blurRadius: 36,
                           offset: const Offset(0, 12),
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          LucideIcons.fileText,
-                          size: 30,
-                          color: Colors.white,
-                        ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Image.asset(
+                        'assets/icons/app_icon.png',
+                        width: 108,
+                        height: 108,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   )
