@@ -1,11 +1,13 @@
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/providers/backend_provider.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/constants/api_config.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/particle_background.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,108 +17,186 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  double _progress = 0.0;
+  Timer? _progressTimer;
+
   @override
   void initState() {
     super.initState();
-    _handleSplashLogic();
+    _wakeUpServers();
+    _startSplashSequence();
   }
 
-  Future<void> _handleSplashLogic() async {
-    // 1. Initialize / warm up persistent anonymous user identity
-    await StorageService().getAnonymousUserId();
+  // Asynchronously ping both onrender URLs in background to wake up cold servers
+  void _wakeUpServers() {
+    try {
+      final dio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 55),
+          receiveTimeout: const Duration(seconds: 55),
+        ),
+      );
 
-    // 2. Check onboarding status
-    final prefs = await SharedPreferences.getInstance();
-    final onboardingDone = prefs.getBool('paperkit_onboarding_done') ?? false;
+      // Ping Backend
+      dio.get('${ApiConfig.defaultBackendUrl}/health').catchError((_) => Response(requestOptions: RequestOptions(path: '')));
+      
+      // Ping Web URL
+      dio.get(ApiConfig.frontendUrl).catchError((_) => Response(requestOptions: RequestOptions(path: '')));
+      
+      // Warm up local anonymous user storage
+      StorageService().getAnonymousUserId().catchError((_) => '');
+    } catch (_) {}
+  }
 
-    // Minimum branded splash display duration
-    await Future.delayed(const Duration(milliseconds: 1400));
+  void _startSplashSequence() {
+    // 5-second smooth progress timer
+    const totalDurationMs = 5000;
+    const intervalMs = 50;
+    const step = intervalMs / totalDurationMs;
 
-    if (!mounted) return;
+    _progressTimer = Timer.periodic(const Duration(milliseconds: intervalMs), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _progress = (_progress + step).clamp(0.0, 1.0);
+      });
 
-    if (!onboardingDone) {
-      context.go('/onboarding');
-    } else {
-      context.go('/');
-    }
+      if (_progress >= 1.0) {
+        timer.cancel();
+        context.go('/onboarding');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _progressTimer?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final backend = context.watch<BackendProvider>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.surfaceLight,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Branded Logo Container
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.35),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      body: Stack(
+        children: [
+          // Ambient Particle Layer
+          const ParticleBackground(
+            numberOfParticles: 28,
+            particleColor: Color(0xFF3B82F6),
+            maxSpeed: 0.5,
+          ),
+
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Glowing Logo Container
+                  Container(
+                    width: 104,
+                    height: 104,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.45),
+                          blurRadius: 32,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          LucideIcons.fileText,
+                          size: 30,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  )
+                      .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                      .scale(
+                        duration: 2000.ms,
+                        begin: const Offset(1, 1),
+                        end: const Offset(1.06, 1.06),
+                        curve: Curves.easeInOut,
+                      ),
+
+                  const SizedBox(height: 28),
+
+                  Text(
+                    'PaperKit',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.8,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
+                  ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.15, end: 0),
+
+                  const SizedBox(height: 6),
+
+                  Text(
+                    'Document Intelligence Suite',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
+                  ).animate().fadeIn(delay: 200.ms),
+
+                  const SizedBox(height: 48),
+
+                  // Progress Bar (5 seconds)
+                  Container(
+                    width: 200,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: _progress,
+                        backgroundColor: Colors.transparent,
+                        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  Text(
+                    'Waking up cloud engines & local sandbox...',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    ),
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.asset(
-                  'assets/icons/app_icon.png',
-                  width: 96,
-                  height: 96,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            )
-                .animate()
-                .scale(duration: 600.ms, curve: Curves.easeOutBack)
-                .fadeIn(duration: 400.ms),
-            const SizedBox(height: 24),
-            Text(
-              'PaperKit',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              ),
-            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
-            const SizedBox(height: 6),
-            Text(
-              'Document Intelligence Suite',
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
-              ),
-            ).animate().fadeIn(delay: 350.ms),
-            const SizedBox(height: 48),
-            // Backend Status Indicator
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-              ),
             ),
-            const SizedBox(height: 14),
-            Text(
-              backend.statusMessage,
-              style: TextStyle(
-                fontSize: 12,
-                color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

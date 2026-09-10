@@ -1,17 +1,15 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/services/pdf_engine.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/widgets/action_button.dart';
-import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/tool_flow_scaffold.dart';
 
 class WatermarkPDFScreen extends StatefulWidget {
   const WatermarkPDFScreen({super.key});
@@ -26,10 +24,15 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
   double _opacity = 0.3;
   double _fontSize = 40;
   double _angle = -45;
-  bool _isProcessing = false;
-  File? _watermarkedResult;
+
+  @override
+  void dispose() {
+    _watermarkController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickFile() async {
+    HapticFeedback.lightImpact();
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -38,175 +41,202 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
     if (result != null && result.files.single.path != null) {
       setState(() {
         _selectedFile = File(result.files.single.path!);
-        _watermarkedResult = null;
       });
     }
   }
 
-  Future<void> _applyWatermark() async {
-    if (_selectedFile == null || _watermarkController.text.trim().isEmpty) return;
-    setState(() => _isProcessing = true);
-
-    try {
-      final outputFile = await PdfEngine.addWatermark(
-        inputFile: _selectedFile!,
-        watermarkText: _watermarkController.text.trim(),
-        opacity: _opacity,
-        fontSize: _fontSize,
-        angle: _angle,
-      );
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = outputFile.uri.pathSegments.last;
-
-      final doc = DocumentFile(
-        id: 'wm_$timestamp',
-        name: fileName,
-        path: outputFile.path,
-        size: await outputFile.length(),
-        modifiedAt: DateTime.now(),
-        type: FileTypeCategory.pdf,
-      );
-
-      if (mounted) {
-        await context.read<FilesProvider>().addFile(doc);
-        await context.read<HistoryProvider>().addRecord(
-              HistoryItem(
-                id: 'hist_$timestamp',
-                toolId: 'watermark',
-                toolName: 'Watermark PDF',
-                fileName: fileName,
-                outputPath: outputFile.path,
-                fileSize: await outputFile.length(),
-                timestamp: DateTime.now(),
-              ),
-            );
-
-        setState(() {
-          _watermarkedResult = outputFile;
-          _isProcessing = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Watermark applied successfully!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Watermarking failed: $e')),
-        );
-      }
+  Future<File?> _executeWatermark() async {
+    final text = _watermarkController.text.trim();
+    if (_selectedFile == null || text.isEmpty) {
+      throw Exception('Please specify watermark text.');
     }
+
+    final outputFile = await PdfEngine.addWatermark(
+      inputFile: _selectedFile!,
+      watermarkText: text,
+      opacity: _opacity,
+      fontSize: _fontSize,
+      angle: _angle,
+    );
+
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fileName = outputFile.uri.pathSegments.last;
+    final fileSize = await outputFile.length();
+
+    final doc = DocumentFile(
+      id: 'wm_$timestamp',
+      name: fileName,
+      path: outputFile.path,
+      size: fileSize,
+      modifiedAt: DateTime.now(),
+      type: FileTypeCategory.pdf,
+    );
+
+    if (mounted) {
+      await context.read<FilesProvider>().addFile(doc);
+      await context.read<HistoryProvider>().addRecord(
+            HistoryItem(
+              id: 'hist_$timestamp',
+              toolId: 'watermark',
+              toolName: 'Watermark PDF',
+              fileName: fileName,
+              outputPath: outputFile.path,
+              fileSize: fileSize,
+              timestamp: DateTime.now(),
+            ),
+          );
+    }
+
+    return outputFile;
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const primaryColor = Color(0xFF0D9488); // Teal
 
-    return AppShell(
+    return ToolFlowScaffold(
       title: 'Watermark PDF',
-      showBottomNav: false,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+      toolId: 'watermark',
+      primaryColor: primaryColor,
+      toolIcon: LucideIcons.stamp,
+      processingMessage: 'Applying custom watermark to PDF pages...',
+      canProceedToEdition: _selectedFile != null,
+      onProcess: _executeWatermark,
+      onReset: () {
+        setState(() {
+          _selectedFile = null;
+          _watermarkController.text = 'CONFIDENTIAL';
+          _opacity = 0.3;
+          _fontSize = 40;
+          _angle = -45;
+        });
+      },
+
+      // ── Step 1: Upload Widget ──
+      uploadWidget: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF0FDFA),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.stamp, size: 36, color: primaryColor),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Select PDF to Watermark',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Stamp text watermarks, draft notices, or custom logos.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 18),
+
+            ElevatedButton.icon(
+              onPressed: _pickFile,
+              icon: const Icon(LucideIcons.filePlus, size: 18),
+              label: Text(
+                _selectedFile == null ? 'Choose PDF File' : 'Change Selected PDF',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
-            child: Column(
-              children: [
-                if (_selectedFile == null)
-                  Center(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickFile,
-                      icon: const Icon(LucideIcons.filePlus, size: 20),
-                      label: const Text('Choose PDF Document'),
+
+            if (_selectedFile != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.fileCheck, color: primaryColor, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _selectedFile!.uri.pathSegments.last,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  )
-                else ...[
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.toolTeal.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(LucideIcons.stamp, color: AppColors.toolTeal, size: 24),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          _selectedFile!.uri.pathSegments.last,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      TextButton(onPressed: _pickFile, child: const Text('Change')),
-                    ],
-                  ),
-                ],
-              ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+
+      // ── Step 2: Edition Widget ──
+      editionWidget: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Configure Watermark Stamp',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+          ),
+          const SizedBox(height: 14),
+
+          TextField(
+            controller: _watermarkController,
+            decoration: InputDecoration(
+              labelText: 'Watermark Text',
+              hintText: 'e.g. CONFIDENTIAL, DRAFT, SAMPLE',
+              filled: true,
+              fillColor: Colors.white,
+              prefixIcon: const Icon(LucideIcons.type, size: 18),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
-          if (_selectedFile != null) ...[
-            TextField(
-              controller: _watermarkController,
-              decoration: const InputDecoration(
-                labelText: 'Watermark Text',
-                hintText: 'e.g. CONFIDENTIAL, DRAFT, SAMPLE',
-                prefixIcon: Icon(LucideIcons.type, size: 18),
-              ),
-            ),
-            const SizedBox(height: 16),
+          // Opacity Slider
+          Text(
+            'Opacity: ${(_opacity * 100).toInt()}%',
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+          ),
+          Slider(
+            value: _opacity,
+            min: 0.1,
+            max: 0.9,
+            divisions: 8,
+            activeColor: primaryColor,
+            onChanged: (val) => setState(() => _opacity = val),
+          ),
+          const SizedBox(height: 10),
 
-            Text('Opacity: ${(_opacity * 100).toInt()}%', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
-            Slider(
-              value: _opacity,
-              min: 0.1,
-              max: 1.0,
-              divisions: 9,
-              onChanged: (val) => setState(() => _opacity = val),
-            ),
-            const SizedBox(height: 10),
-
-            Text('Font Size: ${_fontSize.toInt()} pt', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
-            Slider(
-              value: _fontSize,
-              min: 20,
-              max: 80,
-              divisions: 12,
-              onChanged: (val) => setState(() => _fontSize = val),
-            ),
-            const SizedBox(height: 20),
-
-            ActionButton(
-              label: 'Apply Watermark',
-              icon: LucideIcons.stamp,
-              isLoading: _isProcessing,
-              onPressed: _applyWatermark,
-            ),
-          ],
-
-          if (_watermarkedResult != null) ...[
-            const SizedBox(height: 20),
-            ActionButton(
-              label: 'Open Watermarked PDF',
-              icon: LucideIcons.externalLink,
-              isSecondary: true,
-              onPressed: () => OpenFilex.open(_watermarkedResult!.path),
-            ),
-          ],
+          // Font Size Slider
+          Text(
+            'Font Size: ${_fontSize.toInt()} pt',
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+          ),
+          Slider(
+            value: _fontSize,
+            min: 20,
+            max: 80,
+            divisions: 12,
+            activeColor: primaryColor,
+            onChanged: (val) => setState(() => _fontSize = val),
+          ),
         ],
       ),
     );

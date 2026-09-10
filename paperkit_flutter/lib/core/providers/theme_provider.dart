@@ -1,48 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  static const String _themePrefKey = 'paperkit_theme_mode';
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode get themeMode => ThemeMode.light;
+  bool get isDarkMode => false;
 
-  ThemeMode get themeMode => _themeMode;
-  bool get isDarkMode => _themeMode == ThemeMode.dark;
-
-  ThemeProvider() {
-    _loadTheme();
-  }
-
-  Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedMode = prefs.getString(_themePrefKey);
-    if (savedMode == 'dark') {
-      _themeMode = ThemeMode.dark;
-    } else if (savedMode == 'light') {
-      _themeMode = ThemeMode.light;
-    } else {
-      _themeMode = ThemeMode.system;
-    }
-    notifyListeners();
-  }
+  ThemeProvider();
 
   Future<void> setThemeMode(ThemeMode mode) async {
-    _themeMode = mode;
+    // Pure light mode enforced
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    if (mode == ThemeMode.dark) {
-      await prefs.setString(_themePrefKey, 'dark');
-    } else if (mode == ThemeMode.light) {
-      await prefs.setString(_themePrefKey, 'light');
-    } else {
-      await prefs.setString(_themePrefKey, 'system');
-    }
   }
 
   void toggleTheme() {
-    if (_themeMode == ThemeMode.dark) {
-      setThemeMode(ThemeMode.light);
-    } else {
-      setThemeMode(ThemeMode.dark);
-    }
+    // Pure light mode enforced
+    notifyListeners();
   }
 }

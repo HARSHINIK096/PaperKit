@@ -1,17 +1,15 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/services/image_engine.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/widgets/action_button.dart';
-import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/tool_flow_scaffold.dart';
 
 class ImageConverterScreen extends StatefulWidget {
   final String? initialTo;
@@ -25,8 +23,6 @@ class ImageConverterScreen extends StatefulWidget {
 class _ImageConverterScreenState extends State<ImageConverterScreen> {
   File? _selectedFile;
   late String _targetFormat;
-  bool _isProcessing = false;
-  File? _convertedResult;
 
   final List<String> _formats = ['png', 'jpg', 'webp', 'bmp', 'gif'];
 
@@ -37,6 +33,7 @@ class _ImageConverterScreenState extends State<ImageConverterScreen> {
   }
 
   Future<void> _pickFile() async {
+    HapticFeedback.lightImpact();
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'heic', 'bmp', 'gif'],
@@ -45,175 +42,178 @@ class _ImageConverterScreenState extends State<ImageConverterScreen> {
     if (result != null && result.files.single.path != null) {
       setState(() {
         _selectedFile = File(result.files.single.path!);
-        _convertedResult = null;
       });
     }
   }
 
-  Future<void> _convertImage() async {
-    if (_selectedFile == null) return;
-    setState(() => _isProcessing = true);
+  Future<File?> _executeConvert() async {
+    if (_selectedFile == null) return null;
 
-    try {
-      final outputFile = await ImageEngine.convertFormat(
-        inputFile: _selectedFile!,
-        targetFormat: _targetFormat,
-      );
+    final outputFile = await ImageEngine.convertFormat(
+      inputFile: _selectedFile!,
+      targetFormat: _targetFormat,
+    );
 
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = outputFile.uri.pathSegments.last;
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fileName = outputFile.uri.pathSegments.last;
+    final fileSize = await outputFile.length();
 
-      final doc = DocumentFile(
-        id: 'imgconv_$timestamp',
-        name: fileName,
-        path: outputFile.path,
-        size: await outputFile.length(),
-        modifiedAt: DateTime.now(),
-        type: FileTypeCategory.image,
-      );
+    final doc = DocumentFile(
+      id: 'imgconv_$timestamp',
+      name: fileName,
+      path: outputFile.path,
+      size: fileSize,
+      modifiedAt: DateTime.now(),
+      type: FileTypeCategory.image,
+    );
 
-      if (mounted) {
-        await context.read<FilesProvider>().addFile(doc);
-        await context.read<HistoryProvider>().addRecord(
-              HistoryItem(
-                id: 'hist_$timestamp',
-                toolId: 'image-converter',
-                toolName: 'Image Converter ($_targetFormat)',
-                fileName: fileName,
-                outputPath: outputFile.path,
-                fileSize: await outputFile.length(),
-                timestamp: DateTime.now(),
-              ),
-            );
-
-        setState(() {
-          _convertedResult = outputFile;
-          _isProcessing = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Converted to ${_targetFormat.toUpperCase()} successfully!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Conversion failed: $e')),
-        );
-      }
+    if (mounted) {
+      await context.read<FilesProvider>().addFile(doc);
+      await context.read<HistoryProvider>().addRecord(
+            HistoryItem(
+              id: 'hist_$timestamp',
+              toolId: 'image-converter',
+              toolName: 'Image Converter (${_targetFormat.toUpperCase()})',
+              fileName: fileName,
+              outputPath: outputFile.path,
+              fileSize: fileSize,
+              timestamp: DateTime.now(),
+            ),
+          );
     }
+
+    return outputFile;
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const primaryColor = Color(0xFF8B5CF6); // Purple
 
-    return AppShell(
+    return ToolFlowScaffold(
       title: 'Image Converter',
-      showBottomNav: false,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+      toolId: 'image-converter',
+      primaryColor: primaryColor,
+      toolIcon: LucideIcons.image,
+      processingMessage: 'Converting image to ${_targetFormat.toUpperCase()} format...',
+      canProceedToEdition: _selectedFile != null,
+      onProcess: _executeConvert,
+      onReset: () {
+        setState(() {
+          _selectedFile = null;
+          _targetFormat = widget.initialTo ?? 'png';
+        });
+      },
+
+      // ── Step 1: Upload Widget ──
+      uploadWidget: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F3FF),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.image, size: 36, color: primaryColor),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Select Image to Convert',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Supports JPG, PNG, WebP, HEIC, BMP and GIF formats.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 18),
+
+            ElevatedButton.icon(
+              onPressed: _pickFile,
+              icon: const Icon(LucideIcons.filePlus, size: 18),
+              label: Text(
+                _selectedFile == null ? 'Choose Image' : 'Change Selected Image',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+
+            if (_selectedFile != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.image, color: primaryColor, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _selectedFile!.uri.pathSegments.last,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+
+      // ── Step 2: Edition Widget ──
+      editionWidget: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-              ),
-            ),
-            child: Column(
-              children: [
-                if (_selectedFile == null)
-                  Center(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickFile,
-                      icon: const Icon(LucideIcons.image, size: 20),
-                      label: const Text('Choose Image to Convert'),
-                    ),
-                  )
-                else ...[
-                  Row(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          image: DecorationImage(
-                            image: FileImage(_selectedFile!),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          _selectedFile!.uri.pathSegments.last,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      TextButton(onPressed: _pickFile, child: const Text('Change')),
-                    ],
-                  ),
-                ],
-              ],
-            ),
+          const Text(
+            'Select Target Image Format',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
 
-          if (_selectedFile != null) ...[
-            Text(
-              'Target Image Format',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            Wrap(
-              spacing: 10,
-              children: _formats.map((fmt) {
-                final isSelected = _targetFormat == fmt;
-                return ChoiceChip(
-                  label: Text(
-                    fmt.toUpperCase(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-                    ),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: _formats.map((fmt) {
+              final isSelected = _targetFormat == fmt;
+              return ChoiceChip(
+                label: Text(
+                  fmt.toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected ? Colors.white : const Color(0xFF334155),
                   ),
-                  selected: isSelected,
-                  selectedColor: AppColors.primary,
-                  onSelected: (_) => setState(() => _targetFormat = fmt),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
-
-            ActionButton(
-              label: 'Convert to ${_targetFormat.toUpperCase()}',
-              icon: LucideIcons.refreshCw,
-              isLoading: _isProcessing,
-              onPressed: _convertImage,
-            ),
-          ],
-
-          if (_convertedResult != null) ...[
-            const SizedBox(height: 20),
-            ActionButton(
-              label: 'Open Converted Image',
-              icon: LucideIcons.externalLink,
-              isSecondary: true,
-              onPressed: () => OpenFilex.open(_convertedResult!.path),
-            ),
-          ],
+                ),
+                selected: isSelected,
+                selectedColor: primaryColor,
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: BorderSide(
+                    color: isSelected ? primaryColor : const Color(0xFFCBD5E1),
+                  ),
+                ),
+                onSelected: (_) => setState(() => _targetFormat = fmt),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );

@@ -24,6 +24,33 @@ def cleanup_file(filepath: str):
     except Exception as e:
         print(f"Error cleaning up file {filepath}: {e}")
 
+import asyncio
+
+def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
+    ydl_opts = {
+        'outtmpl': output_template,
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'merge_output_format': 'mp4',
+        'quiet': True,
+        'no_warnings': True,
+        'nocheckcertificate': True,
+        'ignoreerrors': False,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web', 'ios', 'tv'],
+            }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
+        }
+    }
+    if os.path.exists(bin_dir):
+        ydl_opts['ffmpeg_location'] = bin_dir
+        
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
 @router.post("/download-youtube")
 async def download_youtube(req: DownloadRequest, background_tasks: BackgroundTasks):
     if not req.url or ("youtube.com" not in req.url and "youtu.be" not in req.url):
@@ -31,34 +58,10 @@ async def download_youtube(req: DownloadRequest, background_tasks: BackgroundTas
 
     job_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{job_id}_%(title)s.%(ext)s")
+    bin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "bin")
     
     try:
-        bin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "bin")
-        
-        ydl_opts = {
-            'outtmpl': output_template,
-            'format': 'b[ext=mp4]/best[ext=mp4]/bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b/best',
-            'merge_output_format': 'mp4',
-            'quiet': True,
-            'no_warnings': True,
-            'nocheckcertificate': True,
-            'ignoreerrors': False,
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['android_creator', 'ios', 'mweb', 'web', 'tv_embedded'],
-                }
-            },
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                'Accept-Language': 'en-US,en;q=0.9',
-            }
-        }
-        
-        if os.path.exists(bin_dir):
-            ydl_opts['ffmpeg_location'] = bin_dir
-            
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([req.url])
+        await asyncio.to_thread(_sync_download_youtube, req.url, output_template, bin_dir)
             
         # Find the downloaded file
         downloaded_file = None
@@ -99,7 +102,13 @@ async def download_spotify(req: DownloadRequest, background_tasks: BackgroundTas
     job_id = str(uuid.uuid4())
     
     try:
-        downloaded_file = download_spotify_track(req.url, output_dir=DOWNLOAD_DIR, job_id=job_id)
+        downloaded_file = await asyncio.to_thread(
+            download_spotify_track, 
+            req.url, 
+            DOWNLOAD_DIR, 
+            None, 
+            job_id
+        )
         
         if not downloaded_file or not os.path.exists(downloaded_file):
             raise Exception("Downloaded audio file not found")
@@ -119,5 +128,141 @@ async def download_spotify(req: DownloadRequest, background_tasks: BackgroundTas
     except Exception as e:
         print(f"Spotify Download Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+from fastapi import UploadFile, File, Form
+
+def get_ffmpeg_cmd():
+    bin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "bin")
+    ffmpeg_bin = os.path.join(bin_dir, "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg")
+    if os.path.exists(ffmpeg_bin):
+        return ffmpeg_bin
+    return "ffmpeg"
+
+
+@router.post("/convert-video")
+async def convert_video(
+    file: UploadFile = File(...),
+    target_format: str = Form("mp4"),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+):
+    job_id = str(uuid.uuid4())
+    in_ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "mp4"
+    in_path = os.path.join(DOWNLOAD_DIR, f"{job_id}_in.{in_ext}")
+    target_fmt = target_format.lower().replace(".", "")
+    out_path = os.path.join(DOWNLOAD_DIR, f"{job_id}_out.{target_fmt}")
+
+    content = await file.read()
+    with open(in_path, "wb") as f:
+        f.write(content)
+
+    ffmpeg = get_ffmpeg_cmd()
+    try:
+        if target_fmt == "gif":
+            cmd = [ffmpeg, "-y", "-i", in_path, "-vf", "fps=10,scale=480:-1:flags=lanczos", out_path]
+        elif target_fmt == "webm":
+            cmd = [ffmpeg, "-y", "-i", in_path, "-c:v", "libvpx-vp9", "-crf", "30", "-b:v", "0", "-c:a", "libopus", out_path]
+        elif target_fmt == "mov":
+            cmd = [ffmpeg, "-y", "-i", in_path, "-c:v", "libx264", "-c:a", "aac", out_path]
+        else: # mp4
+            cmd = [ffmpeg, "-y", "-i", in_path, "-c:v", "libx264", "-c:a", "aac", "-movflags", "+faststart", out_path]
+
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+        if res.returncode != 0 or not os.path.exists(out_path):
+            if not os.path.exists(out_path):
+                raise Exception(f"FFmpeg error: {res.stderr.decode('utf-8', errors='ignore')[:300]}")
+
+        background_tasks.add_task(cleanup_file, in_path)
+        background_tasks.add_task(cleanup_file, out_path)
+
+        media_type = f"video/{target_fmt}" if target_fmt != "gif" else "image/gif"
+        orig_stem = file.filename.rsplit(".", 1)[0]
+        return FileResponse(out_path, filename=f"{orig_stem}.{target_fmt}", media_type=media_type)
+    except Exception as e:
+        cleanup_file(in_path)
+        cleanup_file(out_path)
+        raise HTTPException(status_code=500, detail=f"Video conversion error: {str(e)}")
+
+
+@router.post("/compress-video")
+async def compress_video(
+    file: UploadFile = File(...),
+    preset: str = Form("medium"),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+):
+    job_id = str(uuid.uuid4())
+    in_ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "mp4"
+    in_path = os.path.join(DOWNLOAD_DIR, f"{job_id}_in.{in_ext}")
+    out_path = os.path.join(DOWNLOAD_DIR, f"{job_id}_compressed.{in_ext}")
+
+    content = await file.read()
+    with open(in_path, "wb") as f:
+        f.write(content)
+
+    crf = "28"
+    if preset == "low":
+        crf = "22"
+    elif preset == "high":
+        crf = "36"
+
+    ffmpeg = get_ffmpeg_cmd()
+    try:
+        cmd = [ffmpeg, "-y", "-i", in_path, "-vcodec", "libx264", "-crf", crf, "-preset", "faster", "-acodec", "aac", "-b:a", "128k", out_path]
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=180)
+        if res.returncode != 0 or not os.path.exists(out_path):
+            raise Exception(f"FFmpeg compression error: {res.stderr.decode('utf-8', errors='ignore')[:300]}")
+
+        background_tasks.add_task(cleanup_file, in_path)
+        background_tasks.add_task(cleanup_file, out_path)
+
+        orig_stem = file.filename.rsplit(".", 1)[0]
+        return FileResponse(out_path, filename=f"{orig_stem}_compressed.{in_ext}", media_type=f"video/{in_ext}")
+    except Exception as e:
+        cleanup_file(in_path)
+        cleanup_file(out_path)
+        raise HTTPException(status_code=500, detail=f"Video compression error: {str(e)}")
+
+
+@router.post("/convert-audio")
+async def convert_audio(
+    file: UploadFile = File(...),
+    target_format: str = Form("mp3"),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+):
+    job_id = str(uuid.uuid4())
+    in_ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "mp3"
+    in_path = os.path.join(DOWNLOAD_DIR, f"{job_id}_in.{in_ext}")
+    target_fmt = target_format.lower().replace(".", "")
+    out_path = os.path.join(DOWNLOAD_DIR, f"{job_id}_out.{target_fmt}")
+
+    content = await file.read()
+    with open(in_path, "wb") as f:
+        f.write(content)
+
+    ffmpeg = get_ffmpeg_cmd()
+    try:
+        if target_fmt == "wav":
+            cmd = [ffmpeg, "-y", "-i", in_path, "-acodec", "pcm_s16le", out_path]
+        elif target_fmt == "ogg":
+            cmd = [ffmpeg, "-y", "-i", in_path, "-acodec", "libvorbis", out_path]
+        elif target_fmt == "aac" or target_fmt == "m4a":
+            cmd = [ffmpeg, "-y", "-i", in_path, "-acodec", "aac", out_path]
+        else: # mp3
+            cmd = [ffmpeg, "-y", "-i", in_path, "-acodec", "libmp3lame", "-b:a", "192k", out_path]
+
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+        if res.returncode != 0 or not os.path.exists(out_path):
+            raise Exception(f"FFmpeg audio conversion error: {res.stderr.decode('utf-8', errors='ignore')[:300]}")
+
+        background_tasks.add_task(cleanup_file, in_path)
+        background_tasks.add_task(cleanup_file, out_path)
+
+        orig_stem = file.filename.rsplit(".", 1)[0]
+        return FileResponse(out_path, filename=f"{orig_stem}.{target_fmt}", media_type=f"audio/{target_fmt}")
+    except Exception as e:
+        cleanup_file(in_path)
+        cleanup_file(out_path)
+        raise HTTPException(status_code=500, detail=f"Audio conversion error: {str(e)}")
+
 
 

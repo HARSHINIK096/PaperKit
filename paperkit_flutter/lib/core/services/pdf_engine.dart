@@ -216,4 +216,266 @@ class PdfEngine {
 
     return outputFile;
   }
+
+  // Extract Text Lines with Bounding Boxes for in-place selection and editing
+  static Future<List<PdfExistingTextSpan>> extractPageTextSpans({
+    required File inputFile,
+    required int pageIndex,
+  }) async {
+    final bytes = await inputFile.readAsBytes();
+    final PdfDocument document = PdfDocument(inputBytes: bytes);
+    final List<PdfExistingTextSpan> spans = [];
+
+    try {
+      if (pageIndex >= 0 && pageIndex < document.pages.count) {
+        final page = document.pages[pageIndex];
+        final pageSize = page.size;
+        final extractor = PdfTextExtractor(document);
+        final lines = extractor.extractTextLines(
+          startPageIndex: pageIndex,
+          endPageIndex: pageIndex,
+        );
+
+        int idx = 0;
+        for (final line in lines) {
+          final trimmed = line.text.trim();
+          if (trimmed.isEmpty) continue;
+
+          final bounds = line.bounds;
+          // Normalize coordinates relative to page size (0.0 to 1.0)
+          final normLeft = (bounds.left / pageSize.width).clamp(0.0, 1.0);
+          final normTop = (bounds.top / pageSize.height).clamp(0.0, 1.0);
+          final normWidth = (bounds.width / pageSize.width).clamp(0.005, 1.0);
+          final normHeight = (bounds.height / pageSize.height).clamp(0.005, 1.0);
+
+          spans.add(
+            PdfExistingTextSpan(
+              id: 'span_${pageIndex}_$idx',
+              originalText: line.text,
+              currentText: line.text,
+              pdfBounds: bounds,
+              normalizedRect: Rect.fromLTWH(normLeft, normTop, normWidth, normHeight),
+              fontSize: line.fontSize > 0 ? line.fontSize : 12.0,
+              isBold: line.fontStyle.contains(PdfFontStyle.bold),
+            ),
+          );
+          idx++;
+        }
+      }
+    } catch (e) {
+      print('Extract text spans error: $e');
+    } finally {
+      document.dispose();
+    }
+
+    return spans;
+  }
+
+  // Apply In-Place Annotations, Freehand Drawings, Text Overlays, and Existing Text Replacements
+  static Future<File> applyPdfAnnotations({
+    required File inputFile,
+    required Map<int, List<PdfDrawPath>> drawPathsByPage,
+    required Map<int, List<PdfTextEdit>> textEditsByPage,
+    required Map<int, List<PdfHighlightBox>> highlightsByPage,
+    Map<int, List<PdfExistingTextSpan>>? modifiedSpansByPage,
+  }) async {
+    final bytes = await inputFile.readAsBytes();
+    final PdfDocument document = PdfDocument(inputBytes: bytes);
+
+    for (int pageIdx = 0; pageIdx < document.pages.count; pageIdx++) {
+      final page = document.pages[pageIdx];
+      final pageSize = page.size;
+
+      // 1. In-place Replacement of Existing Text Objects (Redact original + Draw replacement)
+      final modifiedSpans = modifiedSpansByPage?[pageIdx] ?? [];
+      for (final span in modifiedSpans) {
+        if (!span.isModified) continue;
+
+        // Cover / redact original text with crisp white background
+        final coverBrush = PdfSolidBrush(PdfColor(255, 255, 255));
+        final coverBounds = Rect.fromLTWH(
+          span.normalizedRect.left * pageSize.width - 2,
+          span.normalizedRect.top * pageSize.height - 1,
+          span.normalizedRect.width * pageSize.width + 4,
+          span.normalizedRect.height * pageSize.height + 2,
+        );
+        page.graphics.drawRectangle(brush: coverBrush, bounds: coverBounds);
+
+        // Draw the new updated text exactly in place
+        final font = PdfStandardFont(
+          PdfFontFamily.helvetica,
+          span.fontSize,
+          style: span.isBold ? PdfFontStyle.bold : PdfFontStyle.regular,
+        );
+        final textBrush = PdfSolidBrush(
+          PdfColor(span.color.red, span.color.green, span.color.blue),
+        );
+        page.graphics.drawString(
+          span.currentText,
+          font,
+          brush: textBrush,
+          bounds: Rect.fromLTWH(
+            span.normalizedRect.left * pageSize.width,
+            span.normalizedRect.top * pageSize.height,
+            pageSize.width - (span.normalizedRect.left * pageSize.width),
+            span.fontSize * 2.5,
+          ),
+        );
+      }
+
+      // 2. Draw Highlights / Rectangles
+      final highlights = highlightsByPage[pageIdx] ?? [];
+      for (final h in highlights) {
+        final brush = PdfSolidBrush(
+          PdfColor(h.color.red, h.color.green, h.color.blue, (h.opacity * 255).toInt()),
+        );
+        page.graphics.drawRectangle(
+          brush: brush,
+          bounds: Rect.fromLTWH(
+            h.normalizedRect.left * pageSize.width,
+            h.normalizedRect.top * pageSize.height,
+            h.normalizedRect.width * pageSize.width,
+            h.normalizedRect.height * pageSize.height,
+          ),
+        );
+      }
+
+      // 3. Draw Freehand Pen Paths
+      final paths = drawPathsByPage[pageIdx] ?? [];
+      for (final path in paths) {
+        if (path.normalizedPoints.length < 2) continue;
+        final pen = PdfPen(
+          PdfColor(path.color.red, path.color.green, path.color.blue),
+          width: path.strokeWidth,
+        );
+        for (int i = 0; i < path.normalizedPoints.length - 1; i++) {
+          final p1 = path.normalizedPoints[i];
+          final p2 = path.normalizedPoints[i + 1];
+          page.graphics.drawLine(
+            pen,
+            Offset(p1.dx * pageSize.width, p1.dy * pageSize.height),
+            Offset(p2.dx * pageSize.width, p2.dy * pageSize.height),
+          );
+        }
+      }
+
+      // 4. Draw Text Annotations
+      final textEdits = textEditsByPage[pageIdx] ?? [];
+      for (final t in textEdits) {
+        final font = PdfStandardFont(
+          PdfFontFamily.helvetica,
+          t.fontSize,
+          style: t.isBold ? PdfFontStyle.bold : PdfFontStyle.regular,
+        );
+        final brush = PdfSolidBrush(
+          PdfColor(t.color.red, t.color.green, t.color.blue),
+        );
+        page.graphics.drawString(
+          t.text,
+          font,
+          brush: brush,
+          bounds: Rect.fromLTWH(
+            t.normalizedPosition.dx * pageSize.width,
+            t.normalizedPosition.dy * pageSize.height,
+            pageSize.width - (t.normalizedPosition.dx * pageSize.width),
+            t.fontSize * 3,
+          ),
+        );
+      }
+    }
+
+    final outputDir = await getApplicationDocumentsDirectory();
+    final baseName = inputFile.uri.pathSegments.last.replaceAll('.pdf', '');
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputFile = File('${outputDir.path}/edited_${baseName}_$timestamp.pdf');
+    await outputFile.writeAsBytes(document.saveSync());
+    document.dispose();
+
+    return outputFile;
+  }
 }
+
+class PdfExistingTextSpan {
+  final String id;
+  final String originalText;
+  String currentText;
+  final Rect pdfBounds;
+  final Rect normalizedRect;
+  double fontSize;
+  Color color;
+  bool isBold;
+  bool isModified;
+
+  PdfExistingTextSpan({
+    required this.id,
+    required this.originalText,
+    required this.currentText,
+    required this.pdfBounds,
+    required this.normalizedRect,
+    required this.fontSize,
+    this.color = const Color(0xFF000000),
+    this.isBold = false,
+    this.isModified = false,
+  });
+
+  PdfExistingTextSpan copyWith({
+    String? currentText,
+    double? fontSize,
+    Color? color,
+    bool? isBold,
+    bool? isModified,
+  }) {
+    return PdfExistingTextSpan(
+      id: id,
+      originalText: originalText,
+      currentText: currentText ?? this.currentText,
+      pdfBounds: pdfBounds,
+      normalizedRect: normalizedRect,
+      fontSize: fontSize ?? this.fontSize,
+      color: color ?? this.color,
+      isBold: isBold ?? this.isBold,
+      isModified: isModified ?? this.isModified,
+    );
+  }
+}
+
+class PdfTextEdit {
+  final String text;
+  final Offset normalizedPosition;
+  final double fontSize;
+  final Color color;
+  final bool isBold;
+
+  PdfTextEdit({
+    required this.text,
+    required this.normalizedPosition,
+    this.fontSize = 14,
+    this.color = const Color(0xFF000000),
+    this.isBold = false,
+  });
+}
+
+class PdfDrawPath {
+  final List<Offset> normalizedPoints;
+  final Color color;
+  final double strokeWidth;
+
+  PdfDrawPath({
+    required this.normalizedPoints,
+    required this.color,
+    this.strokeWidth = 3.0,
+  });
+}
+
+class PdfHighlightBox {
+  final Rect normalizedRect;
+  final Color color;
+  final double opacity;
+
+  PdfHighlightBox({
+    required this.normalizedRect,
+    required this.color,
+    this.opacity = 0.35,
+  });
+}
+

@@ -8,9 +8,11 @@ import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
+import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/file_success_dialog.dart';
 
 class VideoCompressorScreen extends StatefulWidget {
   final String? initialPreset;
@@ -62,16 +64,20 @@ class _VideoCompressorScreenState extends State<VideoCompressorScreen> {
     setState(() => _isProcessing = true);
 
     try {
+      final outputFile = await ApiService().compressVideo(
+        file: _selectedFile!,
+        preset: _preset,
+      );
+
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outName = 'Compressed_${_selectedFile!.uri.pathSegments.last}';
-      final outputFile = File('${_selectedFile!.parent.path}/$outName');
-      await outputFile.writeAsBytes(await _selectedFile!.readAsBytes());
+      final outName = outputFile.uri.pathSegments.last;
+      final fileSize = await outputFile.length();
 
       final doc = DocumentFile(
         id: 'vidcomp_$timestamp',
         name: outName,
         path: outputFile.path,
-        size: await outputFile.length(),
+        size: fileSize,
         modifiedAt: DateTime.now(),
         type: FileTypeCategory.video,
       );
@@ -82,10 +88,10 @@ class _VideoCompressorScreenState extends State<VideoCompressorScreen> {
               HistoryItem(
                 id: 'hist_$timestamp',
                 toolId: 'video-compressor',
-                toolName: 'Video Compressor ($_preset)',
+                toolName: 'Video Compressor (${_preset.toUpperCase()})',
                 fileName: outName,
                 outputPath: outputFile.path,
-                fileSize: await outputFile.length(),
+                fileSize: fileSize,
                 timestamp: DateTime.now(),
               ),
             );
@@ -95,8 +101,12 @@ class _VideoCompressorScreenState extends State<VideoCompressorScreen> {
           _isProcessing = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Video compression completed!')),
+        FileSuccessDialog.show(
+          context,
+          title: 'Compression Complete!',
+          message: 'Video compressed using ${_preset.toUpperCase()} optimization.',
+          file: outputFile,
+          fileSize: '${(fileSize / (1024 * 1024)).toStringAsFixed(2)} MB',
         );
       }
     } catch (e) {

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../theme/app_colors.dart';
+import 'app_drawer.dart';
 
 class AppShell extends StatelessWidget {
   final Widget child;
@@ -21,11 +22,13 @@ class AppShell extends StatelessWidget {
   });
 
   int _calculateSelectedIndex(BuildContext context) {
-    final String location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/tools') || location.startsWith('/category')) return 1;
-    if (location.startsWith('/scanner')) return 2;
-    if (location.startsWith('/files')) return 3;
-    if (location.startsWith('/profile') || location.startsWith('/history') || location.startsWith('/storage')) return 4;
+    try {
+      final String location = GoRouterState.of(context).uri.path;
+      if (location.startsWith('/tools') || location.startsWith('/category')) return 1;
+      if (location.startsWith('/scanner')) return 2;
+      if (location.startsWith('/files')) return 3;
+      if (location.startsWith('/profile') || location.startsWith('/history') || location.startsWith('/storage')) return 4;
+    } catch (_) {}
     return 0; // Home
   }
 
@@ -56,11 +59,19 @@ class AppShell extends StatelessWidget {
     final selectedIndex = _calculateSelectedIndex(context);
 
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: showAppBar
           ? AppBar(
               title: Text(
                 title ?? 'PaperKit',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18.5, letterSpacing: -0.3),
+              ),
+              leading: Builder(
+                builder: (scaffoldContext) => IconButton(
+                  icon: const Icon(LucideIcons.menu, size: 22),
+                  onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+                  tooltip: 'Open Menu',
+                ),
               ),
               actions: actions,
               bottom: PreferredSize(
@@ -78,54 +89,168 @@ class AppShell extends StatelessWidget {
         child: child,
       ),
       bottomNavigationBar: showBottomNav
-          ? Container(
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                border: Border(
-                  top: BorderSide(
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                    width: 1,
-                  ),
+          ? _buildCustomBottomNav(context, selectedIndex, isDark)
+          : null,
+    );
+  }
+
+  Widget _buildCustomBottomNav(BuildContext context, int selectedIndex, bool isDark) {
+    final bgColor = isDark ? AppColors.surfaceDark : Colors.white;
+    const activeColor = Color(0xFF2563EB);
+    const inactiveColor = Color(0xFF94A3B8);
+
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        color: bgColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.borderDark : const Color(0xFFF1F5F9),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          Row(
+            children: [
+              // 1. Home
+              Expanded(
+                child: _buildNavItem(
+                  icon: LucideIcons.home,
+                  label: 'Home',
+                  isSelected: selectedIndex == 0,
+                  activeColor: activeColor,
+                  inactiveColor: inactiveColor,
+                  onTap: () => _onItemTapped(0, context),
                 ),
               ),
-              child: NavigationBar(
-                selectedIndex: selectedIndex,
-                onDestinationSelected: (idx) => _onItemTapped(idx, context),
-                backgroundColor: Colors.transparent,
-                indicatorColor: AppColors.primary.withValues(alpha: 0.12),
-                elevation: 0,
-                height: 64,
-                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                destinations: const [
-                  NavigationDestination(
-                    icon: Icon(LucideIcons.home, size: 21),
-                    selectedIcon: Icon(LucideIcons.home, size: 21, color: AppColors.primary),
-                    label: 'Home',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(LucideIcons.grid, size: 21),
-                    selectedIcon: Icon(LucideIcons.grid, size: 21, color: AppColors.primary),
-                    label: 'Tools',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(LucideIcons.scanLine, size: 21),
-                    selectedIcon: Icon(LucideIcons.scanLine, size: 21, color: AppColors.primary),
-                    label: 'Scanner',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(LucideIcons.folder, size: 21),
-                    selectedIcon: Icon(LucideIcons.folder, size: 21, color: AppColors.primary),
-                    label: 'Files',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(LucideIcons.user, size: 21),
-                    selectedIcon: Icon(LucideIcons.user, size: 21, color: AppColors.primary),
-                    label: 'Profile',
-                  ),
-                ],
+              // 2. Tools
+              Expanded(
+                child: _buildNavItem(
+                  icon: LucideIcons.grid2x2,
+                  label: 'Tools',
+                  isSelected: selectedIndex == 1,
+                  activeColor: activeColor,
+                  inactiveColor: inactiveColor,
+                  onTap: () => _onItemTapped(1, context),
+                ),
               ),
-            )
-          : null,
+              // Center Spacer for Camera FAB
+              const SizedBox(width: 54),
+              // 4. Files
+              Expanded(
+                child: _buildNavItem(
+                  icon: LucideIcons.files,
+                  label: 'Files',
+                  isSelected: selectedIndex == 3,
+                  activeColor: activeColor,
+                  inactiveColor: inactiveColor,
+                  onTap: () => _onItemTapped(3, context),
+                ),
+              ),
+              // 5. Settings
+              Expanded(
+                child: _buildNavItem(
+                  icon: LucideIcons.settings,
+                  label: 'Settings',
+                  isSelected: selectedIndex == 4,
+                  activeColor: activeColor,
+                  inactiveColor: inactiveColor,
+                  onTap: () => _onItemTapped(4, context),
+                ),
+              ),
+            ],
+          ),
+
+          // Center Floating Elevated Blue Camera Button
+          Positioned(
+            top: -16,
+            child: GestureDetector(
+              onTap: () => _onItemTapped(2, context),
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.45),
+                      blurRadius: 14,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 3.5,
+                  ),
+                ),
+                child: const Icon(
+                  LucideIcons.camera,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required Color activeColor,
+    required Color inactiveColor,
+    required VoidCallback onTap,
+  }) {
+    final color = isSelected ? activeColor : inactiveColor;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 21,
+              color: color,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

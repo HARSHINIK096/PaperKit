@@ -65,17 +65,75 @@ class _HomeScreenState extends State<HomeScreen> {
     return AppShell(
       title: 'PaperKit',
       actions: [
-        IconButton(
-          icon: Icon(
-            backend.isConnected ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-            color: backend.isConnected ? AppColors.success : AppColors.error,
-            size: 21,
-          ),
-          onPressed: () {
-            HapticFeedback.selectionClick();
-            backend.checkHealth();
+        // Live Server Sync Beacon (Green = Online, Red = Offline)
+        InkWell(
+          onTap: () async {
+            HapticFeedback.lightImpact();
+            final online = await backend.checkHealth();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(
+                        online ? LucideIcons.checkCircle2 : LucideIcons.alertTriangle,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(backend.statusMessage),
+                    ],
+                  ),
+                  backgroundColor: online ? const Color(0xFF059669) : const Color(0xFFDC2626),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
           },
-          tooltip: backend.statusMessage,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: backend.statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: backend.statusColor.withValues(alpha: 0.4),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: backend.statusColor,
+                    boxShadow: [
+                      BoxShadow(
+                        color: backend.statusColor.withValues(alpha: 0.6),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  backend.isConnected ? 'ONLINE' : 'OFFLINE',
+                  style: TextStyle(
+                    color: backend.statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         IconButton(
           icon: const Icon(LucideIcons.history, size: 20),
@@ -85,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           tooltip: 'Processing History',
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
       ],
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -134,82 +192,125 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildCategoryPills(context, isDark),
           const SizedBox(height: 24),
 
-          // ── Featured Quick Launch Grid ───────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Featured Tools',
-                style: TextStyle(
-                  fontSize: 17.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  HapticFeedback.selectionClick();
-                  context.go('/tools');
-                },
-                child: const Text('See All (30+)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: AppTools.quickTools.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1.15,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-            ),
-            itemBuilder: (context, index) {
-              return ToolCard(tool: AppTools.quickTools[index]);
-            },
+          // ── 1. Featured Quick Launch Grid ───────────────────────
+          _buildCategorySection(
+            context,
+            isDark: isDark,
+            title: 'Featured Tools',
+            categoryId: 'all',
+            tools: AppTools.featuredTools,
+            customRoute: '/tools',
+            viewAllLabel: 'See All (40+)',
           ),
           const SizedBox(height: 26),
 
-          // ── AI Document Intelligence Category Section ────────────
+          // ── 2. AI Document Intelligence Category Section ─────────
           _buildCategorySection(
             context,
             isDark: isDark,
             title: 'AI Document Intelligence',
             categoryId: 'ai',
-            tools: AppTools.aiTools.take(4).toList(),
+            tools: AppTools.aiTools,
           ),
           const SizedBox(height: 26),
 
-          // ── PDF Processing & Pages Category Section ──────────────
+          // ── 3. PDF Processing & Pages Category Section ───────────
           _buildCategorySection(
             context,
             isDark: isDark,
             title: 'PDF Processing & Pages',
             categoryId: 'pdf',
-            tools: AppTools.pdfTools.take(4).toList(),
+            tools: AppTools.pdfTools,
           ),
           const SizedBox(height: 26),
 
-          // ── Security & Privacy Category Section ──────────────────
+          // ── 4. Security & Privacy Category Section ───────────────
           _buildCategorySection(
             context,
             isDark: isDark,
-            title: 'Security & Privacy Studio',
+            title: 'Security & Privacy',
             categoryId: 'security',
             tools: AppTools.securityTools,
           ),
           const SizedBox(height: 26),
 
-          // ── Image & Media Studio Section ─────────────────────────
+          // ── 5. Document Conversions Category Section ─────────────
           _buildCategorySection(
             context,
             isDark: isDark,
-            title: 'Image & Media Studio',
+            title: 'Conversions',
+            categoryId: 'conversions',
+            tools: AppTools.conversionTools,
+          ),
+          const SizedBox(height: 26),
+
+          // ── 6. Image Format Converter Section ────────────────────
+          _buildCategorySection(
+            context,
+            isDark: isDark,
+            title: 'Image Format Converter',
             categoryId: 'image',
-            tools: AppTools.mediaTools.take(4).toList(),
+            tools: AppTools.imageFormatTools,
+          ),
+          const SizedBox(height: 26),
+
+          // ── 7. Image Compressor ⭐ Section ───────────────────────
+          _buildCategorySection(
+            context,
+            isDark: isDark,
+            title: 'Image Compressor ⭐',
+            categoryId: 'image',
+            tools: AppTools.imageCompressorTools,
+          ),
+          const SizedBox(height: 26),
+
+          // ── 8. Media Downloader (YouTube & Spotify) Section ──────
+          _buildCategorySection(
+            context,
+            isDark: isDark,
+            title: 'Media Downloader (YouTube & Spotify)',
+            categoryId: 'media',
+            tools: AppTools.mediaDownloaderTools,
+          ),
+          const SizedBox(height: 26),
+
+          // ── 9. Video Format Converter Section ────────────────────
+          _buildCategorySection(
+            context,
+            isDark: isDark,
+            title: 'Video Format Converter',
+            categoryId: 'video',
+            tools: AppTools.videoConverterTools,
+          ),
+          const SizedBox(height: 26),
+
+          // ── 10. Video Compressor Section ─────────────────────────
+          _buildCategorySection(
+            context,
+            isDark: isDark,
+            title: 'Video Compressor',
+            categoryId: 'video',
+            tools: AppTools.videoCompressorTools,
+          ),
+          const SizedBox(height: 26),
+
+          // ── 11. Archive & Compression Section ────────────────────
+          _buildCategorySection(
+            context,
+            isDark: isDark,
+            title: 'Archive & Compression (.ZIP, .RAR, .TAR, .GZ, .7Z, .BZ2)',
+            categoryId: 'archive',
+            tools: AppTools.archiveTools,
+          ),
+          const SizedBox(height: 26),
+
+          // ── 12. Audio Format Converter Section ───────────────────
+          _buildCategorySection(
+            context,
+            isDark: isDark,
+            title: 'Audio Format Converter',
+            categoryId: 'audio',
+            tools: AppTools.audioConverterTools,
           ),
           const SizedBox(height: 26),
 
@@ -545,6 +646,8 @@ class _HomeScreenState extends State<HomeScreen> {
     required String title,
     required String categoryId,
     required List<ToolItem> tools,
+    String? customRoute,
+    String viewAllLabel = 'View All',
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,21 +655,30 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 17.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 17.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            const SizedBox(width: 8),
             TextButton(
               onPressed: () {
                 HapticFeedback.selectionClick();
-                context.push('/category/$categoryId');
+                if (customRoute != null) {
+                  context.push(customRoute);
+                } else {
+                  context.push('/category/$categoryId');
+                }
               },
-              child: const Text('View All', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+              child: Text(viewAllLabel, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             ),
           ],
         ),
@@ -576,10 +688,10 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: const NeverScrollableScrollPhysics(),
           itemCount: tools.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 1.15,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
+            crossAxisCount: 4,
+            childAspectRatio: 0.74,
+            crossAxisSpacing: 6,
+            mainAxisSpacing: 14,
           ),
           itemBuilder: (context, index) {
             return ToolCard(tool: tools[index]);
@@ -696,10 +808,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategoryPills(BuildContext context, bool isDark) {
     final categories = [
-      {'name': 'PDF Tools', 'cat': ToolCategory.pdf, 'icon': LucideIcons.fileText, 'color': AppColors.toolBlue},
-      {'name': 'AI Intelligence', 'cat': ToolCategory.ai, 'icon': LucideIcons.sparkles, 'color': AppColors.toolPurple},
-      {'name': 'Security', 'cat': ToolCategory.security, 'icon': LucideIcons.shieldCheck, 'color': AppColors.toolGreen},
-      {'name': 'Media Suite', 'cat': ToolCategory.image, 'icon': LucideIcons.video, 'color': AppColors.toolOrange},
+      {'name': 'PDF Tools', 'cat': 'pdf', 'icon': LucideIcons.fileText, 'color': AppColors.toolBlue},
+      {'name': 'AI Intelligence', 'cat': 'ai', 'icon': LucideIcons.sparkles, 'color': AppColors.toolPurple},
+      {'name': 'Conversions', 'cat': 'conversions', 'icon': LucideIcons.fileSpreadsheet, 'color': AppColors.toolGreen},
+      {'name': 'Security', 'cat': 'security', 'icon': LucideIcons.shieldCheck, 'color': AppColors.toolRed},
+      {'name': 'Images', 'cat': 'image', 'icon': LucideIcons.image, 'color': AppColors.toolPink},
+      {'name': 'Video & Audio', 'cat': 'video', 'icon': LucideIcons.video, 'color': AppColors.toolIndigo},
+      {'name': 'Archive Studio', 'cat': 'archive', 'icon': LucideIcons.archive, 'color': AppColors.toolOrange},
     ];
 
     return SingleChildScrollView(
@@ -712,7 +827,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: InkWell(
               onTap: () {
                 HapticFeedback.selectionClick();
-                context.push('/category/${(cat['cat'] as ToolCategory).name}');
+                context.push('/category/${cat['cat']}');
               },
               borderRadius: BorderRadius.circular(14),
               child: Container(
@@ -747,3 +862,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+

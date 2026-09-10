@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/welcome/splash_screen.dart';
 import '../../features/welcome/onboarding_screen.dart';
+import '../../features/welcome/landing_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/tools/all_tools_screen.dart';
 import '../../features/tools/category_hub_screen.dart';
@@ -107,7 +108,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/welcome',
-        builder: (context, state) => const OnboardingScreen(),
+        builder: (context, state) => const LandingScreen(),
       ),
       GoRoute(
         path: '/category/:categoryId',

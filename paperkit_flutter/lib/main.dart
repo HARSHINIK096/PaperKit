@@ -40,14 +40,11 @@ class PaperKitApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProv = context.watch<ThemeProvider>();
-
     return MaterialApp.router(
       title: 'PaperKit',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeProv.themeMode,
+      themeMode: ThemeMode.light,
       routerConfig: AppRouter.router,
     );
   }

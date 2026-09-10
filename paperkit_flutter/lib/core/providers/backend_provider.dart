@@ -7,47 +7,44 @@ class BackendProvider extends ChangeNotifier {
   
   bool _isConnected = false;
   bool _isChecking = false;
-  String _statusMessage = 'Connecting to PaperKit Cloud...';
-  int _elapsedSeconds = 0;
-  Timer? _timer;
+  String _statusMessage = 'Checking Server Sync...';
+  Timer? _periodicTimer;
 
   bool get isConnected => _isConnected;
   bool get isChecking => _isChecking;
   String get statusMessage => _statusMessage;
-  int get elapsedSeconds => _elapsedSeconds;
+  Color get statusColor => _isConnected
+      ? const Color(0xFF10B981) // Green Online
+      : (_isChecking ? const Color(0xFFF59E0B) : const Color(0xFFEF4444)); // Red Offline
 
   BackendProvider() {
     checkHealth();
+    // Periodic background sync ping every 25 seconds
+    _periodicTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+      checkHealth(isSilent: true);
+    });
   }
 
-  Future<bool> checkHealth() async {
-    _isChecking = true;
-    _elapsedSeconds = 0;
-    _statusMessage = 'Connecting to PaperKit Cloud...';
-    notifyListeners();
-
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _elapsedSeconds++;
-      if (_elapsedSeconds > 5 && !_isConnected) {
-        _statusMessage = 'Waking up cold services... ($_elapsedSeconds s)';
-      }
+  Future<bool> checkHealth({bool isSilent = false}) async {
+    if (!isSilent) {
+      _isChecking = true;
+      _statusMessage = 'Connecting to PaperKit Server...';
       notifyListeners();
-    });
+    }
 
     try {
       final healthy = await _apiService.checkHealth();
       _isConnected = healthy;
-      _statusMessage = healthy ? 'Connected to PaperKit Cloud' : 'Cloud services offline';
+      _statusMessage = healthy
+          ? 'Cloud Server Online • Operational'
+          : 'Local Mode • Cloud Server Offline';
       _isChecking = false;
-      _timer?.cancel();
       notifyListeners();
       return healthy;
     } catch (_) {
       _isConnected = false;
-      _statusMessage = 'Could not reach server';
+      _statusMessage = 'Server Offline • Reconnecting...';
       _isChecking = false;
-      _timer?.cancel();
       notifyListeners();
       return false;
     }
@@ -55,7 +52,7 @@ class BackendProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _periodicTimer?.cancel();
     super.dispose();
   }
 }

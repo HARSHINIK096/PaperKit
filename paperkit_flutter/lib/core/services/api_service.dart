@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_config.dart';
 import 'pdf_engine.dart';
@@ -54,6 +55,8 @@ class ApiService {
       ),
     );
   }
+
+  String get baseUrl => dio.options.baseUrl;
 
   void setBaseUrl(String url) {
     dio.options.baseUrl = url;
@@ -433,19 +436,123 @@ class ApiService {
     return {'result': res.data};
   }
 
-  // Media Downloader
-  Future<Map<String, dynamic>> downloadMedia({
-    required String url,
-    required String type,
-  }) async {
-    final response = await dio.post(
-      '/api/media/download',
-      data: {
-        'url': url,
-        'type': type,
-      },
+  // Media Downloader: YouTube Video (streams actual MP4 file)
+  Future<File> downloadYouTube({required String url}) async {
+    final response = await dio.post<List<int>>(
+      '/api/media/download-youtube',
+      data: {'url': url},
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(minutes: 5),
+        sendTimeout: const Duration(minutes: 1),
+      ),
     );
-    return response.data;
+    if (response.data == null || response.data!.isEmpty) {
+      throw Exception('Failed to download YouTube video stream.');
+    }
+    final outputDir = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputFile = File('${outputDir.path}/YouTube_Video_$timestamp.mp4');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Media Downloader: Spotify Audio (streams actual MP3 file)
+  Future<File> downloadSpotify({required String url}) async {
+    final response = await dio.post<List<int>>(
+      '/api/media/download-spotify',
+      data: {'url': url},
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(minutes: 5),
+        sendTimeout: const Duration(minutes: 1),
+      ),
+    );
+    if (response.data == null || response.data!.isEmpty) {
+      throw Exception('Failed to download Spotify audio stream.');
+    }
+    final outputDir = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputFile = File('${outputDir.path}/Spotify_Track_$timestamp.mp3');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Convert Video via backend FFmpeg
+  Future<File> convertVideo({required File file, required String targetFormat}) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      'target_format': targetFormat,
+    });
+    final response = await dio.post<List<int>>(
+      '/api/media/convert-video',
+      data: formData,
+      options: Options(
+        responseType: ResponseType.bytes,
+        contentType: 'multipart/form-data',
+      ),
+    );
+    if (response.data == null || response.data!.isEmpty) {
+      throw Exception('Video conversion failed on server.');
+    }
+    final outputDir = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputFile = File('${outputDir.path}/Video_${targetFormat}_$timestamp.$targetFormat');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Compress Video via backend FFmpeg
+  Future<File> compressVideo({required File file, required String preset}) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      'preset': preset,
+    });
+    final response = await dio.post<List<int>>(
+      '/api/media/compress-video',
+      data: formData,
+      options: Options(
+        responseType: ResponseType.bytes,
+        contentType: 'multipart/form-data',
+      ),
+    );
+    if (response.data == null || response.data!.isEmpty) {
+      throw Exception('Video compression failed on server.');
+    }
+    final outputDir = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final ext = file.path.contains('.') ? file.path.split('.').last : 'mp4';
+    final outputFile = File('${outputDir.path}/Compressed_${preset}_$timestamp.$ext');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Convert Audio via backend FFmpeg
+  Future<File> convertAudio({required File file, required String targetFormat}) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      'target_format': targetFormat,
+    });
+    final response = await dio.post<List<int>>(
+      '/api/media/convert-audio',
+      data: formData,
+      options: Options(
+        responseType: ResponseType.bytes,
+        contentType: 'multipart/form-data',
+      ),
+    );
+    if (response.data == null || response.data!.isEmpty) {
+      throw Exception('Audio conversion failed on server.');
+    }
+    final outputDir = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputFile = File('${outputDir.path}/Audio_${targetFormat}_$timestamp.$targetFormat');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
   }
 }
+
 

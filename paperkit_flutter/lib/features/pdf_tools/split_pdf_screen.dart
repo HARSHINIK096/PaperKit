@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../../core/models/document_file.dart';
@@ -10,9 +10,7 @@ import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/services/pdf_engine.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/widgets/action_button.dart';
-import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/tool_flow_scaffold.dart';
 
 class SplitPDFScreen extends StatefulWidget {
   const SplitPDFScreen({super.key});
@@ -26,10 +24,10 @@ class _SplitPDFScreenState extends State<SplitPDFScreen> {
   int _totalPages = 0;
   bool _splitAllSingle = true;
   String _customRanges = '1-2, 3-5';
-  bool _isProcessing = false;
   List<File> _splitResults = [];
 
   Future<void> _pickFile() async {
+    HapticFeedback.lightImpact();
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -50,234 +48,238 @@ class _SplitPDFScreenState extends State<SplitPDFScreen> {
     }
   }
 
-  Future<void> _splitPdf() async {
-    if (_selectedFile == null) return;
-    setState(() => _isProcessing = true);
+  Future<File?> _executeSplit() async {
+    if (_selectedFile == null) return null;
 
-    try {
-      List<List<int>> ranges = [];
-      if (_splitAllSingle) {
-        for (int i = 0; i < _totalPages; i++) {
-          ranges.add([i]);
-        }
-      } else {
-        // Parse custom ranges e.g. "1-2, 3-5"
-        final parts = _customRanges.split(',');
-        for (final p in parts) {
-          final trimmed = p.trim();
-          if (trimmed.contains('-')) {
-            final nums = trimmed.split('-');
-            final start = (int.tryParse(nums[0].trim()) ?? 1) - 1;
-            final end = (int.tryParse(nums[1].trim()) ?? _totalPages) - 1;
-            final r = <int>[];
-            for (int i = start; i <= end; i++) {
-              if (i >= 0 && i < _totalPages) r.add(i);
-            }
-            if (r.isNotEmpty) ranges.add(r);
-          } else {
-            final page = (int.tryParse(trimmed) ?? 1) - 1;
-            if (page >= 0 && page < _totalPages) ranges.add([page]);
+    List<List<int>> ranges = [];
+    if (_splitAllSingle) {
+      for (int i = 0; i < _totalPages; i++) {
+        ranges.add([i]);
+      }
+    } else {
+      final parts = _customRanges.split(',');
+      for (final p in parts) {
+        final trimmed = p.trim();
+        if (trimmed.contains('-')) {
+          final nums = trimmed.split('-');
+          final start = (int.tryParse(nums[0].trim()) ?? 1) - 1;
+          final end = (int.tryParse(nums[1].trim()) ?? _totalPages) - 1;
+          final r = <int>[];
+          for (int i = start; i <= end; i++) {
+            if (i >= 0 && i < _totalPages) r.add(i);
           }
+          if (r.isNotEmpty) ranges.add(r);
+        } else {
+          final page = (int.tryParse(trimmed) ?? 1) - 1;
+          if (page >= 0 && page < _totalPages) ranges.add([page]);
         }
-      }
-
-      final files = await PdfEngine.splitPdf(_selectedFile!, ranges);
-      final filesProv = context.read<FilesProvider>();
-      final histProv = context.read<HistoryProvider>();
-
-      for (final f in files) {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final name = f.uri.pathSegments.last;
-        await filesProv.addFile(
-          DocumentFile(
-            id: 'split_$timestamp',
-            name: name,
-            path: f.path,
-            size: await f.length(),
-            modifiedAt: DateTime.now(),
-            type: FileTypeCategory.pdf,
-          ),
-        );
-        await histProv.addRecord(
-          HistoryItem(
-            id: 'hist_$timestamp',
-            toolId: 'split-pdf',
-            toolName: 'Split PDF',
-            fileName: name,
-            outputPath: f.path,
-            fileSize: await f.length(),
-            timestamp: DateTime.now(),
-          ),
-        );
-      }
-
-      setState(() {
-        _splitResults = files;
-        _isProcessing = false;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Split into ${files.length} parts successfully!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Split failed: $e')),
-        );
       }
     }
+
+    final files = await PdfEngine.splitPdf(_selectedFile!, ranges);
+    final filesProv = context.read<FilesProvider>();
+    final histProv = context.read<HistoryProvider>();
+
+    for (final f in files) {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final name = f.uri.pathSegments.last;
+      await filesProv.addFile(
+        DocumentFile(
+          id: 'split_$timestamp',
+          name: name,
+          path: f.path,
+          size: await f.length(),
+          modifiedAt: DateTime.now(),
+          type: FileTypeCategory.pdf,
+        ),
+      );
+      await histProv.addRecord(
+        HistoryItem(
+          id: 'hist_$timestamp',
+          toolId: 'split-pdf',
+          toolName: 'Split PDF',
+          fileName: name,
+          outputPath: f.path,
+          fileSize: await f.length(),
+          timestamp: DateTime.now(),
+        ),
+      );
+    }
+
+    setState(() {
+      _splitResults = files;
+    });
+
+    return files.isNotEmpty ? files.first : null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const primaryColor = Color(0xFFEF4444); // Red/Coral
 
-    return AppShell(
+    return ToolFlowScaffold(
       title: 'Split PDF',
-      showBottomNav: false,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Select File Tile
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+      toolId: 'split-pdf',
+      primaryColor: primaryColor,
+      toolIcon: LucideIcons.scissors,
+      processingMessage: 'Splitting document into ${_splitAllSingle ? '$_totalPages pages' : 'ranges'}...',
+      canProceedToEdition: _selectedFile != null,
+      onProcess: _executeSplit,
+      onReset: () {
+        setState(() {
+          _selectedFile = null;
+          _totalPages = 0;
+          _splitResults.clear();
+        });
+      },
+
+      // ── Step 1: Upload Widget ──
+      uploadWidget: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFEF2F2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.scissors, size: 36, color: primaryColor),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Select PDF to Split',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Extract specific page ranges or burst all pages individually.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 18),
+
+            ElevatedButton.icon(
+              onPressed: _pickFile,
+              icon: const Icon(LucideIcons.filePlus, size: 18),
+              label: Text(
+                _selectedFile == null ? 'Choose PDF File' : 'Change Selected PDF',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_selectedFile == null)
-                  Center(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickFile,
-                      icon: const Icon(LucideIcons.filePlus, size: 20),
-                      label: const Text('Choose PDF Document'),
+
+            if (_selectedFile != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.fileText, color: primaryColor, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selectedFile!.uri.pathSegments.last,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$_totalPages total pages detected',
+                            style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
                     ),
-                  )
-                else ...[
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.toolRed.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(LucideIcons.fileText, color: AppColors.toolRed, size: 24),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _selectedFile!.uri.pathSegments.last,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$_totalPages total pages',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      TextButton(onPressed: _pickFile, child: const Text('Change')),
-                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+
+      // ── Step 2: Edition Widget ──
+      editionWidget: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Select Split Strategy',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+          ),
+          const SizedBox(height: 14),
+
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: [
+                RadioListTile<bool>(
+                  title: const Text(
+                    'Extract Every Single Page',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                   ),
-                ],
+                  subtitle: Text(
+                    'Creates $_totalPages separate single-page PDF files',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  ),
+                  activeColor: primaryColor,
+                  value: true,
+                  groupValue: _splitAllSingle,
+                  onChanged: (val) => setState(() => _splitAllSingle = val!),
+                ),
+                const Divider(height: 1),
+                RadioListTile<bool>(
+                  title: const Text(
+                    'Custom Page Ranges',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
+                  subtitle: const Text(
+                    'Segment by specified intervals (e.g. 1-2, 3-5)',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  ),
+                  activeColor: primaryColor,
+                  value: false,
+                  groupValue: _splitAllSingle,
+                  onChanged: (val) => setState(() => _splitAllSingle = val!),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
 
-          if (_selectedFile != null) ...[
-            Text(
-              'Split Mode',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+          if (!_splitAllSingle) ...[
+            const SizedBox(height: 14),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Enter Custom Ranges (e.g. 1-2, 3-5)',
+                hintText: '1-2, 3-$_totalPages',
+                filled: true,
+                fillColor: Colors.white,
+                prefixIcon: const Icon(LucideIcons.sliders, size: 18),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
-            ),
-            const SizedBox(height: 10),
-
-            RadioListTile<bool>(
-              title: const Text('Extract Every Single Page', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-              subtitle: Text('Creates $_totalPages separate single-page PDF documents', style: const TextStyle(fontSize: 12)),
-              value: true,
-              groupValue: _splitAllSingle,
-              onChanged: (val) => setState(() => _splitAllSingle = val!),
-            ),
-            RadioListTile<bool>(
-              title: const Text('Custom Page Ranges', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-              subtitle: const Text('Split by specified page ranges (e.g. 1-3, 4-7)', style: TextStyle(fontSize: 12)),
-              value: false,
-              groupValue: _splitAllSingle,
-              onChanged: (val) => setState(() => _splitAllSingle = val!),
-            ),
-
-            if (!_splitAllSingle) ...[
-              const SizedBox(height: 10),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Page Ranges',
-                  hintText: 'e.g. 1-2, 3-5',
-                ),
-                onChanged: (val) => _customRanges = val,
-              ),
-            ],
-
-            const SizedBox(height: 24),
-            ActionButton(
-              label: 'Split Document',
-              icon: LucideIcons.scissors,
-              isLoading: _isProcessing,
-              onPressed: _splitPdf,
-            ),
-          ],
-
-          if (_splitResults.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Text(
-              'Generated Files (${_splitResults.length})',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ..._splitResults.map(
-              (f) => Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                  ),
-                ),
-                child: ListTile(
-                  leading: const Icon(LucideIcons.fileCheck, color: AppColors.success),
-                  title: Text(f.uri.pathSegments.last, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500)),
-                  trailing: const Icon(LucideIcons.externalLink, size: 16),
-                  onTap: () => OpenFilex.open(f.path),
-                ),
-              ),
+              onChanged: (val) => _customRanges = val,
             ),
           ],
         ],

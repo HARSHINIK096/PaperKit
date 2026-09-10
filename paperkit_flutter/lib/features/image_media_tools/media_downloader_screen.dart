@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
@@ -12,6 +11,7 @@ import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/file_success_dialog.dart';
 
 class MediaDownloaderScreen extends StatefulWidget {
   final String? initialType; // 'youtube', 'spotify'
@@ -41,20 +41,22 @@ class _MediaDownloaderScreenState extends State<MediaDownloaderScreen> {
     setState(() => _isDownloading = true);
 
     try {
-      await ApiService().downloadMedia(url: url, type: _mediaType);
+      File outputFile;
+      if (_mediaType == 'youtube') {
+        outputFile = await ApiService().downloadYouTube(url: url);
+      } else {
+        outputFile = await ApiService().downloadSpotify(url: url);
+      }
+      
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final ext = _mediaType == 'youtube' ? 'mp4' : 'mp3';
-      final fileName = 'Media_${_mediaType}_$timestamp.$ext';
-
-      final outputDir = await getApplicationDocumentsDirectory();
-      final outputFile = File('${outputDir.path}/$fileName');
-      await outputFile.writeAsString('Downloaded media from $url');
+      final fileName = outputFile.uri.pathSegments.last;
+      final fileSize = await outputFile.length();
 
       final doc = DocumentFile(
         id: 'media_$timestamp',
         name: fileName,
         path: outputFile.path,
-        size: await outputFile.length(),
+        size: fileSize,
         modifiedAt: DateTime.now(),
         type: _mediaType == 'youtube' ? FileTypeCategory.video : FileTypeCategory.audio,
       );
@@ -65,10 +67,10 @@ class _MediaDownloaderScreenState extends State<MediaDownloaderScreen> {
               HistoryItem(
                 id: 'hist_$timestamp',
                 toolId: 'media-downloader',
-                toolName: 'Media Downloader ($_mediaType)',
+                toolName: 'Media Downloader (${_mediaType.toUpperCase()})',
                 fileName: fileName,
                 outputPath: outputFile.path,
-                fileSize: await outputFile.length(),
+                fileSize: fileSize,
                 timestamp: DateTime.now(),
               ),
             );
@@ -78,15 +80,19 @@ class _MediaDownloaderScreenState extends State<MediaDownloaderScreen> {
           _isDownloading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Media download complete: $fileName')),
+        FileSuccessDialog.show(
+          context,
+          title: 'Download Successful!',
+          message: 'Your ${_mediaType.toUpperCase()} file is ready and saved locally.',
+          file: outputFile,
+          fileSize: '${(fileSize / (1024 * 1024)).toStringAsFixed(2)} MB',
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isDownloading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Download failed or server offline: $e')),
+          SnackBar(content: Text('Download failed: $e')),
         );
       }
     }
@@ -104,13 +110,20 @@ class _MediaDownloaderScreenState extends State<MediaDownloaderScreen> {
             children: [
               Expanded(
                 child: ChoiceChip(
-                  label: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(LucideIcons.video, size: 16),
-                      SizedBox(width: 8),
-                      Text('YouTube (Video/Audio)'),
-                    ],
+                  label: const Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.video, size: 16),
+                        SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'YouTube Video',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   selected: _mediaType == 'youtube',
                   selectedColor: AppColors.toolRed.withOpacity(0.2),
@@ -120,13 +133,20 @@ class _MediaDownloaderScreenState extends State<MediaDownloaderScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: ChoiceChip(
-                  label: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(LucideIcons.music, size: 16),
-                      SizedBox(width: 8),
-                      Text('Spotify (Audio)'),
-                    ],
+                  label: const Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.music, size: 16),
+                        SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'Spotify Audio',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   selected: _mediaType == 'spotify',
                   selectedColor: AppColors.toolGreen.withOpacity(0.2),

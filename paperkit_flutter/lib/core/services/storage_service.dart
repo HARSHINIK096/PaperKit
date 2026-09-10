@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/document_file.dart';
 import '../models/history_item.dart';
@@ -182,5 +183,20 @@ class StorageService {
       'other': otherBytes,
       'total': pdfBytes + imageBytes + mediaBytes + otherBytes,
     };
+  }
+
+  // Clear temporary cache directory
+  Future<void> clearTempDirectory() async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      if (await tempDir.exists()) {
+        final entities = tempDir.listSync(recursive: false);
+        for (final entity in entities) {
+          try {
+            await entity.delete(recursive: true);
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
   }
 }

@@ -8,9 +8,11 @@ import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
+import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/file_success_dialog.dart';
 
 class AudioConverterScreen extends StatefulWidget {
   final String? initialTo;
@@ -54,16 +56,20 @@ class _AudioConverterScreenState extends State<AudioConverterScreen> {
     setState(() => _isProcessing = true);
 
     try {
+      final outputFile = await ApiService().convertAudio(
+        file: _selectedFile!,
+        targetFormat: _targetFormat,
+      );
+
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outName = 'Audio_${_targetFormat}_$timestamp.$_targetFormat';
-      final outputFile = File('${_selectedFile!.parent.path}/$outName');
-      await outputFile.writeAsBytes(await _selectedFile!.readAsBytes());
+      final outName = outputFile.uri.pathSegments.last;
+      final fileSize = await outputFile.length();
 
       final doc = DocumentFile(
         id: 'audconv_$timestamp',
         name: outName,
         path: outputFile.path,
-        size: await outputFile.length(),
+        size: fileSize,
         modifiedAt: DateTime.now(),
         type: FileTypeCategory.audio,
       );
@@ -74,10 +80,10 @@ class _AudioConverterScreenState extends State<AudioConverterScreen> {
               HistoryItem(
                 id: 'hist_$timestamp',
                 toolId: 'audio-converter',
-                toolName: 'Audio Converter ($_targetFormat)',
+                toolName: 'Audio Converter (${_targetFormat.toUpperCase()})',
                 fileName: outName,
                 outputPath: outputFile.path,
-                fileSize: await outputFile.length(),
+                fileSize: fileSize,
                 timestamp: DateTime.now(),
               ),
             );
@@ -87,8 +93,12 @@ class _AudioConverterScreenState extends State<AudioConverterScreen> {
           _isProcessing = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Converted to ${_targetFormat.toUpperCase()} successfully!')),
+        FileSuccessDialog.show(
+          context,
+          title: 'Conversion Complete!',
+          message: 'Audio converted to ${_targetFormat.toUpperCase()} format successfully.',
+          file: outputFile,
+          fileSize: '${(fileSize / (1024 * 1024)).toStringAsFixed(2)} MB',
         );
       }
     } catch (e) {

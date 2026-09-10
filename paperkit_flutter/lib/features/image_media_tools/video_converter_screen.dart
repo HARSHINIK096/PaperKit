@@ -8,9 +8,11 @@ import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
+import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/file_success_dialog.dart';
 
 class VideoConverterScreen extends StatefulWidget {
   final String? initialTo;
@@ -54,18 +56,22 @@ class _VideoConverterScreenState extends State<VideoConverterScreen> {
     setState(() => _isProcessing = true);
 
     try {
+      final outputFile = await ApiService().convertVideo(
+        file: _selectedFile!,
+        targetFormat: _targetFormat,
+      );
+
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outName = 'Video_${_targetFormat}_$timestamp.$_targetFormat';
-      final outputFile = File('${_selectedFile!.parent.path}/$outName');
-      await outputFile.writeAsBytes(await _selectedFile!.readAsBytes());
+      final outName = outputFile.uri.pathSegments.last;
+      final fileSize = await outputFile.length();
 
       final doc = DocumentFile(
         id: 'vidconv_$timestamp',
         name: outName,
         path: outputFile.path,
-        size: await outputFile.length(),
+        size: fileSize,
         modifiedAt: DateTime.now(),
-        type: FileTypeCategory.video,
+        type: _targetFormat == 'gif' ? FileTypeCategory.image : FileTypeCategory.video,
       );
 
       if (mounted) {
@@ -74,10 +80,10 @@ class _VideoConverterScreenState extends State<VideoConverterScreen> {
               HistoryItem(
                 id: 'hist_$timestamp',
                 toolId: 'video-converter',
-                toolName: 'Video Converter ($_targetFormat)',
+                toolName: 'Video Converter (${_targetFormat.toUpperCase()})',
                 fileName: outName,
                 outputPath: outputFile.path,
-                fileSize: await outputFile.length(),
+                fileSize: fileSize,
                 timestamp: DateTime.now(),
               ),
             );
@@ -87,8 +93,12 @@ class _VideoConverterScreenState extends State<VideoConverterScreen> {
           _isProcessing = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Video converted to ${_targetFormat.toUpperCase()}!')),
+        FileSuccessDialog.show(
+          context,
+          title: 'Conversion Complete!',
+          message: 'Video successfully converted to ${_targetFormat.toUpperCase()}.',
+          file: outputFile,
+          fileSize: '${(fileSize / (1024 * 1024)).toStringAsFixed(2)} MB',
         );
       }
     } catch (e) {
