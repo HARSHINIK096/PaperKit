@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiConfig {
   // Backend Services URL on Render
   static const String defaultBackendUrl = 'https://paperkit-backend.onrender.com';
-  static const String localBackendUrl = 'http://localhost:8000';
+  static const String localBackendUrl = 'https://paperkit-backend.onrender.com';
   static const String frontendUrl = 'https://paperkit-web.onrender.com';
 
   // AI Service API Keys (Fill with your keys)

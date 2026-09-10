@@ -9,7 +9,7 @@ import 'storage_service.dart';
 
 class ApiService {
   static const String defaultBaseUrl = ApiConfig.defaultBackendUrl;
-  static const String localBaseUrl = ApiConfig.localBackendUrl;
+  static const String productionBaseUrl = ApiConfig.defaultBackendUrl;
   late final Dio dio;
 
   static final ApiService _instance = ApiService._internal();
@@ -66,9 +66,7 @@ class ApiService {
     final candidateUrls = <String>{
       dio.options.baseUrl.replaceAll(RegExp(r'/+$'), ''),
       defaultBaseUrl.replaceAll(RegExp(r'/+$'), ''),
-      localBaseUrl.replaceAll(RegExp(r'/+$'), ''),
-      'http://127.0.0.1:8000',
-      'http://10.0.2.2:8000',
+      ApiConfig.defaultBackendUrl.replaceAll(RegExp(r'/+$'), ''),
     }.toList();
 
     for (final base in candidateUrls) {
