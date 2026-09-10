@@ -1,17 +1,22 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
+
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class PdfEngine {
   // Merge multiple PDF files into one
-  static Future<File> mergePdfFiles(List<File> files, String outputFileName) async {
+  static Future<File> mergePdfFiles(
+    List<File> files,
+    String outputFileName,
+  ) async {
     final PdfDocument finalDocument = PdfDocument();
 
     for (final file in files) {
       final bytes = await file.readAsBytes();
       final PdfDocument inputDocument = PdfDocument(inputBytes: bytes);
-      
+
       for (int i = 0; i < inputDocument.pages.count; i++) {
         final PdfTemplate template = inputDocument.pages[i].createTemplate();
         final PdfPage page = finalDocument.pages.add();
@@ -29,7 +34,10 @@ class PdfEngine {
   }
 
   // Split PDF by page ranges or extract all pages
-  static Future<List<File>> splitPdf(File inputFile, List<List<int>> ranges) async {
+  static Future<List<File>> splitPdf(
+    File inputFile,
+    List<List<int>> ranges,
+  ) async {
     final bytes = await inputFile.readAsBytes();
     final PdfDocument inputDocument = PdfDocument(inputBytes: bytes);
     final outputDir = await getApplicationDocumentsDirectory();
@@ -40,13 +48,15 @@ class PdfEngine {
       final PdfDocument splitDocument = PdfDocument();
       for (final pageIndex in range) {
         if (pageIndex >= 0 && pageIndex < inputDocument.pages.count) {
-          final PdfTemplate template = inputDocument.pages[pageIndex].createTemplate();
+          final PdfTemplate template = inputDocument.pages[pageIndex]
+              .createTemplate();
           final PdfPage newPage = splitDocument.pages.add();
           newPage.graphics.drawPdfTemplate(template, const Offset(0, 0));
         }
       }
 
-      final fileName = '${inputFile.uri.pathSegments.last.replaceAll('.pdf', '')}_part_$partIndex.pdf';
+      final fileName =
+          '${inputFile.uri.pathSegments.last.replaceAll('.pdf', '')}_part_$partIndex.pdf';
       final outputFile = File('${outputDir.path}/$fileName');
       await outputFile.writeAsBytes(splitDocument.saveSync());
       splitDocument.dispose();
@@ -59,7 +69,10 @@ class PdfEngine {
   }
 
   // Rotate PDF Pages
-  static Future<File> rotatePdf(File inputFile, int rotationAngleDegrees) async {
+  static Future<File> rotatePdf(
+    File inputFile,
+    int rotationAngleDegrees,
+  ) async {
     final bytes = await inputFile.readAsBytes();
     final PdfDocument document = PdfDocument(inputBytes: bytes);
 
@@ -99,22 +112,29 @@ class PdfEngine {
     final PdfDocument document = PdfDocument(inputBytes: bytes);
 
     final font = PdfStandardFont(PdfFontFamily.helvetica, fontSize);
-    final brush = PdfSolidBrush(PdfColor(128, 128, 128, (opacity * 255).round()));
+    final brush = PdfSolidBrush(
+      PdfColor(128, 128, 128, (opacity * 255).round()),
+    );
 
     for (int i = 0; i < document.pages.count; i++) {
       final PdfPage page = document.pages[i];
       final PdfGraphics graphics = page.graphics;
-      
+
       final state = graphics.save();
       graphics.translateTransform(page.size.width / 2, page.size.height / 2);
       graphics.rotateTransform(angle);
-      
+
       final textSize = font.measureString(watermarkText);
       graphics.drawString(
         watermarkText,
         font,
         brush: brush,
-        bounds: Rect.fromLTWH(-textSize.width / 2, -textSize.height / 2, textSize.width, textSize.height),
+        bounds: Rect.fromLTWH(
+          -textSize.width / 2,
+          -textSize.height / 2,
+          textSize.width,
+          textSize.height,
+        ),
       );
       graphics.restore(state);
     }
@@ -176,7 +196,8 @@ class PdfEngine {
 
     for (final pageIndex in pageOrderZeroIndexed) {
       if (pageIndex >= 0 && pageIndex < inputDocument.pages.count) {
-        final PdfTemplate template = inputDocument.pages[pageIndex].createTemplate();
+        final PdfTemplate template = inputDocument.pages[pageIndex]
+            .createTemplate();
         final PdfPage newPage = newDocument.pages.add();
         newPage.graphics.drawPdfTemplate(template, const Offset(0, 0));
       }
@@ -186,7 +207,7 @@ class PdfEngine {
     final baseName = inputFile.uri.pathSegments.last.replaceAll('.pdf', '');
     final outputFile = File('${outputDir.path}/${baseName}_organized.pdf');
     await outputFile.writeAsBytes(newDocument.saveSync());
-    
+
     inputDocument.dispose();
     newDocument.dispose();
     return outputFile;
@@ -299,20 +320,51 @@ class PdfEngine {
 
               final normLeft = (bounds.left / pageSize.width).clamp(0.0, 1.0);
               final normTop = (bounds.top / pageSize.height).clamp(0.0, 1.0);
-              final normWidth = (bounds.width / pageSize.width).clamp(0.001, 1.0);
-              final normHeight = (bounds.height / pageSize.height).clamp(0.001, 1.0);
+              final normWidth = (bounds.width / pageSize.width).clamp(
+                0.001,
+                1.0,
+              );
+              final normHeight = (bounds.height / pageSize.height).clamp(
+                0.001,
+                1.0,
+              );
 
-              final rawFontName = word.glyphs.isNotEmpty ? word.glyphs.first.fontName : line.fontName;
-              final fontSize = (word.glyphs.isNotEmpty && word.glyphs.first.fontSize > 0)
+              final rawFontName = word.glyphs.isNotEmpty
+                  ? word.glyphs.first.fontName
+                  : line.fontName;
+              final fontSize =
+                  (word.glyphs.isNotEmpty && word.glyphs.first.fontSize > 0)
                   ? word.glyphs.first.fontSize
                   : (line.fontSize > 0 ? line.fontSize : 12.0);
-              final fontStyle = word.glyphs.isNotEmpty ? word.glyphs.first.fontStyle : line.fontStyle;
+              final fontStyle = word.glyphs.isNotEmpty
+                  ? word.glyphs.first.fontStyle
+                  : line.fontStyle;
 
               final fnLower = rawFontName.toLowerCase();
-              final isBold = fontStyle.contains(PdfFontStyle.bold) ||
-                  anySubstring(fnLower, ['bold', 'black', 'heavy', 'semibold', 'medium', 'tibo', 'hebo', 'cobo', 'bd']);
-              final isItalic = fontStyle.contains(PdfFontStyle.italic) ||
-                  anySubstring(fnLower, ['italic', 'oblique', 'slanted', 'tiit', 'heit', 'coit', 'it']);
+              final isBold =
+                  fontStyle.contains(PdfFontStyle.bold) ||
+                  anySubstring(fnLower, [
+                    'bold',
+                    'black',
+                    'heavy',
+                    'semibold',
+                    'medium',
+                    'tibo',
+                    'hebo',
+                    'cobo',
+                    'bd',
+                  ]);
+              final isItalic =
+                  fontStyle.contains(PdfFontStyle.italic) ||
+                  anySubstring(fnLower, [
+                    'italic',
+                    'oblique',
+                    'slanted',
+                    'tiit',
+                    'heit',
+                    'coit',
+                    'it',
+                  ]);
               final resolvedFamily = resolveFontFamily(rawFontName);
 
               spans.add(
@@ -321,7 +373,12 @@ class PdfEngine {
                   originalText: word.text,
                   currentText: word.text,
                   pdfBounds: bounds,
-                  normalizedRect: Rect.fromLTWH(normLeft, normTop, normWidth, normHeight),
+                  normalizedRect: Rect.fromLTWH(
+                    normLeft,
+                    normTop,
+                    normWidth,
+                    normHeight,
+                  ),
                   originalPageSize: Size(pageSize.width, pageSize.height),
                   fontSize: fontSize,
                   fontName: rawFontName,
@@ -352,14 +409,37 @@ class PdfEngine {
             final normLeft = (bounds.left / pageSize.width).clamp(0.0, 1.0);
             final normTop = (bounds.top / pageSize.height).clamp(0.0, 1.0);
             final normWidth = (bounds.width / pageSize.width).clamp(0.005, 1.0);
-            final normHeight = (bounds.height / pageSize.height).clamp(0.005, 1.0);
+            final normHeight = (bounds.height / pageSize.height).clamp(
+              0.005,
+              1.0,
+            );
 
             final rawFontName = line.fontName;
             final fnLower = rawFontName.toLowerCase();
-            final isBold = line.fontStyle.contains(PdfFontStyle.bold) ||
-                anySubstring(fnLower, ['bold', 'black', 'heavy', 'semibold', 'medium', 'tibo', 'hebo', 'cobo', 'bd']);
-            final isItalic = line.fontStyle.contains(PdfFontStyle.italic) ||
-                anySubstring(fnLower, ['italic', 'oblique', 'slanted', 'tiit', 'heit', 'coit', 'it']);
+            final isBold =
+                line.fontStyle.contains(PdfFontStyle.bold) ||
+                anySubstring(fnLower, [
+                  'bold',
+                  'black',
+                  'heavy',
+                  'semibold',
+                  'medium',
+                  'tibo',
+                  'hebo',
+                  'cobo',
+                  'bd',
+                ]);
+            final isItalic =
+                line.fontStyle.contains(PdfFontStyle.italic) ||
+                anySubstring(fnLower, [
+                  'italic',
+                  'oblique',
+                  'slanted',
+                  'tiit',
+                  'heit',
+                  'coit',
+                  'it',
+                ]);
             final resolvedFamily = resolveFontFamily(rawFontName);
 
             spans.add(
@@ -368,7 +448,12 @@ class PdfEngine {
                 originalText: line.text,
                 currentText: line.text,
                 pdfBounds: bounds,
-                normalizedRect: Rect.fromLTWH(normLeft, normTop, normWidth, normHeight),
+                normalizedRect: Rect.fromLTWH(
+                  normLeft,
+                  normTop,
+                  normWidth,
+                  normHeight,
+                ),
                 originalPageSize: Size(pageSize.width, pageSize.height),
                 fontSize: line.fontSize > 0 ? line.fontSize : 12.0,
                 fontName: rawFontName,
@@ -418,11 +503,20 @@ class PdfEngine {
         if (!span.isModified) continue;
 
         // Use exact PDF points bounding box for sub-pixel accuracy with normalized fallback
-        final hasExactBounds = span.pdfBounds.width > 0 && span.pdfBounds.height > 0;
-        final coverLeft = hasExactBounds ? (span.pdfBounds.left - 1.5) : (span.normalizedRect.left * pageSize.width - 2);
-        final coverTop = hasExactBounds ? (span.pdfBounds.top - 1.0) : (span.normalizedRect.top * pageSize.height - 1);
-        final coverWidth = hasExactBounds ? (span.pdfBounds.width + 3.0) : (span.normalizedRect.width * pageSize.width + 4);
-        final coverHeight = hasExactBounds ? (span.pdfBounds.height + 2.0) : (span.normalizedRect.height * pageSize.height + 2);
+        final hasExactBounds =
+            span.pdfBounds.width > 0 && span.pdfBounds.height > 0;
+        final coverLeft = hasExactBounds
+            ? (span.pdfBounds.left - 1.5)
+            : (span.normalizedRect.left * pageSize.width - 2);
+        final coverTop = hasExactBounds
+            ? (span.pdfBounds.top - 1.0)
+            : (span.normalizedRect.top * pageSize.height - 1);
+        final coverWidth = hasExactBounds
+            ? (span.pdfBounds.width + 3.0)
+            : (span.normalizedRect.width * pageSize.width + 4);
+        final coverHeight = hasExactBounds
+            ? (span.pdfBounds.height + 2.0)
+            : (span.normalizedRect.height * pageSize.height + 2);
 
         // Cover / redact original text with crisp white background
         final coverBrush = PdfSolidBrush(PdfColor(255, 255, 255));
@@ -438,21 +532,41 @@ class PdfEngine {
 
         PdfStandardFont font;
         if (isBold && isItalic) {
-          font = PdfStandardFont(family, span.fontSize, multiStyle: [PdfFontStyle.bold, PdfFontStyle.italic]);
+          font = PdfStandardFont(
+            family,
+            span.fontSize,
+            multiStyle: [PdfFontStyle.bold, PdfFontStyle.italic],
+          );
         } else if (isBold) {
-          font = PdfStandardFont(family, span.fontSize, style: PdfFontStyle.bold);
+          font = PdfStandardFont(
+            family,
+            span.fontSize,
+            style: PdfFontStyle.bold,
+          );
         } else if (isItalic) {
-          font = PdfStandardFont(family, span.fontSize, style: PdfFontStyle.italic);
+          font = PdfStandardFont(
+            family,
+            span.fontSize,
+            style: PdfFontStyle.italic,
+          );
         } else {
-          font = PdfStandardFont(family, span.fontSize, style: PdfFontStyle.regular);
+          font = PdfStandardFont(
+            family,
+            span.fontSize,
+            style: PdfFontStyle.regular,
+          );
         }
 
         final textBrush = PdfSolidBrush(
           PdfColor(span.color.red, span.color.green, span.color.blue),
         );
 
-        final textLeft = hasExactBounds ? span.pdfBounds.left : (span.normalizedRect.left * pageSize.width);
-        final textTop = hasExactBounds ? span.pdfBounds.top : (span.normalizedRect.top * pageSize.height);
+        final textLeft = hasExactBounds
+            ? span.pdfBounds.left
+            : (span.normalizedRect.left * pageSize.width);
+        final textTop = hasExactBounds
+            ? span.pdfBounds.top
+            : (span.normalizedRect.top * pageSize.height);
 
         page.graphics.drawString(
           span.currentText,
@@ -471,7 +585,12 @@ class PdfEngine {
       final highlights = highlightsByPage[pageIdx] ?? [];
       for (final h in highlights) {
         final brush = PdfSolidBrush(
-          PdfColor(h.color.red, h.color.green, h.color.blue, (h.opacity * 255).toInt()),
+          PdfColor(
+            h.color.red,
+            h.color.green,
+            h.color.blue,
+            (h.opacity * 255).toInt(),
+          ),
         );
         page.graphics.drawRectangle(
           brush: brush,
@@ -531,7 +650,44 @@ class PdfEngine {
     final outputDir = await getApplicationDocumentsDirectory();
     final baseName = inputFile.uri.pathSegments.last.replaceAll('.pdf', '');
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final outputFile = File('${outputDir.path}/edited_${baseName}_$timestamp.pdf');
+    final outputFile = File(
+      '${outputDir.path}/edited_${baseName}_$timestamp.pdf',
+    );
+    await outputFile.writeAsBytes(document.saveSync());
+    document.dispose();
+
+    return outputFile;
+  }
+
+  // Stamp Signature Image / Vector at exact normalized Rect coordinates on target PDF page
+  static Future<File> stampSignatureOnPdf({
+    required File inputFile,
+    required Uint8List signaturePngBytes,
+    required int pageIndex,
+    required Rect normalizedRect,
+  }) async {
+    final bytes = await inputFile.readAsBytes();
+    final PdfDocument document = PdfDocument(inputBytes: bytes);
+
+    if (pageIndex >= 0 && pageIndex < document.pages.count) {
+      final page = document.pages[pageIndex];
+      final pageSize = page.size;
+
+      final stampRect = Rect.fromLTWH(
+        normalizedRect.left * pageSize.width,
+        normalizedRect.top * pageSize.height,
+        normalizedRect.width * pageSize.width,
+        normalizedRect.height * pageSize.height,
+      );
+
+      final PdfBitmap bitmap = PdfBitmap(signaturePngBytes);
+      page.graphics.drawImage(bitmap, stampRect);
+    }
+
+    final outputDir = await getApplicationDocumentsDirectory();
+    final baseName = inputFile.uri.pathSegments.last.replaceAll('.pdf', '');
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputFile = File('${outputDir.path}/${baseName}_signed_$timestamp.pdf');
     await outputFile.writeAsBytes(document.saveSync());
     document.dispose();
 
@@ -581,7 +737,6 @@ class PdfExistingTextSpan {
       case PdfFontFamily.zapfDingbats:
         return 'ZapfDingbats';
       case PdfFontFamily.helvetica:
-      default:
         return 'Helvetica / Arial (Sans)';
     }
   }
@@ -666,4 +821,3 @@ class PdfHighlightBox {
     this.opacity = 0.35,
   });
 }
-

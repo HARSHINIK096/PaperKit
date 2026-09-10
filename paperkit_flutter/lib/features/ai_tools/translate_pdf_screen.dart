@@ -7,6 +7,7 @@ import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/markdown_viewer.dart';
 
 class TranslatePDFScreen extends StatefulWidget {
   const TranslatePDFScreen({super.key});
@@ -124,33 +125,9 @@ class _TranslatePDFScreenState extends State<TranslatePDFScreen> {
 
           if (_translatedText.isNotEmpty) ...[
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Translated Result', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight)),
-                TextButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: _translatedText));
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied translation!')));
-                  },
-                  icon: const Icon(LucideIcons.copy, size: 16),
-                  label: const Text('Copy'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-              ),
-              child: SelectableText(
-                _translatedText,
-                style: TextStyle(fontSize: 13.5, height: 1.5, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
-              ),
+            MarkdownViewer(
+              markdown: _translatedText,
+              title: 'AI Translation ($_targetLanguage)',
             ),
           ],
         ],

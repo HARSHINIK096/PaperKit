@@ -5,6 +5,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/document_file.dart';
 import '../theme/app_colors.dart';
+import 'markdown_viewer.dart';
 
 class FilePreviewModal extends StatefulWidget {
   final DocumentFile file;
@@ -146,13 +147,10 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
                         : _textContent != null
                             ? SingleChildScrollView(
                                 padding: const EdgeInsets.all(16),
-                                child: SelectableText(
-                                  _textContent!,
-                                  style: TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: 13,
-                                    color: isDark ? Colors.white70 : Colors.black87,
-                                  ),
+                                child: MarkdownViewer(
+                                  markdown: _textContent!,
+                                  title: widget.file.name,
+                                  showHeader: false,
                                 ),
                               )
                             : Column(
