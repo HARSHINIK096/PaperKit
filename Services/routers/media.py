@@ -28,8 +28,9 @@ import asyncio
 
 def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
     client_strategies = [
-        ['ios', 'mweb', 'android'],
-        ['tv_embedded', 'ios'],
+        ['mweb', 'android_vr', 'ios', 'tv'],
+        ['mweb', 'ios'],
+        ['tv_embedded', 'ios', 'mweb'],
         ['android', 'ios', 'web'],
     ]
     
@@ -51,14 +52,14 @@ def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
             'outtmpl': output_template,
             'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
             'merge_output_format': 'mp4',
-            'quiet': True,
+            'quiet': False,
             'no_warnings': True,
             'nocheckcertificate': True,
             'ignoreerrors': False,
+            'js_runtimes': {'node': {}},
             'extractor_args': {
                 'youtube': {
                     'player_client': clients,
-                    'player_skip': ['configs', 'webpage'],
                 }
             },
             'http_headers': {

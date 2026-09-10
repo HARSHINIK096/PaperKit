@@ -107,8 +107,9 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
             cookie_file = None
 
     client_strategies = [
-        ["ios", "mweb", "android"],
-        ["tv_embedded", "ios"],
+        ["mweb", "android_vr", "ios", "tv"],
+        ["mweb", "ios"],
+        ["tv_embedded", "ios", "mweb"],
         ["android", "ios", "web"],
     ]
 
@@ -125,10 +126,10 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
             "quiet": False,
             "no_warnings": True,
             "nocheckcertificate": True,
+            "js_runtimes": {"node": {}},
             "extractor_args": {
                 "youtube": {
                     "player_client": clients,
-                    "player_skip": ["configs", "webpage"],
                 }
             },
             "http_headers": {

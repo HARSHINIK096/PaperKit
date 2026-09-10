@@ -10,10 +10,10 @@ def download_youtube_video(url, output_path="."):
         'outtmpl': f'{output_path}/%(title)s.%(ext)s',
         'format': 'bestvideo+bestaudio/best',
         'merge_output_format': 'mp4',
+        'js_runtimes': {'node': {}},
         'extractor_args': {
             'youtube': {
-                'player_client': ['ios', 'mweb', 'android'],
-                'player_skip': ['configs', 'webpage'],
+                'player_client': ['mweb', 'android_vr', 'ios', 'tv'],
             }
         },
         'http_headers': {

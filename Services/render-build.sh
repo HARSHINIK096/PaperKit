@@ -9,7 +9,7 @@ python -m pip install --upgrade pip setuptools wheel
 
 # Install Python dependencies
 pip install -r requirements.txt
-pip install --upgrade yt-dlp
+pip install --upgrade "yt-dlp[default]"
 
 # Create bin directory
 mkdir -p bin
