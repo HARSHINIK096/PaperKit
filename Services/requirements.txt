@@ -25,3 +25,4 @@ py7zr>=0.20.0
 rarfile>=4.0
 # Video processing requires FFmpeg binary installed on system
 yt-dlp[default]>=2025.1.15
+bgutil-ytdlp-pot-provider>=2.0.0
