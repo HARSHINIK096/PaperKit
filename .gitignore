@@ -45,6 +45,9 @@ GoogleService-Info.plist
 *.jks
 *.p8
 *.p12
+paperkit_flutter/lib/core/constants/api_config.dart
+**/api_config.dart
+!**/api_config.dart.example
 
 # ==============================================================================
 # Node.js & Web App (paper-kit)
@@ -87,8 +90,8 @@ develop-eggs/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+Services/lib/
+Services/lib64/
 parts/
 sdist/
 var/
@@ -100,7 +103,7 @@ Services/storage/
 storage/
 
 # ==============================================================================
-# Android & Native Mobile Builds (Capacitor)
+# Android & Native Mobile Builds (Capacitor & Flutter)
 # ==============================================================================
 android/.gradle/
 android/build/
@@ -122,6 +125,42 @@ ios/App/build/
 ios/App/Pods/
 paper-kit/ios/App/build/
 paper-kit/ios/App/Pods/
+
+# Flutter / Dart / Pub (paperkit_flutter)
+.dart_tool/
+**/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/.flutter-plugins*
+.pub-cache/
+**/.pub-cache/
+.pub/
+**/.pub/
+paperkit_flutter/build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+app.*.symbols
+app.*.map.json
+.widget_preview/
+paperkit_flutter/android/.gradle/
+paperkit_flutter/android/build/
+paperkit_flutter/android/app/build/
+paperkit_flutter/android/local.properties
+paperkit_flutter/android/.idea/
+paperkit_flutter/android/*.iml
+paperkit_flutter/android/app/*.iml
+paperkit_flutter/android/app/debug
+paperkit_flutter/android/app/profile
+paperkit_flutter/android/app/release
+paperkit_flutter/ios/Flutter/Generated.xcconfig
+paperkit_flutter/ios/Flutter/flutter_export_environment.sh
+paperkit_flutter/ios/Flutter/App.framework
+paperkit_flutter/ios/Flutter/Flutter.framework
+paperkit_flutter/ios/Flutter/Flutter.podspec
+paperkit_flutter/ios/Pods/
+paperkit_flutter/ios/.symlinks/
+paperkit_flutter/lib/core/constants/api_config.dart
+
 *.apk
 *.aab
 *.mp3

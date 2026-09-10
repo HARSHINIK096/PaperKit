@@ -1,0 +1,84 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
+class ApiConfig {
+  // Backend Services URL on Render
+  static const String defaultBackendUrl = 'https://paperkit-backend.onrender.com';
+  static const String localBackendUrl = 'http://localhost:8000';
+  static const String frontendUrl = 'https://paperkit-web.onrender.com';
+
+  // AI Service API Keys (Fill with your keys)
+  static const String defaultGeminiApiKey = 'YOUR_GEMINI_API_KEY';
+  static const String defaultGroqApiKey = 'YOUR_GROQ_API_KEY';
+  static const String defaultHfApiKey = 'YOUR_HF_API_KEY';
+
+  // AI Model Constants (Live & Verified on Groq & Google Gemini APIs)
+  static const String geminiModel = 'gemini-3.6-flash';
+  static const List<String> geminiCandidateModels = [
+    'gemini-3.6-flash',
+    'gemini-3.7-flash',
+    'gemini-3.8-flash',
+    'gemini-3.5-flash',
+  ];
+  static const String groqTextModel = 'openai/gpt-oss-120b';
+  static const String groqFastModel = 'openai/gpt-oss-20b';
+  static const String geminiVisionModel = 'gemini-3.6-flash';
+
+  // Keys for SharedPreferences user overrides
+  static const String _prefBackendUrlKey = 'pk_custom_backend_url';
+  static const String _prefGeminiKey = 'pk_custom_gemini_key';
+  static const String _prefGroqKey = 'pk_custom_groq_key';
+  static const String _prefHfKey = 'pk_custom_hf_key';
+
+  // Get active backend URL
+  static Future<String> getBackendUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_prefBackendUrlKey) ?? defaultBackendUrl;
+  }
+
+  static Future<void> setBackendUrl(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefBackendUrlKey, url);
+  }
+
+  // Get active Gemini API Key
+  static Future<String> getGeminiApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_prefGeminiKey) ?? defaultGeminiApiKey;
+  }
+
+  static Future<void> setGeminiApiKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefGeminiKey, key);
+  }
+
+  // Get active Groq API Key
+  static Future<String> getGroqApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_prefGroqKey) ?? defaultGroqApiKey;
+  }
+
+  static Future<void> setGroqApiKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefGroqKey, key);
+  }
+
+  // Get active Hugging Face API Key
+  static Future<String> getHfApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_prefHfKey) ?? defaultHfApiKey;
+  }
+
+  static Future<void> setHfApiKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefHfKey, key);
+  }
+
+  // Reset to default configuration
+  static Future<void> resetToDefaults() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefBackendUrlKey);
+    await prefs.remove(_prefGeminiKey);
+    await prefs.remove(_prefGroqKey);
+    await prefs.remove(_prefHfKey);
+  }
+}

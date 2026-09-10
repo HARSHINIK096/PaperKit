@@ -39,7 +39,7 @@ def _get_gemini_model(model_name: str = "gemini-3.6-flash"):
     if not current_settings.gemini_api_key:
         raise RuntimeError("GEMINI_API_KEY is not configured")
     import google.generativeai as genai
-    candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.7-flash", "gemini-2.5-pro"]
+    candidate_models = ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.8-flash", "gemini-3.5-flash"]
     for m in candidate_models:
         try:
             return genai.GenerativeModel(m)
@@ -61,7 +61,7 @@ async def generate_text(prompt: str, system_prompt: Optional[str] = None) -> str
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": prompt})
 
-            model = current_settings.groq_text_model or "llama-3.3-70b-versatile"
+            model = current_settings.groq_text_model or "openai/gpt-oss-120b"
             completion = groq_client.chat.completions.create(
                 model=model,
                 messages=messages,

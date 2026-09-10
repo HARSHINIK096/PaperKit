@@ -71,7 +71,7 @@ async def get_current_user(
     if not token and isinstance(request, Request):
         token = request.query_params.get("token") or request.headers.get("Authorization", "").replace("Bearer ", "").strip()
     
-    # Try decoding token if provided and not a guest token
+    # 1. Authenticated user with JWT token
     if token and token not in GUEST_TOKENS and not token.startswith("guest"):
         payload = decode_token(token)
         user_id = payload.get("sub")
@@ -85,7 +85,51 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Seamless zero-auth open fallback: guest/local workspace user
+    # 2. Dynamic Anonymous User Identity (e.g. from Flutter client via X-User-ID)
+    if isinstance(request, Request):
+        anon_id = (
+            request.headers.get("X-User-ID")
+            or request.headers.get("X-Anonymous-ID")
+            or request.query_params.get("user_id")
+        )
+        if anon_id and anon_id.strip():
+            anon_id = anon_id.strip()
+            if db is not None:
+                try:
+                    # Query user by anonymous_id or string _id
+                    user = await db.users.find_one({"anonymous_id": anon_id})
+                    if not user:
+                        user = await db.users.find_one({"_id": anon_id})
+                    if not user:
+                        short_suffix = anon_id[-6:].upper() if len(anon_id) >= 6 else anon_id.upper()
+                        user = {
+                            "_id": anon_id,
+                            "anonymous_id": anon_id,
+                            "name": f"User {short_suffix}",
+                            "email": f"guest_{anon_id[:8]}@paperkit.local",
+                            "is_guest": True,
+                            "is_anonymous": True,
+                            "created_at": datetime.now(timezone.utc),
+                            "preferences": {
+                                "dark_mode": False,
+                                "default_view": "list",
+                                "language": "en"
+                            },
+                        }
+                        await db.users.insert_one(user)
+                    return user
+                except Exception as e:
+                    print(f"Anonymous user resolution error: {e}")
+                    return {
+                        "_id": anon_id,
+                        "anonymous_id": anon_id,
+                        "name": f"User {anon_id[-6:].upper() if len(anon_id) >= 6 else anon_id}",
+                        "is_guest": True,
+                        "is_anonymous": True,
+                        "preferences": {"dark_mode": False, "default_view": "list", "language": "en"},
+                    }
+
+    # 3. Seamless fallback: default guest user
     if db is not None:
         try:
             user = await db.users.find_one({"_id": GUEST_USER_ID})

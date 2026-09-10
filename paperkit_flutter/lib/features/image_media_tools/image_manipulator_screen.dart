@@ -1,0 +1,230 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:provider/provider.dart';
+import '../../core/models/document_file.dart';
+import '../../core/models/history_item.dart';
+import '../../core/providers/files_provider.dart';
+import '../../core/providers/history_provider.dart';
+import '../../core/services/image_engine.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/action_button.dart';
+import '../../core/widgets/app_shell.dart';
+
+class ImageManipulatorScreen extends StatefulWidget {
+  const ImageManipulatorScreen({super.key});
+
+  @override
+  State<ImageManipulatorScreen> createState() => _ImageManipulatorScreenState();
+}
+
+class _ImageManipulatorScreenState extends State<ImageManipulatorScreen> {
+  File? _selectedFile;
+  double _brightness = 1.0;
+  double _contrast = 1.0;
+  int _rotation = 0;
+  bool _grayscale = false;
+  bool _invert = false;
+  bool _isProcessing = false;
+  File? _manipulatedResult;
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        _selectedFile = File(result.files.single.path!);
+        _manipulatedResult = null;
+      });
+    }
+  }
+
+  Future<void> _applyFilters() async {
+    if (_selectedFile == null) return;
+    setState(() => _isProcessing = true);
+
+    try {
+      final outputFile = await ImageEngine.manipulateImage(
+        inputFile: _selectedFile!,
+        brightness: _brightness,
+        contrast: _contrast,
+        rotationAngle: _rotation,
+        grayscale: _grayscale,
+        invert: _invert,
+      );
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = outputFile.uri.pathSegments.last;
+
+      final doc = DocumentFile(
+        id: 'imgman_$timestamp',
+        name: fileName,
+        path: outputFile.path,
+        size: await outputFile.length(),
+        modifiedAt: DateTime.now(),
+        type: FileTypeCategory.image,
+      );
+
+      if (mounted) {
+        await context.read<FilesProvider>().addFile(doc);
+        await context.read<HistoryProvider>().addRecord(
+              HistoryItem(
+                id: 'hist_$timestamp',
+                toolId: 'image-manipulator',
+                toolName: 'Image Adjust & Filter',
+                fileName: fileName,
+                outputPath: outputFile.path,
+                fileSize: await outputFile.length(),
+                timestamp: DateTime.now(),
+              ),
+            );
+
+        setState(() {
+          _manipulatedResult = outputFile;
+          _isProcessing = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image filters applied and saved!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Filter processing failed: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AppShell(
+      title: 'Image Adjust & Filters',
+      showBottomNav: false,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+              ),
+            ),
+            child: Column(
+              children: [
+                if (_selectedFile == null)
+                  Center(
+                    child: OutlinedButton.icon(
+                      onPressed: _pickFile,
+                      icon: const Icon(LucideIcons.image, size: 20),
+                      label: const Text('Choose Image to Adjust'),
+                    ),
+                  )
+                else ...[
+                  Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          image: DecorationImage(
+                            image: FileImage(_selectedFile!),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          _selectedFile!.uri.pathSegments.last,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      TextButton(onPressed: _pickFile, child: const Text('Change')),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          if (_selectedFile != null) ...[
+            Text('Brightness (${(_brightness * 100).toInt()}%)', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+            Slider(
+              value: _brightness,
+              min: 0.2,
+              max: 2.0,
+              divisions: 18,
+              onChanged: (val) => setState(() => _brightness = val),
+            ),
+            const SizedBox(height: 10),
+
+            Text('Contrast (${(_contrast * 100).toInt()}%)', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+            Slider(
+              value: _contrast,
+              min: 0.2,
+              max: 2.0,
+              divisions: 18,
+              onChanged: (val) => setState(() => _contrast = val),
+            ),
+            const SizedBox(height: 14),
+
+            Row(
+              children: [
+                Expanded(
+                  child: FilterChip(
+                    label: const Text('Grayscale (B&W)'),
+                    selected: _grayscale,
+                    onSelected: (val) => setState(() => _grayscale = val),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilterChip(
+                    label: const Text('Invert Colors'),
+                    selected: _invert,
+                    onSelected: (val) => setState(() => _invert = val),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            ActionButton(
+              label: 'Apply & Save Image',
+              icon: LucideIcons.sliders,
+              isLoading: _isProcessing,
+              onPressed: _applyFilters,
+            ),
+          ],
+
+          if (_manipulatedResult != null) ...[
+            const SizedBox(height: 20),
+            ActionButton(
+              label: 'Open Adjusted Image',
+              icon: LucideIcons.externalLink,
+              isSecondary: true,
+              onPressed: () => OpenFilex.open(_manipulatedResult!.path),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
