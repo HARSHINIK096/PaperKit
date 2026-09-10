@@ -62,13 +62,37 @@ class ApiService {
     dio.options.baseUrl = url;
   }
 
-  Future<bool> checkHealth() async {
-    try {
-      final response = await dio.get('/health');
-      return response.statusCode == 200;
-    } catch (_) {
-      return false;
+  Future<bool> checkHealth({int timeoutMs = 3000}) async {
+    final candidateUrls = <String>{
+      dio.options.baseUrl.replaceAll(RegExp(r'/+$'), ''),
+      defaultBaseUrl.replaceAll(RegExp(r'/+$'), ''),
+      localBaseUrl.replaceAll(RegExp(r'/+$'), ''),
+      'http://127.0.0.1:8000',
+      'http://10.0.2.2:8000',
+    }.toList();
+
+    for (final base in candidateUrls) {
+      for (final endpoint in ['/health', '/']) {
+        try {
+          final probeDio = Dio(
+            BaseOptions(
+              baseUrl: base,
+              connectTimeout: Duration(milliseconds: timeoutMs),
+              receiveTimeout: Duration(milliseconds: timeoutMs),
+              headers: {'Accept': 'application/json'},
+            ),
+          );
+          final response = await probeDio.get(endpoint);
+          if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 400) {
+            dio.options.baseUrl = base;
+            return true;
+          }
+        } catch (_) {
+          // Continue probing next candidate
+        }
+      }
     }
+    return false;
   }
 
   // Generic File Upload

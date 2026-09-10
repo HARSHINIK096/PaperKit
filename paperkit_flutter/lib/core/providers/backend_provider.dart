@@ -10,6 +10,8 @@ class BackendProvider extends ChangeNotifier {
   String _statusMessage = 'Checking Server Sync...';
   Timer? _periodicTimer;
 
+  bool _isDisposed = false;
+
   bool get isConnected => _isConnected;
   bool get isChecking => _isChecking;
   String get statusMessage => _statusMessage;
@@ -26,32 +28,36 @@ class BackendProvider extends ChangeNotifier {
   }
 
   Future<bool> checkHealth({bool isSilent = false}) async {
+    if (_isDisposed) return false;
     if (!isSilent) {
       _isChecking = true;
       _statusMessage = 'Connecting to PaperKit Server...';
-      notifyListeners();
+      if (!_isDisposed) notifyListeners();
     }
 
     try {
-      final healthy = await _apiService.checkHealth();
+      final healthy = await _apiService.checkHealth(timeoutMs: 2500);
+      if (_isDisposed) return healthy;
       _isConnected = healthy;
       _statusMessage = healthy
           ? 'Cloud Server Online • Operational'
           : 'Local Mode • Cloud Server Offline';
       _isChecking = false;
-      notifyListeners();
+      if (!_isDisposed) notifyListeners();
       return healthy;
     } catch (_) {
+      if (_isDisposed) return false;
       _isConnected = false;
-      _statusMessage = 'Server Offline • Reconnecting...';
+      _statusMessage = 'Local Mode • Cloud Server Offline';
       _isChecking = false;
-      notifyListeners();
+      if (!_isDisposed) notifyListeners();
       return false;
     }
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _periodicTimer?.cancel();
     super.dispose();
   }
