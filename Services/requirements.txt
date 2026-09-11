@@ -23,6 +23,8 @@ beautifulsoup4
 # Archive tools
 py7zr>=0.20.0
 rarfile>=4.0
-# Video processing requires FFmpeg binary installed on system
+# Video and audio processing requires FFmpeg binary
 yt-dlp[default]>=2025.1.15
 bgutil-ytdlp-pot-provider>=2.0.0
+imageio-ffmpeg>=0.5.1
+certifi>=2024.2.2

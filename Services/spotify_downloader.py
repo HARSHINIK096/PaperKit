@@ -18,14 +18,23 @@ except ImportError:
 
 def find_ffmpeg_path() -> Optional[str]:
     """
-    Locates ffmpeg binary in the local bin/ folder or on the system PATH.
+    Locates ffmpeg binary in the local bin/ folder, system PATH, or common Linux/Render paths.
     """
+    import shutil
     base_dir = os.path.dirname(os.path.abspath(__file__))
     bin_dir = os.path.join(base_dir, "bin")
     
     local_ffmpeg = os.path.join(bin_dir, "ffmpeg.exe" if os.name == "nt" else "ffmpeg")
     if os.path.isfile(local_ffmpeg):
         return local_ffmpeg
+
+    sys_ffmpeg = shutil.which("ffmpeg")
+    if sys_ffmpeg and os.path.isfile(sys_ffmpeg):
+        return sys_ffmpeg
+
+    for p in ["/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/opt/homebrew/bin/ffmpeg"]:
+        if os.path.isfile(p):
+            return p
         
     return None
 
@@ -86,15 +95,63 @@ def extract_spotify_metadata(url: str) -> Tuple[str, str]:
         
     return title or "Spotify Track", artists
 
+def resolve_youtube_url_for_query(search_query: str) -> Optional[str]:
+    """
+    Resolves a direct YouTube video URL for a given search query using clean search extraction.
+    """
+    import yt_dlp
+    
+    queries = [
+        f"ytsearch5:{search_query}",
+        f"ytsearch5:{search_query} audio",
+        f"ytsearch5:{search_query} official",
+    ]
+    
+    search_opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "nocheckcertificate": True,
+        "extract_flat": True,
+        "skip_download": True,
+        "default_search": "ytsearch",
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+    }
+    
+    proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
+    if proxy_url:
+        search_opts["proxy"] = proxy_url
+
+    for q in queries:
+        try:
+            with yt_dlp.YoutubeDL(search_opts) as ydl:
+                info = ydl.extract_info(q, download=False)
+                if info and "entries" in info and info["entries"]:
+                    for entry in info["entries"]:
+                        if entry and entry.get("id"):
+                            vid_id = entry["id"]
+                            print(f"Resolved YouTube video for '{search_query}': https://www.youtube.com/watch?v={vid_id} ({entry.get('title', '')})")
+                            return f"https://www.youtube.com/watch?v={vid_id}"
+        except Exception as e:
+            print(f"Search query '{q}' note: {e}")
+            continue
+
+    return None
+
 def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str] = None) -> str:
     """
-    Downloads audio stream using yt-dlp search and converts to standard 192kbps MP3.
+    Downloads audio stream using yt-dlp and converts to standard 192kbps MP3.
     """
     import yt_dlp
     
     prefix = f"{job_id}_" if job_id else ""
     out_tmpl = os.path.join(output_dir, f"{prefix}%(title)s.%(ext)s")
     ffmpeg_bin = find_ffmpeg_path()
+    
+    target_video_url = resolve_youtube_url_for_query(search_query)
+    download_targets = [target_video_url] if target_video_url else [f"ytsearch1:{search_query}"]
     
     cookie_file = os.getenv("YOUTUBE_COOKIES_FILE") or os.getenv("COOKIES_FILE")
     cookie_content = os.getenv("YOUTUBE_COOKIES")
@@ -108,7 +165,7 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
             print(f"Warning: Failed to decode YOUTUBE_COOKIES_BASE64 in Spotify downloader: {be}")
 
     if not cookie_file and cookie_content:
-        cookie_file = os.path.join(output_dir, "yt_cookies.txt")
+        cookie_file = os.path.join(output_dir, f"yt_cookies_{job_id or 'default'}.txt")
         try:
             with open(cookie_file, "w", encoding="utf-8") as f:
                 f.write(cookie_content)
@@ -118,77 +175,91 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
     proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
 
     client_strategies = [
-        ["mweb", "android_vr", "ios", "tv"],
-        ["mweb", "ios"],
-        ["tv_embedded", "ios", "mweb"],
-        ["android", "ios", "web"],
+        None,
+        ["web", "android"],
+        ["ios", "mweb"],
+        ["tv_embedded", "ios"],
+        ["mweb", "android_vr"],
     ]
 
     last_error = None
-    for clients in client_strategies:
-        ydl_opts = {
-            "outtmpl": out_tmpl,
-            "format": "bestaudio/best",
-            "postprocessors": [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "192",
-            }],
-            "quiet": False,
-            "no_warnings": True,
-            "nocheckcertificate": True,
-            "js_runtimes": {"node": {}},
-            "extractor_args": {
-                "youtube": {
-                    "player_client": clients,
+    for target in download_targets:
+        for clients in client_strategies:
+            ydl_opts = {
+                "outtmpl": out_tmpl,
+                "format": "bestaudio/best",
+                "quiet": False,
+                "no_warnings": True,
+                "nocheckcertificate": True,
+                "ignoreerrors": False,
+                "http_headers": {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                    "Accept-Language": "en-US,en;q=0.9",
                 }
-            },
-            "http_headers": {
-                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
-                "Accept-Language": "en-US,en;q=0.9",
             }
-        }
-        if proxy_url:
-            ydl_opts["proxy"] = proxy_url
-        if ffmpeg_bin:
-            ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin)
-        if cookie_file and os.path.exists(cookie_file):
-            ydl_opts["cookiefile"] = cookie_file
-            
-        print(f"Searching and downloading audio stream for: '{search_query}' (clients: {clients})...")
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([f"ytsearch1:{search_query}"])
-            last_error = None
-            break
-        except Exception as e:
-            last_error = e
-            print(f"yt-dlp search attempt failed with clients {clients}: {e}. Retrying with next client...")
-            continue
+            if ffmpeg_bin:
+                ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin) if os.path.isfile(ffmpeg_bin) else ffmpeg_bin
+                ydl_opts["postprocessors"] = [{
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
+                    "preferredquality": "192",
+                }]
+            if proxy_url:
+                ydl_opts["proxy"] = proxy_url
+            if cookie_file and os.path.exists(cookie_file):
+                ydl_opts["cookiefile"] = cookie_file
+            if clients:
+                ydl_opts["extractor_args"] = {
+                    "youtube": {
+                        "player_client": clients,
+                    }
+                }
 
-    if last_error:
-        print(f"Warning: yt-dlp returned error during download: {last_error}")
-        
+            print(f"Downloading audio from {target} (clients: {clients})...")
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([target])
+                
+                # Check if audio was produced
+                matching_files = [
+                    os.path.join(output_dir, f)
+                    for f in os.listdir(output_dir)
+                    if os.path.isfile(os.path.join(output_dir, f))
+                    and os.path.getsize(os.path.join(output_dir, f)) > 1024
+                    and (not job_id or f.startswith(job_id))
+                    and not f.endswith(".part")
+                    and not f.endswith(".ytdl")
+                    and not f.endswith(".txt")
+                ]
+                if matching_files:
+                    mp3s = [f for f in matching_files if f.endswith(".mp3")]
+                    if mp3s:
+                        return max(mp3s, key=os.path.getctime)
+                    return max(matching_files, key=os.path.getctime)
+            except Exception as e:
+                last_error = e
+                print(f"yt-dlp download attempt failed with clients {clients}: {e}. Retrying with next client...")
+                continue
+
     # Locate output file
     matching_files = [
         os.path.join(output_dir, f)
         for f in os.listdir(output_dir)
-        if os.path.isfile(os.path.join(output_dir, f)) and f.endswith(".mp3") and (not job_id or f.startswith(job_id))
+        if os.path.isfile(os.path.join(output_dir, f))
+        and os.path.getsize(os.path.join(output_dir, f)) > 1024
+        and (not job_id or f.startswith(job_id))
+        and not f.endswith(".part")
+        and not f.endswith(".ytdl")
+        and not f.endswith(".txt")
     ]
     
     if matching_files:
+        mp3s = [f for f in matching_files if f.endswith(".mp3")]
+        if mp3s:
+            return max(mp3s, key=os.path.getctime)
         return max(matching_files, key=os.path.getctime)
         
-    # Check all files
-    all_files = [
-        os.path.join(output_dir, f)
-        for f in os.listdir(output_dir)
-        if os.path.isfile(os.path.join(output_dir, f)) and (not job_id or f.startswith(job_id))
-    ]
-    if all_files:
-        return max(all_files, key=os.path.getctime)
-        
-    raise RuntimeError("Download completed but output audio file was not found.")
+    raise RuntimeError(f"Download completed but output audio file was not found. Last error: {last_error}")
 
 def download_spotify_track(url: str, output_dir: str = ".", output_template: Optional[str] = None, job_id: Optional[str] = None) -> str:
     """

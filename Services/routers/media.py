@@ -178,13 +178,11 @@ async def download_spotify(req: DownloadRequest, background_tasks: BackgroundTas
 
 
 from fastapi import UploadFile, File, Form
+from spotify_downloader import find_ffmpeg_path
 
 def get_ffmpeg_cmd():
-    bin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "bin")
-    ffmpeg_bin = os.path.join(bin_dir, "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg")
-    if os.path.exists(ffmpeg_bin):
-        return ffmpeg_bin
-    return "ffmpeg"
+    cmd = find_ffmpeg_path()
+    return cmd if cmd else "ffmpeg"
 
 
 @router.post("/convert-video")
