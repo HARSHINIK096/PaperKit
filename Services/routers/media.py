@@ -33,7 +33,9 @@ from services.youtube_service import (
     YouTubeExtractionError,
     YouTubeErrorCode,
     check_pot_provider_health,
+    check_pot_provider_operational,
     get_pot_provider_url,
+    get_node_version,
 )
 import yt_dlp.version
 from fastapi.responses import JSONResponse
@@ -43,15 +45,24 @@ youtube_service = YouTubeService(DOWNLOAD_DIR)
 
 @router.get("/youtube-health")
 async def youtube_health():
-    """Health check for YouTube extraction subsystem & PO-Token provider."""
+    """Health & operational readiness check for YouTube extraction subsystem & PO-Token provider."""
     pot_url = get_pot_provider_url()
-    pot_healthy = await check_pot_provider_health(pot_url)
+    reachable = await check_pot_provider_health(pot_url)
+    operational = await check_pot_provider_operational(pot_url) if reachable else False
     ffmpeg_path = youtube_service.find_ffmpeg_location()
+    node_ver = get_node_version()
+
+    status = "healthy" if operational else ("degraded" if reachable else "unhealthy")
 
     return {
-        "status": "healthy" if pot_healthy else "degraded",
-        "pot_provider_available": pot_healthy,
+        "status": status,
+        "pot_provider_configured": bool(pot_url),
+        "pot_provider_reachable": reachable,
+        "pot_provider_operational": operational,
+        "pot_provider_available": operational,  # Backward compatibility flag
         "pot_provider_url": pot_url,
+        "node_available": bool(node_ver),
+        "node_version": node_ver or "not_found",
         "ytdlp_version": getattr(yt_dlp.version, "__version__", "unknown"),
         "ffmpeg_available": bool(ffmpeg_path),
     }

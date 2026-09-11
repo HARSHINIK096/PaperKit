@@ -178,8 +178,26 @@ def get_pot_provider_url() -> str:
     """Returns the configured PO-token provider URL."""
     return os.getenv("POT_PROVIDER_URL") or os.getenv("YTDL_POT_URL") or DEFAULT_POT_URL
 
+def get_node_version() -> Optional[str]:
+    """Returns the version of Node.js available in PATH if present."""
+    node_bin = shutil.which("node")
+    if not node_bin:
+        # Check local bin directory as fallback
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        bin_node = os.path.join(base_dir, "bin", "node")
+        if os.path.isfile(bin_node):
+            node_bin = bin_node
+    if node_bin:
+        try:
+            res = subprocess.run([node_bin, "-v"], capture_output=True, text=True, timeout=2)
+            if res.returncode == 0:
+                return res.stdout.strip()
+        except Exception:
+            pass
+    return None
+
 async def check_pot_provider_health(url: Optional[str] = None) -> bool:
-    """Pings the PO-token provider health endpoint."""
+    """Pings the PO-token provider HTTP ping endpoint."""
     import httpx
     target_url = url or get_pot_provider_url()
     ping_url = f"{target_url.rstrip('/')}/ping"
@@ -189,6 +207,29 @@ async def check_pot_provider_health(url: Optional[str] = None) -> bool:
             if resp.status_code == 200:
                 data = resp.json()
                 return data.get("status") == "ok"
+    except Exception:
+        return False
+    return False
+
+async def check_pot_provider_operational(url: Optional[str] = None) -> bool:
+    """
+    Performs a real readiness check by requesting a PO token for a known video ID
+    to verify that BotGuard/WebPoMinter token minting is functional.
+    """
+    import httpx
+    target_url = url or get_pot_provider_url()
+    pot_url = f"{target_url.rstrip('/')}/get_pot"
+    payload = {
+        "bypass_cache": True,
+        "content_binding": "_Wv9oLUe740",
+        "innertube_context": {}
+    }
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(pot_url, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                return bool(data.get("poToken"))
     except Exception:
         return False
     return False
@@ -209,18 +250,42 @@ def start_local_pot_server() -> bool:
 
     node_bin = shutil.which("node")
     if not node_bin:
-        logger.warning("Node.js binary not found in PATH for local POT server.")
+        bin_node = os.path.join(base_dir, "bin", "node")
+        if os.path.isfile(bin_node):
+            node_bin = bin_node
+
+    if not node_bin:
+        logger.warning("Node.js binary not found in PATH or bin/ for local POT server.")
         return False
 
     try:
+        env = {**os.environ, "POT_PORT": "4416", "POT_HOST": "127.0.0.1"}
+        # Prepend bin directory to PATH for child process
+        bin_dir = os.path.join(base_dir, "bin")
+        if os.path.exists(bin_dir):
+            env["PATH"] = bin_dir + os.pathsep + env.get("PATH", "")
+
         _pot_server_process = subprocess.Popen(
             [node_bin, "server.js"],
             cwd=pot_server_dir,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            env={**os.environ, "POT_PORT": "4416", "POT_HOST": "127.0.0.1"},
+            env=env,
         )
         logger.info("Started local POT provider server (PID: %d)", _pot_server_process.pid)
+
+        # Wait up to 3 seconds for readiness
+        import urllib.request
+        for _ in range(15):
+            time.sleep(0.2)
+            try:
+                with urllib.request.urlopen("http://127.0.0.1:4416/ping", timeout=1) as resp:
+                    if resp.status == 200:
+                        logger.info("Local POT provider server ping succeeded on port 4416.")
+                        return True
+            except Exception:
+                pass
+
         return True
     except Exception as e:
         logger.error("Failed to start local POT server: %s", e)
@@ -270,7 +335,6 @@ class YouTubeService:
             "merge_output_format": "mp4",
             "quiet": True,
             "no_warnings": True,
-            "nocheckcertificate": True,
             "ignoreerrors": False,
             "socket_timeout": 15,
             "js_runtimes": {"node": {}},
@@ -283,7 +347,6 @@ class YouTubeService:
                 },
             },
         }
-
 
         if ffmpeg_bin:
             ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin) if os.path.isfile(ffmpeg_bin) else ffmpeg_bin
