@@ -272,55 +272,51 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
 
     proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
 
-    # If cookies are provided, standard player client (None or web) should be used
-    if cookie_file and os.path.exists(cookie_file):
-        yt_client_strategies = [None, ["web"], ["mweb"]]
-    else:
-        yt_client_strategies = [
-            None,
-            ["web", "android"],
-            ["ios", "mweb"],
-            ["tv_embedded", "ios"],
-            ["mweb", "android_vr"],
-        ]
+    yt_client_strategies = [
+        ['android', 'ios'],
+        ['ios', 'mweb'],
+        ['android_vr', 'mweb'],
+        ['web'],
+        None,
+    ]
+
+    cookie_modes = [cookie_file, None] if (cookie_file and os.path.exists(cookie_file)) else [None]
 
     last_error = None
     for target in download_targets:
         is_soundcloud = "soundcloud.com" in target or target.startswith("scsearch")
         client_strategies = [None] if is_soundcloud else yt_client_strategies
+        target_cookie_modes = [None] if is_soundcloud else cookie_modes
 
-        for clients in client_strategies:
-            ydl_opts = {
-                "outtmpl": out_tmpl,
-                "format": "bestaudio/best",
-                "quiet": False,
-                "no_warnings": True,
-                "nocheckcertificate": True,
-                "ignoreerrors": False,
-                "http_headers": {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-                    "Accept-Language": "en-US,en;q=0.9",
+        for use_cookie in target_cookie_modes:
+            for clients in client_strategies:
+                ydl_opts = {
+                    "outtmpl": out_tmpl,
+                    "format": "bestaudio/best",
+                    "quiet": False,
+                    "no_warnings": True,
+                    "nocheckcertificate": True,
+                    "ignoreerrors": False,
                 }
-            }
-            if ffmpeg_bin:
-                ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin) if os.path.isfile(ffmpeg_bin) else ffmpeg_bin
-                ydl_opts["postprocessors"] = [{
-                    "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
-                    "preferredquality": "192",
-                }]
-            if proxy_url:
-                ydl_opts["proxy"] = proxy_url
-            if cookie_file and os.path.exists(cookie_file) and not is_soundcloud:
-                ydl_opts["cookiefile"] = cookie_file
-            if clients and not is_soundcloud:
-                ydl_opts["extractor_args"] = {
-                    "youtube": {
-                        "player_client": clients,
+                if ffmpeg_bin:
+                    ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin) if os.path.isfile(ffmpeg_bin) else ffmpeg_bin
+                    ydl_opts["postprocessors"] = [{
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "mp3",
+                        "preferredquality": "192",
+                    }]
+                if proxy_url:
+                    ydl_opts["proxy"] = proxy_url
+                if use_cookie and os.path.exists(use_cookie) and not is_soundcloud:
+                    ydl_opts["cookiefile"] = use_cookie
+                if clients and not is_soundcloud:
+                    ydl_opts["extractor_args"] = {
+                        "youtube": {
+                            "player_client": clients,
+                        }
                     }
-                }
 
-            print(f"Downloading audio from {target} (clients: {clients})...")
+                print(f"Downloading audio from {target} (clients: {clients}, cookie: {bool(use_cookie)})...")
             try:
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([target])

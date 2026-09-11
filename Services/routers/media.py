@@ -42,40 +42,43 @@ def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
 
     proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
 
-    last_error = None
-    for clients in client_strategies:
-        ydl_opts = {
-            'outtmpl': output_template,
-            'format': 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best',
-            'merge_output_format': 'mp4',
-            'quiet': False,
-            'no_warnings': True,
-            'nocheckcertificate': True,
-            'ignoreerrors': False,
-        }
-        if proxy_url:
-            ydl_opts['proxy'] = proxy_url
-        if clients is not None:
-            ydl_opts['extractor_args'] = {
-                'youtube': {
-                    'player_client': clients,
-                }
-            }
-        if ffmpeg_bin:
-            ydl_opts['ffmpeg_location'] = os.path.dirname(ffmpeg_bin) if os.path.isfile(ffmpeg_bin) else ffmpeg_bin
-        elif os.path.exists(bin_dir):
-            ydl_opts['ffmpeg_location'] = bin_dir
-        if cookie_file and os.path.exists(cookie_file):
-            ydl_opts['cookiefile'] = cookie_file
+    cookie_modes = [cookie_file, None] if (cookie_file and os.path.exists(cookie_file)) else [None]
 
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-            return  # Succeeded
-        except Exception as e:
-            last_error = e
-            print(f"yt-dlp attempt with clients {clients} failed: {e}. Trying next strategy...")
-            continue
+    last_error = None
+    for use_cookie in cookie_modes:
+        for clients in client_strategies:
+            ydl_opts = {
+                'outtmpl': output_template,
+                'format': 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best',
+                'merge_output_format': 'mp4',
+                'quiet': False,
+                'no_warnings': True,
+                'nocheckcertificate': True,
+                'ignoreerrors': False,
+            }
+            if proxy_url:
+                ydl_opts['proxy'] = proxy_url
+            if clients is not None:
+                ydl_opts['extractor_args'] = {
+                    'youtube': {
+                        'player_client': clients,
+                    }
+                }
+            if ffmpeg_bin:
+                ydl_opts['ffmpeg_location'] = os.path.dirname(ffmpeg_bin) if os.path.isfile(ffmpeg_bin) else ffmpeg_bin
+            elif os.path.exists(bin_dir):
+                ydl_opts['ffmpeg_location'] = bin_dir
+            if use_cookie and os.path.exists(use_cookie):
+                ydl_opts['cookiefile'] = use_cookie
+
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([url])
+                return  # Succeeded
+            except Exception as e:
+                last_error = e
+                print(f"yt-dlp attempt with clients {clients} (cookie: {bool(use_cookie)}) failed: {e}. Trying next strategy...")
+                continue
 
     if last_error:
         raise last_error
