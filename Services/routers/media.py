@@ -40,10 +40,12 @@ def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
             print(f"Warning: Failed to decode YOUTUBE_COOKIES_BASE64: {be}")
 
     if not cookie_file and cookie_content:
+        from spotify_downloader import format_netscape_cookies
         cookie_file = os.path.join(DOWNLOAD_DIR, "yt_cookies.txt")
         try:
+            sanitized = format_netscape_cookies(cookie_content)
             with open(cookie_file, "w", encoding="utf-8") as f:
-                f.write(cookie_content)
+                f.write(sanitized)
         except Exception as ce:
             print(f"Warning: Could not write YouTube cookies: {ce}")
             cookie_file = None

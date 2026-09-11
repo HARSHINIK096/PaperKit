@@ -104,6 +104,27 @@ def extract_spotify_metadata(url: str) -> Tuple[str, str]:
         
     return title or "Spotify Track", artists
 
+def format_netscape_cookies(raw_content: str) -> str:
+    """
+    Ensures every entry in a Netscape cookies text file strictly satisfies the 7 tab-separated columns specification.
+    """
+    formatted_lines = []
+    for line in raw_content.splitlines():
+        trimmed = line.strip()
+        if not trimmed or trimmed.startswith("#"):
+            formatted_lines.append(line)
+            continue
+        parts = line.split("\t")
+        if len(parts) == 5:
+            domain, sub, exp, name, val = parts
+            formatted_lines.append(f"{domain}\t{sub}\t/\tTRUE\t{exp}\t{name}\t{val}")
+        elif len(parts) == 6:
+            domain, sub, path, exp, name, val = parts
+            formatted_lines.append(f"{domain}\t{sub}\t{path}\tTRUE\t{exp}\t{name}\t{val}")
+        else:
+            formatted_lines.append(line)
+    return "\n".join(formatted_lines) + "\n"
+
 def get_or_create_cookie_file(output_dir: str = ".", job_id: Optional[str] = None) -> Optional[str]:
     """
     Extracts and returns the path to a valid YouTube Netscape cookies file from env vars.
@@ -126,8 +147,9 @@ def get_or_create_cookie_file(output_dir: str = ".", job_id: Optional[str] = Non
         os.makedirs(output_dir, exist_ok=True)
         cookie_path = os.path.join(output_dir, f"yt_cookies_{job_id or 'global'}.txt")
         try:
+            sanitized = format_netscape_cookies(cookie_content)
             with open(cookie_path, "w", encoding="utf-8") as f:
-                f.write(cookie_content)
+                f.write(sanitized)
             return cookie_path
         except Exception as ce:
             print(f"Warning: Could not write cookie file: {ce}")
