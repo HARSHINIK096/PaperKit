@@ -1138,19 +1138,9 @@ class _PdfPageCanvasPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Draw Document Background & Page Watermark
+    // 1. Draw Document Background
     final pageBgPaint = Paint()..color = Colors.white;
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), pageBgPaint);
-
-    // Page indicator header
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: 'PDF Page $pageNumber — Tap any text to select & edit',
-        style: TextStyle(color: Colors.grey.withOpacity(0.4), fontSize: 10.5, fontWeight: FontWeight.w600),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    textPainter.paint(canvas, Offset((size.width - textPainter.width) / 2, 10));
 
     // Calculate viewport font scale relative to true document page width
     final docWidth = docPageSize.width > 0 ? docPageSize.width : 595.28;

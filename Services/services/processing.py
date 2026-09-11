@@ -372,64 +372,249 @@ def pdf_to_txt(pdf_bytes: bytes) -> bytes:
     return text.encode("utf-8")
 
 
+def extract_tables_from_page(page: fitz.Page) -> list[dict]:
+    """
+    Robust multi-strategy table extraction from a PDF page.
+    Attempts explicit lines strategy -> text/whitespace strategy -> snap tolerance heuristics.
+    Returns list of dicts: {"bbox": fitz.Rect, "data": list[list[str]], "rows": int, "cols": int}
+    """
+    tables_found = []
+    seen_bboxes = []
+
+    def is_duplicate(bbox: fitz.Rect) -> bool:
+        for sb in seen_bboxes:
+            if bbox.intersects(sb):
+                overlap = fitz.Rect(max(bbox.x0, sb.x0), max(bbox.y0, sb.y0), min(bbox.x1, sb.x1), min(bbox.y1, sb.y1))
+                if overlap.is_valid and (overlap.width * overlap.height) > 0.4 * min(bbox.width * bbox.height, sb.width * sb.height):
+                    return True
+        return False
+
+    def process_tab_finder(tab_finder):
+        if not tab_finder or not hasattr(tab_finder, "tables"):
+            return
+        for tab in tab_finder.tables:
+            bbox = fitz.Rect(tab.bbox)
+            if is_duplicate(bbox):
+                continue
+            raw_data = tab.extract()
+            if not raw_data:
+                continue
+            cleaned_rows = []
+            for r in raw_data:
+                cleaned_cells = [str(c or "").strip().replace("\xa0", " ") for c in r]
+                if any(cleaned_cells):
+                    cleaned_rows.append(cleaned_cells)
+            if cleaned_rows and len(cleaned_rows) >= 1:
+                max_c = max(len(r) for r in cleaned_rows)
+                if max_c >= 1:
+                    norm_rows = []
+                    for r in cleaned_rows:
+                        norm_rows.append(r + [""] * (max_c - len(r)))
+                    seen_bboxes.append(bbox)
+                    tables_found.append({
+                        "bbox": bbox,
+                        "data": norm_rows,
+                        "rows": len(norm_rows),
+                        "cols": max_c
+                    })
+
+    # Strategy 1: Explicit vector lines (Standard grid tables)
+    try:
+        process_tab_finder(page.find_tables(strategy="lines"))
+    except Exception:
+        pass
+
+    # Strategy 2: Text / whitespace alignment (Borderless / shaded / tabbed tables)
+    if not tables_found:
+        try:
+            process_tab_finder(page.find_tables(strategy="text"))
+        except Exception:
+            pass
+
+    # Strategy 3: Snap tolerance heuristic
+    if not tables_found:
+        try:
+            process_tab_finder(page.find_tables(snap_tolerance=5.0))
+        except Exception:
+            pass
+
+    return tables_found
+
+
+def extract_images_from_page(doc: fitz.Document, page: fitz.Page) -> list[dict]:
+    """
+    Robust image extractor for a PDF page.
+    Queries image metadata, bounding boxes, XObjects, inline images, and normalizes through PIL.
+    Returns list of dicts: {"bbox": fitz.Rect, "bytes": bytes, "width": int, "height": int, "ext": str}
+    """
+    from PIL import Image as PILImage
+    page_images = []
+    seen_xrefs = set()
+    seen_rects = []
+
+    def is_rect_duplicate(rect: fitz.Rect) -> bool:
+        for sr in seen_rects:
+            if abs(rect.x0 - sr.x0) < 5 and abs(rect.y0 - sr.y0) < 5 and abs(rect.width - sr.width) < 10 and abs(rect.height - sr.height) < 10:
+                return True
+        return False
+
+    def normalize_and_add(raw_bytes: bytes, rect: fitz.Rect, fallback_ext: str = "png"):
+        try:
+            pil_img = PILImage.open(io.BytesIO(raw_bytes))
+            if pil_img.mode in ("CMYK", "YCbCr", "LAB", "P", "LA", "I", "F"):
+                pil_img = pil_img.convert("RGB")
+            
+            buf = io.BytesIO()
+            out_ext = "png"
+            if pil_img.mode == "RGBA":
+                pil_img.save(buf, format="PNG")
+                out_ext = "png"
+            else:
+                pil_img.save(buf, format="JPEG", quality=92)
+                out_ext = "jpeg"
+                
+            norm_bytes = buf.getvalue()
+            seen_rects.append(rect)
+            page_images.append({
+                "bbox": rect,
+                "bytes": norm_bytes,
+                "width": pil_img.width,
+                "height": pil_img.height,
+                "ext": out_ext,
+            })
+        except Exception:
+            if raw_bytes and len(raw_bytes) > 50:
+                seen_rects.append(rect)
+                page_images.append({
+                    "bbox": rect,
+                    "bytes": raw_bytes,
+                    "width": int(rect.width),
+                    "height": int(rect.height),
+                    "ext": fallback_ext,
+                })
+
+    # Method 1: get_image_info(xrefs=True) - provides exact bbox and xref on the page
+    try:
+        img_infos = page.get_image_info(xrefs=True)
+        for info in img_infos:
+            bbox_tuple = info.get("bbox")
+            if not bbox_tuple:
+                continue
+            rect = fitz.Rect(bbox_tuple)
+            if rect.width < 8 or rect.height < 8:
+                continue
+            if is_rect_duplicate(rect):
+                continue
+                
+            xref = info.get("xref", 0)
+            img_bytes = None
+            ext = "png"
+            if xref > 0:
+                seen_xrefs.add(xref)
+                try:
+                    base_img = doc.extract_image(xref)
+                    if base_img and base_img.get("image"):
+                        img_bytes = base_img["image"]
+                        ext = base_img.get("ext", "png")
+                except Exception:
+                    pass
+                    
+            if not img_bytes:
+                try:
+                    pix = page.get_pixmap(clip=rect, dpi=150)
+                    img_bytes = pix.tobytes("png")
+                    ext = "png"
+                except Exception:
+                    pass
+                    
+            if img_bytes:
+                normalize_and_add(img_bytes, rect, ext)
+    except Exception:
+        pass
+
+    # Method 2: Scan for any XObjects not caught in image_info
+    try:
+        raw_images = page.get_images(full=True)
+        for img_tuple in raw_images:
+            xref = img_tuple[0]
+            if xref in seen_xrefs:
+                continue
+            seen_xrefs.add(xref)
+            
+            rects = page.get_image_rects(xref)
+            base_img = doc.extract_image(xref)
+            if base_img and base_img.get("image"):
+                raw_bytes = base_img["image"]
+                ext = base_img.get("ext", "png")
+                if rects:
+                    for r in rects:
+                        if not is_rect_duplicate(r):
+                            normalize_and_add(raw_bytes, r, ext)
+                else:
+                    dummy_rect = fitz.Rect(50, 50, 50 + min(base_img.get("width", 300), 500), 50 + min(base_img.get("height", 300), 400))
+                    if not is_rect_duplicate(dummy_rect):
+                        normalize_and_add(raw_bytes, dummy_rect, ext)
+    except Exception:
+        pass
+
+    return page_images
+
+
 def pdf_to_html(pdf_bytes: bytes) -> bytes:
-    """Convert PDF to high-fidelity editable HTML snippet separated into discrete page blocks."""
+    """Convert PDF to high-fidelity editable HTML snippet preserving document order, tables, and images."""
     import base64
     doc = fitz.open("pdf", pdf_bytes)
     page_blocks = []
 
     for page_idx, page in enumerate(doc):
-        html_parts = []
+        elements = []
+        page_width = page.rect.width or 595
+        page_height = page.rect.height or 842
 
-        # 1. Extract Images (Logos, Header Graphics)
+        # 1. Extract Links
+        page_links = []
         try:
-            image_list = page.get_images(full=True)
-            if image_list:
-                img_div = "<div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:16px;'>"
-                has_imgs = False
-                for img_info in image_list[:4]:
-                    xref = img_info[0]
-                    base_img = doc.extract_image(xref)
-                    if base_img and base_img.get("image"):
-                        ext = base_img.get("ext", "png")
-                        b64_str = base64.b64encode(base_img["image"]).decode("ascii")
-                        img_div += f"<img src='data:image/{ext};base64,{b64_str}' style='max-height:80px; object-fit:contain;' />"
-                        has_imgs = True
-                img_div += "</div>"
-                if has_imgs:
-                    html_parts.append(img_div)
+            for lk in page.get_links():
+                if isinstance(lk, dict) and "uri" in lk and lk.get("uri") and "from" in lk and lk.get("from"):
+                    page_links.append({"rect": fitz.Rect(lk["from"]), "uri": lk["uri"]})
         except Exception:
             pass
 
         # 2. Extract Tables
-        table_rects = []
-        try:
-            tables = page.find_tables()
-            for t in tables:
-                table_rects.append(fitz.Rect(t.bbox))
-                data = t.extract()
-                if data:
-                    tbl_html = "<table style='width:100%; border-collapse:collapse; margin:16px 0; font-size:14px;'>"
-                    for r_idx, row in enumerate(data):
-                        tbl_html += "<tr>"
-                        tag = "th" if r_idx == 0 else "td"
-                        style = "border:1px solid #cbd5e1; padding:8px 12px; text-align:left; background-color:#f1f5f9; font-weight:600;" if r_idx == 0 else "border:1px solid #cbd5e1; padding:8px 12px; text-align:left;"
-                        for cell in row:
-                            cell_text = str(cell or "").strip().replace("\n", "<br>")
-                            tbl_html += f"<{tag} style='{style}'>{cell_text}</{tag}>"
-                        tbl_html += "</tr>"
-                    tbl_html += "</table>"
-                    html_parts.append(tbl_html)
-        except Exception:
-            pass
+        tables = extract_tables_from_page(page)
+        table_rects = [t["bbox"] for t in tables]
+        for t in tables:
+            t_rect = t["bbox"]
+            data = t["data"]
+            tbl_html = "<table style='width:100%; border-collapse:collapse; margin:14px 0; font-size:13.5px; border:1px solid #cbd5e1;'>"
+            for r_idx, row in enumerate(data):
+                tbl_html += "<tr>"
+                tag = "th" if r_idx == 0 else "td"
+                style = "border:1px solid #cbd5e1; padding:8px 12px; text-align:left; background-color:#f1f5f9; font-weight:600; color:#0f172a;" if r_idx == 0 else "border:1px solid #cbd5e1; padding:8px 12px; text-align:left; color:#334155;"
+                for cell in row:
+                    cell_text = str(cell or "").strip().replace("\n", "<br>")
+                    tbl_html += f"<{tag} style='{style}'>{cell_text if cell_text else '&nbsp;'}</{tag}>"
+                tbl_html += "</tr>"
+            tbl_html += "</table>"
+            elements.append((t_rect.y0, t_rect.x0, tbl_html))
 
-        # 3. Extract Text Blocks (outside table boundaries)
+        # 3. Extract Images
+        images = extract_images_from_page(doc, page)
+        image_rects = [img["bbox"] for img in images]
+        for img in images:
+            img_rect = img["bbox"]
+            b64_str = base64.b64encode(img["bytes"]).decode("ascii")
+            img_w = min(int(img_rect.width), int(page_width - 40))
+            img_html = f"<div style='text-align:center; margin:12px 0;'><img src='data:image/{img['ext']};base64,{b64_str}' style='max-width:100%; width:{img_w}px; height:auto; border-radius:4px;' alt='PDF Image' /></div>"
+            elements.append((img_rect.y0, img_rect.x0, img_html))
+
+        # 4. Extract Text Blocks (outside table and image boundaries)
         page_dict = page.get_text("dict")
         for b in page_dict.get("blocks", []):
             if b.get("type") != 0:
                 continue
             b_rect = fitz.Rect(b["bbox"])
-            if any(b_rect.intersects(tr) for tr in table_rects):
+            if any(b_rect.intersects(tr) for tr in table_rects) or any(b_rect.intersects(ir) for ir in image_rects):
                 continue
 
             lines_html = []
@@ -450,6 +635,12 @@ def pdf_to_html(pdf_bytes: bytes) -> bytes:
                         txt = f"<strong>{txt}</strong>"
                     if bool(flags & 1) or "italic" in font_name:
                         txt = f"<em>{txt}</em>"
+
+                    span_rect = fitz.Rect(span.get("bbox", b_rect))
+                    matched_link = next((lk["uri"] for lk in page_links if lk["rect"].intersects(span_rect)), None)
+                    if matched_link:
+                        txt = f"<a href='{matched_link}' target='_blank' style='color:#2563eb; text-decoration:underline;'>{txt}</a>"
+
                     line_str += (" " if line_str else "") + txt
 
                 if line_str:
@@ -458,22 +649,25 @@ def pdf_to_html(pdf_bytes: bytes) -> bytes:
             if lines_html:
                 block_text = "<br>".join(lines_html)
                 if max_size >= 20:
-                    html_parts.append(f"<h1 style='font-size:24px; font-weight:700; margin:16px 0 8px;'>{block_text}</h1>")
+                    elements.append((b_rect.y0, b_rect.x0, f"<h1 style='font-size:24px; font-weight:700; margin:16px 0 8px; color:#0f172a;'>{block_text}</h1>"))
                 elif max_size >= 15:
-                    html_parts.append(f"<h2 style='font-size:20px; font-weight:700; margin:14px 0 6px;'>{block_text}</h2>")
+                    elements.append((b_rect.y0, b_rect.x0, f"<h2 style='font-size:19px; font-weight:700; margin:14px 0 6px; color:#0f172a;'>{block_text}</h2>"))
                 elif max_size >= 13:
-                    html_parts.append(f"<h3 style='font-size:17px; font-weight:600; margin:12px 0 6px;'>{block_text}</h3>")
+                    elements.append((b_rect.y0, b_rect.x0, f"<h3 style='font-size:16px; font-weight:600; margin:12px 0 6px; color:#0f172a;'>{block_text}</h3>"))
                 else:
-                    html_parts.append(f"<p style='margin:0 0 10px;'>{block_text}</p>")
+                    elements.append((b_rect.y0, b_rect.x0, f"<p style='margin:0 0 10px; font-size:13.5px; line-height:1.6; color:#334155;'>{block_text}</p>"))
 
-        page_blocks.append("\n".join(html_parts))
+        # Sort elements strictly top-to-bottom, then left-to-right
+        elements.sort(key=lambda item: (item[0], item[1]))
+        page_html = "\n".join(el[2] for el in elements)
+        page_blocks.append(page_html)
 
     doc.close()
     return "\n<!-- PAGE_SPLIT -->\n".join(page_blocks).encode("utf-8")
 
 
 def pdf_to_word_fallback(pdf_bytes: bytes) -> bytes:
-    """High-fidelity PDF to Word DOCX converter preserving headers, footers, links, tables, headings, styles, and images."""
+    """High-fidelity PDF to Word DOCX converter preserving document order, headers, footers, links, tables, headings, styles, and images."""
     import tempfile
     import os
     import gc
@@ -511,26 +705,19 @@ def pdf_to_word_fallback(pdf_bytes: bytes) -> bytes:
     except Exception as e:
         print(f"[Conversion] pdf2docx failed: {e}. Using high-fidelity python-docx fallback...")
 
-    # High-fidelity python-docx fallback with header, footer, tables, images, hyperlinks & formatting
+    # High-fidelity python-docx fallback with document-ordered tables, images, links & styles
     from docx import Document
     from docx.shared import Inches, Pt, RGBColor
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.enum.table import WD_TABLE_ALIGNMENT
     from docx.oxml import OxmlElement, parse_xml
     from docx.oxml.ns import qn, nsdecls
+    from docx.enum.section import WD_ORIENTATION
 
     doc = fitz.open("pdf", pdf_bytes)
     docx_doc = Document()
-    
-    # Configure document margins
-    for section in docx_doc.sections:
-        section.top_margin = Inches(0.75)
-        section.bottom_margin = Inches(0.75)
-        section.left_margin = Inches(0.75)
-        section.right_margin = Inches(0.75)
 
     def add_hyperlink(paragraph, url, text, color="2563EB", underline=True):
-        """Add a working hyperlink element to a docx paragraph."""
         part = paragraph.part
         r_id = part.relate_to(url, "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", is_external=True)
         hyperlink = OxmlElement('w:hyperlink')
@@ -556,13 +743,11 @@ def pdf_to_word_fallback(pdf_bytes: bytes) -> bytes:
         paragraph._p.append(hyperlink)
 
     def set_cell_background(cell, fill_hex):
-        """Set shading background color for docx table cell."""
         tcPr = cell._tc.get_or_add_tcPr()
         shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{fill_hex}"/>')
         tcPr.append(shd)
 
     def set_cell_margins(cell, top=100, bottom=100, left=150, right=150):
-        """Set cell padding in dxa."""
         tcPr = cell._tc.get_or_add_tcPr()
         tcMar = OxmlElement('w:tcMar')
         for side, val in [('top', top), ('bottom', bottom), ('left', left), ('right', right)]:
@@ -572,13 +757,10 @@ def pdf_to_word_fallback(pdf_bytes: bytes) -> bytes:
             tcMar.append(node)
         tcPr.append(tcMar)
 
-    from docx.enum.section import WD_ORIENTATION
-
     for page_idx, page in enumerate(doc):
         page_width = page.rect.width or 595
         page_height = page.rect.height or 842
 
-        # Configure page section dimensions and orientation
         curr_section = docx_doc.sections[-1] if page_idx == 0 else docx_doc.add_section()
         curr_section.top_margin = Inches(0.5)
         curr_section.bottom_margin = Inches(0.5)
@@ -606,17 +788,45 @@ def pdf_to_word_fallback(pdf_bytes: bytes) -> bytes:
             pass
 
         # 2. Extract Tables
-        table_rects = []
-        try:
-            tables = page.find_tables()
-            for t in tables:
-                t_rect = fitz.Rect(t.bbox)
-                table_rects.append(t_rect)
-                data = t.extract()
+        tables = extract_tables_from_page(page)
+        table_rects = [t["bbox"] for t in tables]
+
+        # 3. Extract Images
+        images = extract_images_from_page(doc, page)
+        image_rects = [img["bbox"] for img in images]
+
+        # 4. Extract Text Blocks
+        page_dict = page.get_text("dict")
+        text_blocks = []
+        for b in page_dict.get("blocks", []):
+            if b.get("type") != 0:
+                continue
+            b_rect = fitz.Rect(b["bbox"])
+            if any(b_rect.intersects(tr) for tr in table_rects) or any(b_rect.intersects(ir) for ir in image_rects):
+                continue
+            text_blocks.append(b)
+
+        # 5. Build Unified Ordered Element Stream (sorted by top-to-bottom position)
+        ordered_items = []
+        for t in tables:
+            ordered_items.append((t["bbox"].y0, t["bbox"].x0, "table", t))
+        for img in images:
+            ordered_items.append((img["bbox"].y0, img["bbox"].x0, "image", img))
+        for tb in text_blocks:
+            b_rect = fitz.Rect(tb["bbox"])
+            ordered_items.append((b_rect.y0, b_rect.x0, "text", tb))
+
+        ordered_items.sort(key=lambda item: (item[0], item[1]))
+
+        # 6. Render Ordered Items into Word Document
+        for _, _, item_type, item_data in ordered_items:
+            if item_type == "table":
+                data = item_data["data"]
                 if data:
                     num_rows = len(data)
                     num_cols = max(len(r) for r in data) if data else 1
                     t_doc = docx_doc.add_table(rows=num_rows, cols=num_cols)
+                    t_doc.style = 'Table Grid'
                     t_doc.alignment = WD_TABLE_ALIGNMENT.CENTER
                     
                     for r_idx, r_data in enumerate(data):
@@ -633,109 +843,77 @@ def pdf_to_word_fallback(pdf_bytes: bytes) -> bytes:
                                         for run in p.runs:
                                             run.bold = True
                                             run.font.color.rgb = RGBColor(15, 23, 42)
-                    docx_doc.add_paragraph()  # Spacing
-        except Exception:
-            pass
+                    docx_doc.add_paragraph()  # spacing after table
 
-        # 3. Extract Blocks (Text, Headers, Footers, Images)
-        page_dict = page.get_text("dict")
-        for b in page_dict.get("blocks", []):
-            b_rect = fitz.Rect(b["bbox"])
-            if any(b_rect.intersects(tr) for tr in table_rects):
-                continue
-
-            # Image Block
-            if b.get("type") == 1:
-                img_bytes = b.get("image")
-                if img_bytes:
-                    try:
-                        img_stream = io.BytesIO(img_bytes)
-                        docx_doc.add_picture(img_stream, width=Inches(min(b_rect.width / 72.0, 6.0)))
-                        p = docx_doc.paragraphs[-1]
-                        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    except Exception:
-                        pass
-                continue
-
-            # Text Block
-            if "lines" in b:
-                # Detect Header / Footer
-                is_header = b_rect.y0 < 55
-                is_footer = b_rect.y0 > (page_height - 55)
-
-                p = docx_doc.add_paragraph()
-                
-                # Alignments
-                block_center_x = (b_rect.x0 + b_rect.x1) / 2
-                page_center_x = page_width / 2
-                if abs(block_center_x - page_center_x) < 40 and b_rect.width < page_width * 0.75:
-                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                elif b_rect.x0 > page_width * 0.55:
-                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-                else:
-                    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-
-                max_size = 12
-                for line in b["lines"]:
-                    for span in line["spans"]:
-                        txt = span.get("text", "")
-                        if not txt:
-                            continue
-
-                        sz = span.get("size", 12)
-                        if sz > max_size:
-                            max_size = sz
-                        flags = span.get("flags", 0)
-                        font_name = span.get("font", "").lower()
-                        color_int = span.get("color", 0)
-
-                        span_rect = fitz.Rect(span.get("bbox", b_rect))
-                        # Check hyperlink match
-                        matched_link = next((lk["uri"] for lk in page_links if lk["rect"].intersects(span_rect)), None)
-
-                        if matched_link:
-                            add_hyperlink(p, matched_link, txt)
-                        else:
-                            run = p.add_run(txt)
-                            run.font.size = Pt(max(8, round(sz)))
-                            run.bold = bool(flags & 2) or "bold" in font_name or "black" in font_name
-                            run.italic = bool(flags & 1) or "italic" in font_name
-                            
-                            if color_int and color_int != 0:
-                                r = (color_int >> 16) & 0xFF
-                                g = (color_int >> 8) & 0xFF
-                                b_c = color_int & 0xFF
-                                run.font.color.rgb = RGBColor(r, g, b_c)
-                            elif is_header or is_footer:
-                                run.font.color.rgb = RGBColor(100, 116, 139)
-
-                # Set Heading styles if font size is large
+            elif item_type == "image":
                 try:
-                    if max_size >= 19:
-                        p.style = 'Heading 1'
-                    elif max_size >= 15:
-                        p.style = 'Heading 2'
-                    elif max_size >= 13:
-                        p.style = 'Heading 3'
-                except Exception:
-                    pass
+                    img_stream = io.BytesIO(item_data["bytes"])
+                    max_w = min(item_data["bbox"].width / 72.0, w_in - 1.0)
+                    docx_doc.add_picture(img_stream, width=Inches(max(1.0, max_w)))
+                    p = docx_doc.paragraphs[-1]
+                    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                except Exception as img_err:
+                    print(f"[Word Fallback] Image insertion error: {img_err}")
 
-        # Standalone Images
-        try:
-            image_list = page.get_images(full=True)
-            for img_info in image_list:
-                xref = img_info[0]
-                base_image = doc.extract_image(xref)
-                if base_image and base_image.get("image"):
-                    try:
-                        img_stream = io.BytesIO(base_image["image"])
-                        docx_doc.add_picture(img_stream, width=Inches(4.5))
-                        p = docx_doc.paragraphs[-1]
+            elif item_type == "text":
+                b = item_data
+                b_rect = fitz.Rect(b["bbox"])
+                if "lines" in b:
+                    is_header = b_rect.y0 < 55
+                    is_footer = b_rect.y0 > (page_height - 55)
+
+                    p = docx_doc.add_paragraph()
+                    block_center_x = (b_rect.x0 + b_rect.x1) / 2
+                    page_center_x = page_width / 2
+                    if abs(block_center_x - page_center_x) < 40 and b_rect.width < page_width * 0.75:
                         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    elif b_rect.x0 > page_width * 0.55:
+                        p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                    else:
+                        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+                    max_size = 12
+                    for line in b["lines"]:
+                        for span in line["spans"]:
+                            txt = span.get("text", "")
+                            if not txt:
+                                continue
+
+                            sz = span.get("size", 12)
+                            if sz > max_size:
+                                max_size = sz
+                            flags = span.get("flags", 0)
+                            font_name = span.get("font", "").lower()
+                            color_int = span.get("color", 0)
+
+                            span_rect = fitz.Rect(span.get("bbox", b_rect))
+                            matched_link = next((lk["uri"] for lk in page_links if lk["rect"].intersects(span_rect)), None)
+
+                            if matched_link:
+                                add_hyperlink(p, matched_link, txt)
+                            else:
+                                run = p.add_run(txt)
+                                run.font.size = Pt(max(8, round(sz)))
+                                run.bold = bool(flags & 2) or "bold" in font_name or "black" in font_name
+                                run.italic = bool(flags & 1) or "italic" in font_name
+                                
+                                if color_int and color_int != 0:
+                                    r = (color_int >> 16) & 0xFF
+                                    g = (color_int >> 8) & 0xFF
+                                    b_c = color_int & 0xFF
+                                    run.font.color.rgb = RGBColor(r, g, b_c)
+                                elif is_header or is_footer:
+                                    run.font.color.rgb = RGBColor(100, 116, 139)
+
+                    try:
+                        if max_size >= 19:
+                            p.style = 'Heading 1'
+                        elif max_size >= 15:
+                            p.style = 'Heading 2'
+                        elif max_size >= 13:
+                            p.style = 'Heading 3'
                     except Exception:
                         pass
-        except Exception:
-            pass
 
     doc.close()
     buf = io.BytesIO()
@@ -743,32 +921,83 @@ def pdf_to_word_fallback(pdf_bytes: bytes) -> bytes:
     return buf.getvalue()
 
 
-
 def pdf_to_excel_fallback(pdf_bytes: bytes) -> bytes:
-    """Fallback PDF to Excel XLSX converter using PyMuPDF page.find_tables()."""
+    """Fallback PDF to Excel XLSX converter with robust multi-strategy table extraction, styling, and column alignment."""
     import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
     doc = fitz.open("pdf", pdf_bytes)
     wb = openpyxl.Workbook()
     wb.remove(wb.active)  # remove default sheet
     
+    header_font = Font(name="Segoe UI", size=11, bold=True, color="0F172A")
+    header_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+    regular_font = Font(name="Segoe UI", size=10, color="334155")
+    thin_border = Border(
+        left=Side(style='thin', color='CBD5E1'),
+        right=Side(style='thin', color='CBD5E1'),
+        top=Side(style='thin', color='CBD5E1'),
+        bottom=Side(style='thin', color='CBD5E1')
+    )
+
     for page_idx, page in enumerate(doc):
         ws = wb.create_sheet(title=f"Page {page_idx+1}")
-        try:
-            tables = page.find_tables()
-            row_offset = 1
+        tables = extract_tables_from_page(page)
+        row_offset = 1
+
+        if tables:
             for t in tables:
-                data = t.extract()
-                for r in data:
+                data = t["data"]
+                for r_idx, r in enumerate(data):
                     for col_idx, val in enumerate(r):
-                        ws.cell(row=row_offset, column=col_idx+1, value=val)
+                        cell = ws.cell(row=row_offset, column=col_idx + 1)
+                        # Attempt numeric conversion if applicable
+                        clean_val = str(val or "").strip()
+                        try:
+                            if "." in clean_val:
+                                cell.value = float(clean_val.replace(",", ""))
+                            else:
+                                cell.value = int(clean_val.replace(",", ""))
+                        except ValueError:
+                            cell.value = clean_val
+
+                        cell.border = thin_border
+                        if r_idx == 0:
+                            cell.font = header_font
+                            cell.fill = header_fill
+                            cell.alignment = Alignment(horizontal="center" if clean_val.isdigit() else "left", vertical="center")
+                        else:
+                            cell.font = regular_font
+                            cell.alignment = Alignment(horizontal="right" if isinstance(cell.value, (int, float)) else "left", vertical="center")
+
                     row_offset += 1
-                row_offset += 2  # space between tables
-        except Exception:
-            # Fallback to lines if table parsing fails
-            text = page.get_text("text")
-            for r_idx, line in enumerate(text.split("\n")):
-                if line.strip():
-                    ws.cell(row=r_idx+1, column=1, value=line)
+                row_offset += 2  # Space between tables
+        else:
+            # Fallback to lines/blocks with multi-column alignment detection
+            blocks = page.get_text("blocks")
+            for b in blocks:
+                text = b[4] if len(b) > 4 else ""
+                for line in text.split("\n"):
+                    if not line.strip():
+                        continue
+                    # Split on tab or multiple spaces for columns
+                    parts = [p.strip() for p in line.split("\t") if p.strip()] if "\t" in line else [p.strip() for p in line.split("   ") if p.strip()]
+                    if not parts:
+                        parts = [line.strip()]
+                    for col_idx, part in enumerate(parts):
+                        cell = ws.cell(row=row_offset, column=col_idx + 1, value=part)
+                        cell.font = regular_font
+                    row_offset += 1
+
+        # Auto-adjust column widths
+        for col in ws.columns:
+            max_len = 0
+            col_letter = get_column_letter(col[0].column)
+            for cell in col:
+                if cell.value:
+                    max_len = max(max_len, len(str(cell.value)))
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
             
     if not wb.sheetnames:
         ws = wb.create_sheet(title="Sheet 1")
@@ -781,21 +1010,115 @@ def pdf_to_excel_fallback(pdf_bytes: bytes) -> bytes:
 
 
 def pdf_to_ppt_fallback(pdf_bytes: bytes) -> bytes:
-    """Fallback PDF to PowerPoint PPTX converter."""
+    """Fallback PDF to PowerPoint PPTX converter preserving headings, bullet text, tables, and images."""
     from pptx import Presentation
-    from pptx.util import Inches
+    from pptx.util import Inches, Pt
+    from pptx.dml.color import RGBColor as PPTColor
+    from pptx.enum.text import PP_ALIGN
+
     doc = fitz.open("pdf", pdf_bytes)
     prs = Presentation()
+    prs.slide_width = Inches(10)
+    prs.slide_height = Inches(7.5)
     blank_slide_layout = prs.slide_layouts[6]  # blank layout
     
     for page in doc:
         slide = prs.slides.add_slide(blank_slide_layout)
-        text = page.get_text("text")
-        if text.strip():
-            txBox = slide.shapes.add_textbox(Inches(0.5), Inches(0.5), Inches(9), Inches(6.5))
-            tf = txBox.text_frame
-            tf.word_wrap = True
-            tf.text = text
+        page_width = page.rect.width or 595
+        page_height = page.rect.height or 842
+
+        # 1. Extract Tables
+        tables = extract_tables_from_page(page)
+        table_rects = [t["bbox"] for t in tables]
+
+        # 2. Extract Images
+        images = extract_images_from_page(doc, page)
+        image_rects = [img["bbox"] for img in images]
+
+        # Scale factors to fit on PPT slide (10 x 7.5 inches)
+        scale_x = 9.0 / (page_width or 595.0)
+        scale_y = 6.5 / (page_height or 842.0)
+        margin_x = 0.5
+        margin_y = 0.5
+
+        # Render Tables on Slide
+        for t in tables:
+            data = t["data"]
+            if data:
+                rows = len(data)
+                cols = t["cols"]
+                t_rect = t["bbox"]
+                left = Inches(margin_x + (t_rect.x0 * scale_x))
+                top = Inches(margin_y + (t_rect.y0 * scale_y))
+                width = Inches(min(t_rect.width * scale_x, 9.0))
+                height = Inches(min(t_rect.height * scale_y, 5.0))
+                
+                try:
+                    table_shape = slide.shapes.add_table(rows, cols, left, top, width, height)
+                    ppt_table = table_shape.table
+                    for r_idx, r_data in enumerate(data):
+                        for c_idx, val in enumerate(r_data):
+                            if c_idx < cols:
+                                cell = ppt_table.cell(r_idx, c_idx)
+                                cell.text = str(val or "").strip()
+                                for p in cell.text_frame.paragraphs:
+                                    p.font.size = Pt(10)
+                                    if r_idx == 0:
+                                        p.font.bold = True
+                                        p.font.color.rgb = PPTColor(15, 23, 42)
+                except Exception as t_err:
+                    print(f"[PPT Conversion] Table add error: {t_err}")
+
+        # Render Images on Slide
+        for img in images:
+            img_rect = img["bbox"]
+            left = Inches(margin_x + (img_rect.x0 * scale_x))
+            top = Inches(margin_y + (img_rect.y0 * scale_y))
+            width = Inches(min(img_rect.width * scale_x, 8.0))
+            try:
+                img_stream = io.BytesIO(img["bytes"])
+                slide.shapes.add_picture(img_stream, left, top, width=width)
+            except Exception as img_err:
+                print(f"[PPT Conversion] Image add error: {img_err}")
+
+        # Render Text Blocks outside tables and images
+        page_dict = page.get_text("dict")
+        for b in page_dict.get("blocks", []):
+            if b.get("type") != 0:
+                continue
+            b_rect = fitz.Rect(b["bbox"])
+            if any(b_rect.intersects(tr) for tr in table_rects) or any(b_rect.intersects(ir) for ir in image_rects):
+                continue
+
+            lines = []
+            max_size = 12
+            for line in b.get("lines", []):
+                line_text = "".join(span.get("text", "") for span in line.get("spans", [])).strip()
+                if line_text:
+                    lines.append(line_text)
+                    for span in line.get("spans", []):
+                        sz = span.get("size", 12)
+                        if sz > max_size:
+                            max_size = sz
+
+            if lines:
+                block_text = "\n".join(lines)
+                left = Inches(margin_x + (b_rect.x0 * scale_x))
+                top = Inches(margin_y + (b_rect.y0 * scale_y))
+                width = Inches(min(b_rect.width * scale_x, 9.0))
+                height = Inches(max(b_rect.height * scale_y, 0.4))
+
+                txBox = slide.shapes.add_textbox(left, top, width, height)
+                tf = txBox.text_frame
+                tf.word_wrap = True
+                p = tf.paragraphs[0]
+                p.text = block_text
+                p.font.size = Pt(16 if max_size >= 18 else (13 if max_size >= 14 else 11))
+                if max_size >= 16:
+                    p.font.bold = True
+                    p.font.color.rgb = PPTColor(15, 23, 42)
+                else:
+                    p.font.color.rgb = PPTColor(51, 65, 85)
             
     buf = io.BytesIO()
     prs.save(buf)
@@ -939,8 +1262,14 @@ def word_to_pdf_fallback(word_bytes: bytes) -> bytes:
 def html_to_word_bytes(html_str: str) -> bytes:
     """Convert HTML or formatted text string to Word DOCX bytes with full table, image, and style preservation."""
     from docx import Document
-    from docx.shared import Inches
+    from docx.shared import Inches, Pt, RGBColor
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement, parse_xml
+    from docx.oxml.ns import qn, nsdecls
     import io
+    import base64
+    from PIL import Image as PILImage
 
     docx_doc = Document()
     for section in docx_doc.sections:
@@ -949,16 +1278,31 @@ def html_to_word_bytes(html_str: str) -> bytes:
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.75)
 
+    def set_cell_background(cell, fill_hex):
+        tcPr = cell._tc.get_or_add_tcPr()
+        shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{fill_hex}"/>')
+        tcPr.append(shd)
+
+    def set_cell_margins(cell, top=100, bottom=100, left=150, right=150):
+        tcPr = cell._tc.get_or_add_tcPr()
+        tcMar = OxmlElement('w:tcMar')
+        for side, val in [('top', top), ('bottom', bottom), ('left', left), ('right', right)]:
+            node = OxmlElement(f'w:{side}')
+            node.set(qn('w:w'), str(val))
+            node.set(qn('w:type'), 'dxa')
+            tcMar.append(node)
+        tcPr.append(tcMar)
+
     # Use html-for-docx parser for high-fidelity conversion of HTML, tables, Base64 images, and inline styles
     try:
         from html4docx import HtmlToDocx  # type: ignore[import-not-found]
         parser = HtmlToDocx()
         parser.add_html_to_document(html_str, docx_doc)
     except Exception as e:
-        print(f"[HTML -> DOCX] html4docx parser error: {e}. Falling back to basic soup parser...")
+        print(f"[HTML -> DOCX] html4docx parser error: {e}. Falling back to enhanced soup parser...")
         from bs4 import BeautifulSoup
         soup = BeautifulSoup(html_str, 'html.parser')
-        elements = soup.find_all(['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'table', 'div'])
+        elements = soup.find_all(['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'table', 'img', 'div'])
         for elem in elements:
             tag = elem.name
             if tag == 'h1':
@@ -970,19 +1314,58 @@ def html_to_word_bytes(html_str: str) -> bytes:
             elif tag in ['ul', 'ol']:
                 for li in elem.find_all('li'):
                     docx_doc.add_paragraph(li.get_text().strip(), style='List Bullet' if tag == 'ul' else 'List Number')
+            elif tag == 'img':
+                src = elem.get('src', '')
+                if src:
+                    try:
+                        img_raw = None
+                        if src.startswith('data:image'):
+                            b64_part = src.split(',', 1)[1] if ',' in src else src
+                            img_raw = base64.b64decode(b64_part)
+                        elif os.path.exists(src):
+                            with open(src, 'rb') as f:
+                                img_raw = f.read()
+
+                        if img_raw:
+                            pil_im = PILImage.open(io.BytesIO(img_raw))
+                            if pil_im.mode in ("CMYK", "P", "LA", "YCbCr"):
+                                pil_im = pil_im.convert("RGB")
+                            buf_im = io.BytesIO()
+                            pil_im.save(buf_im, format="PNG")
+                            buf_im.seek(0)
+                            docx_doc.add_picture(buf_im, width=Inches(min(5.5, pil_im.width / 96.0)))
+                            p = docx_doc.paragraphs[-1]
+                            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    except Exception as img_ex:
+                        print(f"[HTML -> DOCX] Image error: {img_ex}")
+
             elif tag == 'table':
                 rows = elem.find_all('tr')
                 if rows:
                     max_cols = max(len(r.find_all(['td', 'th'])) for r in rows)
                     if max_cols > 0:
                         t = docx_doc.add_table(rows=0, cols=max_cols)
-                        for r in rows:
+                        t.style = 'Table Grid'
+                        t.alignment = WD_TABLE_ALIGNMENT.CENTER
+                        for r_idx, r in enumerate(rows):
                             row_cells = t.add_row().cells
                             cols = r.find_all(['td', 'th'])
                             for i, c in enumerate(cols):
                                 if i < max_cols:
                                     row_cells[i].text = c.get_text().strip()
+                                    set_cell_margins(row_cells[i], top=100, bottom=100, left=140, right=140)
+                                    if r_idx == 0:
+                                        set_cell_background(row_cells[i], "F1F5F9")
+                                        for p in row_cells[i].paragraphs:
+                                            for run in p.runs:
+                                                run.bold = True
+                                                run.font.color.rgb = RGBColor(15, 23, 42)
+                        docx_doc.add_paragraph()  # spacing after table
+
             elif tag in ['p', 'div']:
+                # Ignore div if it only contains other elements already processed
+                if tag == 'div' and elem.find(['h1', 'h2', 'h3', 'table', 'p', 'img']):
+                    continue
                 text = elem.get_text().strip()
                 if text:
                     docx_doc.add_paragraph(text)
@@ -1523,34 +1906,40 @@ def pdf_to_editable_pages(pdf_bytes: bytes) -> dict:
         except Exception:
             pass
 
-        # 1. Extract Tables with bounding boxes
-        table_rects = []
-        try:
-            tables = page.find_tables()
-            for t in tables:
-                t_rect = fitz.Rect(t.bbox)
-                table_rects.append(t_rect)
-                data = t.extract()
-                if data:
-                    table_html = "<table class='doc-table' style='width:100%; border-collapse:collapse; margin:16px 0; border:1.5px solid #cbd5e1;'>"
-                    for row_idx, row in enumerate(data):
-                        table_html += "<tr>"
-                        for cell in row:
-                            cell_val = (cell or "").strip()
-                            tag = "th" if row_idx == 0 else "td"
-                            cell_style = "border:1px solid #cbd5e1; padding:9px 12px; font-size:13px;"
-                            if row_idx == 0:
-                                cell_style += " background-color:#f1f5f9; font-weight:bold; color:#0f172a;"
-                            else:
-                                cell_style += " color:#334155;"
-                            table_html += f"<{tag} style='{cell_style}'>{cell_val if cell_val else '&nbsp;'}</{tag}>"
-                        table_html += "</tr>"
-                    table_html += "</table>"
-                    elements.append((t_rect.y0, t_rect.x0, table_html))
-        except Exception:
-            pass
+        # 1. Extract Tables with robust multi-strategy detection
+        tables = extract_tables_from_page(page)
+        table_rects = [t["bbox"] for t in tables]
+        for t in tables:
+            t_rect = t["bbox"]
+            data = t["data"]
+            if data:
+                table_html = "<table class='doc-table' style='width:100%; border-collapse:collapse; margin:16px 0; border:1.5px solid #cbd5e1;'>"
+                for row_idx, row in enumerate(data):
+                    table_html += "<tr>"
+                    for cell in row:
+                        cell_val = (cell or "").strip()
+                        tag = "th" if row_idx == 0 else "td"
+                        cell_style = "border:1px solid #cbd5e1; padding:9px 12px; font-size:13px;"
+                        if row_idx == 0:
+                            cell_style += " background-color:#f1f5f9; font-weight:bold; color:#0f172a;"
+                        else:
+                            cell_style += " color:#334155;"
+                        table_html += f"<{tag} style='{cell_style}'>{cell_val if cell_val else '&nbsp;'}</{tag}>"
+                    table_html += "</tr>"
+                table_html += "</table>"
+                elements.append((t_rect.y0, t_rect.x0, table_html))
 
-        # 2. Extract Blocks (Text, Headers, Footers, and Images)
+        # 2. Extract Images with robust multi-source extraction
+        images = extract_images_from_page(doc, page)
+        image_rects = [img["bbox"] for img in images]
+        for img in images:
+            img_rect = img["bbox"]
+            b64_data = base64.b64encode(img["bytes"]).decode("utf-8")
+            img_w = min(int(img_rect.width), int(page_width - 40))
+            img_html = f"<div style='text-align:center; margin:14px 0;'><img src='data:image/{img['ext']};base64,{b64_data}' style='max-width:100%; width:{img_w}px; height:auto; border-radius:4px;' alt='Extracted Image' /></div>"
+            elements.append((img_rect.y0, img_rect.x0, img_html))
+
+        # 3. Extract Text Blocks (outside table and image boundaries)
         try:
             page_dict = page.get_text("dict")
         except Exception:
@@ -1559,25 +1948,13 @@ def pdf_to_editable_pages(pdf_bytes: bytes) -> dict:
         for b in page_dict.get("blocks", []):
             try:
                 b_bbox = b.get("bbox")
-                if not b_bbox:
+                if not b_bbox or b.get("type") != 0:
                     continue
                 b_rect = fitz.Rect(b_bbox)
 
-                if any(b_rect.intersects(tr) for tr in table_rects):
+                if any(b_rect.intersects(tr) for tr in table_rects) or any(b_rect.intersects(ir) for ir in image_rects):
                     continue
 
-                # Type 1: Image block
-                if b.get("type") == 1:
-                    img_bytes = b.get("image")
-                    img_ext = b.get("ext", "png")
-                    if img_bytes:
-                        b64_data = base64.b64encode(img_bytes).decode("utf-8")
-                        img_w = min(int(b_rect.width), int(page_width - 40))
-                        img_html = f"<div style='text-align:center; margin:14px 0;'><img src='data:image/{img_ext};base64,{b64_data}' style='max-width:100%; width:{img_w}px; height:auto; border-radius:4px;' alt='Document Image' /></div>"
-                        elements.append((b_rect.y0, b_rect.x0, img_html))
-                    continue
-
-                # Type 0: Text block
                 if "lines" in b:
                     block_lines_html = []
                     max_font_size = 12
@@ -1629,7 +2006,6 @@ def pdf_to_editable_pages(pdf_bytes: bytes) -> dict:
                             if span_italic:
                                 escaped = f"<i>{escaped}</i>"
 
-                            # Check hyperlink match safely
                             span_bbox = span.get("bbox")
                             span_rect = fitz.Rect(span_bbox) if span_bbox else b_rect
                             matched_uri = next((lk["uri"] for lk in page_links if lk["rect"].intersects(span_rect)), None)
@@ -1668,30 +2044,6 @@ def pdf_to_editable_pages(pdf_bytes: bytes) -> dict:
                         elements.append((b_rect.y0, b_rect.x0, f"<{tag} style='{style}'>{joined_text}</{tag}>"))
             except Exception as block_err:
                 print(f"[PDF Conversion] Block skipped: {block_err}")
-
-        # 3. Check for standalone images in page
-        try:
-            image_list = page.get_images(full=True)
-            extracted_img_xrefs = set()
-            for img_info in image_list:
-                xref = img_info[0]
-                if xref in extracted_img_xrefs:
-                    continue
-                extracted_img_xrefs.add(xref)
-
-                img_rects = page.get_image_rects(xref)
-                for rect in img_rects:
-                    if any(abs(rect.y0 - el[0]) < 10 for el in elements):
-                        continue
-                    base_image = doc.extract_image(xref)
-                    if base_image:
-                        b64_data = base64.b64encode(base_image["image"]).decode("utf-8")
-                        img_ext = base_image.get("ext", "png")
-                        img_w = min(int(rect.width), int(page_width - 40))
-                        img_html = f"<div style='text-align:center; margin:14px 0;'><img src='data:image/{img_ext};base64,{b64_data}' style='max-width:100%; width:{img_w}px; height:auto; border-radius:4px;' alt='Extracted Image' /></div>"
-                        elements.append((rect.y0, rect.x0, img_html))
-        except Exception:
-            pass
 
         # Sort elements strictly top-to-bottom, then left-to-right
         elements.sort(key=lambda item: (item[0], item[1]))

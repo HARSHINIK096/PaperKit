@@ -49,6 +49,10 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
   // Uploaded Signature State
   Uint8List? _uploadedSignatureBytes;
 
+  // Extracted text spans per page
+  final Map<int, List<PdfExistingTextSpan>> _pageTextSpans = {};
+  bool _isLoadingSpans = false;
+
   // Placement Position (Normalized: 0.0 to 1.0)
   Offset _signatureNormalizedPos = const Offset(0.55, 0.78); // Default bottom right
   double _signatureScale = 0.32; // Width relative to page width (32%)
@@ -77,7 +81,10 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
           _totalPages = count > 0 ? count : 1;
           _currentPageIndex = 0;
           _docPageSize = Size(pSize.width, pSize.height);
+          _pageTextSpans.clear();
         });
+
+        await _loadPageSpans(0);
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -85,6 +92,38 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
           );
         }
       }
+    }
+  }
+
+  Future<void> _loadPageSpans(int pageIndex) async {
+    if (_selectedFile == null) return;
+    if (_pageTextSpans.containsKey(pageIndex)) return;
+
+    setState(() => _isLoadingSpans = true);
+    try {
+      final spans = await PdfEngine.extractPageTextSpans(
+        inputFile: _selectedFile!,
+        pageIndex: pageIndex,
+      );
+      if (mounted) {
+        setState(() {
+          _pageTextSpans[pageIndex] = spans;
+          _isLoadingSpans = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingSpans = false);
+      }
+    }
+  }
+
+  void _onPageChanged(int newPageIndex) {
+    if (newPageIndex >= 0 && newPageIndex < _totalPages) {
+      setState(() {
+        _currentPageIndex = newPageIndex;
+      });
+      _loadPageSpans(newPageIndex);
     }
   }
 
@@ -366,7 +405,7 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(LucideIcons.chevronLeft, size: 18),
-                    onPressed: _currentPageIndex > 0 ? () => setState(() => _currentPageIndex--) : null,
+                    onPressed: _currentPageIndex > 0 ? () => _onPageChanged(_currentPageIndex - 1) : null,
                   ),
                   Text(
                     'Page ${_currentPageIndex + 1} of $_totalPages',
@@ -374,7 +413,7 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
                   ),
                   IconButton(
                     icon: const Icon(LucideIcons.chevronRight, size: 18),
-                    onPressed: _currentPageIndex < _totalPages - 1 ? () => setState(() => _currentPageIndex++) : null,
+                    onPressed: _currentPageIndex < _totalPages - 1 ? () => _onPageChanged(_currentPageIndex + 1) : null,
                   ),
                   TextButton(onPressed: _pickPdfFile, child: const Text('Change')),
                 ],
@@ -420,9 +459,22 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
                     ),
                     child: Stack(
                       children: [
-                        // Page watermark & tap detector
+                        // 1. True Page Rendering Canvas (Extracted Document Text Layout)
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CustomPaint(
+                              painter: _DigitalSignaturePagePainter(
+                                docPageSize: _docPageSize,
+                                existingSpans: _pageTextSpans[_currentPageIndex] ?? [],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 2. Tap detector to reposition
                         GestureDetector(
-                          behavior: HitTestBehavior.opaque,
+                          behavior: HitTestBehavior.translucent,
                           onTapDown: (details) {
                             final normX = (details.localPosition.dx - sigW / 2) / canvasW;
                             final normY = (details.localPosition.dy - sigH / 2) / canvasH;
@@ -433,17 +485,31 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
                               );
                             });
                           },
-                          child: Container(
-                            alignment: Alignment.topCenter,
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Text(
-                              'Page ${_currentPageIndex + 1} • Tap anywhere or drag signature to reposition',
-                              style: TextStyle(color: Colors.grey.withOpacity(0.4), fontSize: 10.5, fontWeight: FontWeight.w600),
-                            ),
-                          ),
                         ),
 
-                        // Draggable & Resizable Signature Overlay
+                        // Loading Indicator
+                        if (_isLoadingSpans)
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black87,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                                  SizedBox(width: 6),
+                                  Text('Loading Layout...', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                        // 3. Draggable & Resizable Signature Overlay
                         Positioned(
                           left: sigLeft,
                           top: sigTop,
@@ -726,4 +792,57 @@ class _SignatureDrawingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SignatureDrawingPainter oldDelegate) => true;
+}
+
+class _DigitalSignaturePagePainter extends CustomPainter {
+  final Size docPageSize;
+  final List<PdfExistingTextSpan> existingSpans;
+
+  _DigitalSignaturePagePainter({
+    required this.docPageSize,
+    required this.existingSpans,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 1. Draw Document Background
+    final pageBgPaint = Paint()..color = Colors.white;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), pageBgPaint);
+
+    // Calculate viewport font scale relative to true document page width
+    final docWidth = docPageSize.width > 0 ? docPageSize.width : 595.28;
+    final fontScale = (size.width / docWidth).clamp(0.1, 4.0);
+
+    // 2. Render Existing Extracted Text Spans (Words)
+    for (final span in existingSpans) {
+      final rect = Rect.fromLTWH(
+        span.normalizedRect.left * size.width,
+        span.normalizedRect.top * size.height,
+        span.normalizedRect.width * size.width,
+        span.normalizedRect.height * size.height,
+      );
+
+      final scaledFontSize = (span.fontSize * fontScale).clamp(4.0, 72.0);
+
+      final tp = TextPainter(
+        text: TextSpan(
+          text: span.currentText,
+          style: TextStyle(
+            color: span.color,
+            fontSize: scaledFontSize,
+            fontWeight: span.isBold ? FontWeight.bold : FontWeight.normal,
+            fontStyle: span.isItalic ? FontStyle.italic : FontStyle.normal,
+            fontFamilyFallback: span.flutterFontFamilyFallback,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: (size.width - rect.left).clamp(10.0, size.width));
+
+      tp.paint(canvas, rect.topLeft);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DigitalSignaturePagePainter oldDelegate) =>
+      oldDelegate.existingSpans != existingSpans || oldDelegate.docPageSize != docPageSize;
 }

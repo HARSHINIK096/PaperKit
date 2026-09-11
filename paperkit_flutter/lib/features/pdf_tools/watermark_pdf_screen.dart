@@ -237,6 +237,61 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
             activeColor: primaryColor,
             onChanged: (val) => setState(() => _fontSize = val),
           ),
+          const SizedBox(height: 14),
+
+          // Live Watermark Preview Card
+          const Text(
+            'Live Preview',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 130,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Simulated Document page lines
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Container(height: 6, width: 80, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(3))),
+                      Container(height: 4, width: 220, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(2))),
+                      Container(height: 4, width: 180, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(2))),
+                      Container(height: 4, width: 140, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(2))),
+                    ],
+                  ),
+                ),
+                // Rotated Watermark Stamp
+                Transform.rotate(
+                  angle: _angle * (3.14159265359 / 180),
+                  child: Text(
+                    _watermarkController.text.trim().isEmpty ? 'WATERMARK' : _watermarkController.text.trim(),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: (_fontSize * 0.45).clamp(12.0, 32.0),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      color: primaryColor.withOpacity(_opacity),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

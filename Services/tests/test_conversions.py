@@ -138,3 +138,98 @@ async def test_convert_html_to_word_endpoint(client, auth_headers):
     )
     assert resp.status_code == 200
     assert resp.json()["download_url"].endswith(".docx")
+
+
+@pytest.fixture
+def sample_pdf_with_table_and_image():
+    """Generates an in-memory PDF containing a structured table, borderless table, and image."""
+    from PIL import Image as PILImage
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, Image
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib import colors
+
+    img = PILImage.new("RGB", (100, 60), color=(59, 130, 246))
+    img_buf = io.BytesIO()
+    img.save(img_buf, format="PNG")
+    img_buf.seek(0)
+
+    pdf_buf = io.BytesIO()
+    doc = SimpleDocTemplate(pdf_buf, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = [
+        Paragraph("Document with Tables and Graphics", styles["Heading1"]),
+        Spacer(1, 10),
+        Paragraph("Summary section before table.", styles["Normal"]),
+        Spacer(1, 10),
+        Table([
+            ["Item", "Quantity", "Unit Price", "Total"],
+            ["Server License", "2", "$500", "$1000"],
+            ["Support Tier", "1", "$250", "$250"],
+        ], style=[
+            ("GRID", (0, 0), (-1, -1), 1, colors.HexColor("#CBD5E1")),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
+        ]),
+        Spacer(1, 12),
+        Image(img_buf, width=100, height=60),
+        Spacer(1, 12),
+        Table([
+            ["Borderless Header A", "Borderless Header B"],
+            ["Data Value 1", "Data Value 2"],
+        ]),
+        Spacer(1, 10),
+        Paragraph("End of document.", styles["Normal"]),
+    ]
+    doc.build(story)
+    return pdf_buf.getvalue()
+
+
+@pytest.mark.asyncio
+async def test_pdf_with_tables_and_images_conversions(client, sample_pdf_with_table_and_image, auth_headers):
+    """Verify table and image detection across Word, Excel, PPT, and HTML conversion flows."""
+    files = {"file": ("report_with_media.pdf", sample_pdf_with_table_and_image, "application/pdf")}
+    up_resp = await client.post("/files/upload", files=files, headers=auth_headers)
+    assert up_resp.status_code == 200
+    file_id = up_resp.json()["_id"]
+
+    # 1. Convert to Word
+    resp_word = await client.post(
+        "/tools/convert",
+        json={"file_id": file_id, "from_format": "pdf", "to_format": "word"},
+        headers=auth_headers,
+    )
+    assert resp_word.status_code == 200
+    assert resp_word.json()["download_url"].endswith(".docx")
+    assert resp_word.json()["size"] > 0
+
+    # 2. Convert to Excel
+    resp_excel = await client.post(
+        "/tools/convert",
+        json={"file_id": file_id, "from_format": "pdf", "to_format": "excel"},
+        headers=auth_headers,
+    )
+    assert resp_excel.status_code == 200
+    assert resp_excel.json()["download_url"].endswith(".xlsx")
+    assert resp_excel.json()["size"] > 0
+
+    # 3. Convert to PPT
+    resp_ppt = await client.post(
+        "/tools/convert",
+        json={"file_id": file_id, "from_format": "pdf", "to_format": "ppt"},
+        headers=auth_headers,
+    )
+    assert resp_ppt.status_code == 200
+    assert resp_ppt.json()["download_url"].endswith(".pptx")
+    assert resp_ppt.json()["size"] > 0
+
+    # 4. Convert to HTML
+    resp_html = await client.post(
+        "/tools/convert",
+        json={"file_id": file_id, "from_format": "pdf", "to_format": "html"},
+        headers=auth_headers,
+    )
+    assert resp_html.status_code == 200
+    assert resp_html.json()["html_content"]
+    assert "<table" in resp_html.json()["html_content"]
+    assert "<img" in resp_html.json()["html_content"]
+

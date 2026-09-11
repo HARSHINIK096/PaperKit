@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/document_file.dart';
+import '../services/pdf_engine.dart';
 import '../theme/app_colors.dart';
 import 'markdown_viewer.dart';
 
@@ -39,7 +40,23 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
     final path = widget.file.path;
     final ext = widget.file.name.split('.').last.toLowerCase();
 
-    if (['txt', 'md', 'json', 'csv', 'log', 'yaml', 'yml', 'xml', 'html', 'js', 'py', 'dart'].contains(ext)) {
+    if (ext == 'pdf') {
+      setState(() => _isLoading = true);
+      try {
+        final file = File(path);
+        if (await file.exists()) {
+          final text = await PdfEngine.extractText(file);
+          setState(() {
+            _textContent = text.trim().isNotEmpty
+                ? '### PDF Content Preview\n\n$text'
+                : '*(This PDF contains scanned images or no direct text layer. Tap Open in Native Viewer to inspect full document.)*';
+            _isLoading = false;
+          });
+        }
+      } catch (e) {
+        setState(() => _isLoading = false);
+      }
+    } else if (['txt', 'md', 'json', 'csv', 'log', 'yaml', 'yml', 'xml', 'html', 'js', 'py', 'dart'].contains(ext)) {
       setState(() => _isLoading = true);
       try {
         final file = File(path);

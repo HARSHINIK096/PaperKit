@@ -183,6 +183,57 @@ class _RotatePDFScreenState extends State<RotatePDFScreen> {
               _buildRotationOption(270, '270° Counter', LucideIcons.rotateCcw),
             ],
           ),
+          const SizedBox(height: 20),
+
+          // Live Rotated Page Orientation Visualizer
+          Center(
+            child: Container(
+              height: 150,
+              width: 150,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: AnimatedRotation(
+                turns: _rotationDegrees / 360,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOutCubic,
+                child: Container(
+                  width: 68,
+                  height: 92,
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: primaryColor, width: 2),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.fileText, size: 24, color: primaryColor),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$_rotationDegrees°',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

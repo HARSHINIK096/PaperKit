@@ -23,49 +23,27 @@ class AppShell extends StatelessWidget {
   });
 
   bool _isIndividualToolRoute(String path) {
-    // Check if the path is an individual tool execution screen
-    const toolPrefixes = [
-      '/tools/merge',
-      '/tools/split',
-      '/tools/compress',
-      '/tools/convert',
-      '/tools/rotate',
-      '/tools/watermark',
-      '/tools/organize',
-      '/tools/extract',
-      '/tools/pdf-to-pdfa',
-      '/tools/pdf-editor',
-      '/tools/protect',
-      '/tools/smart-redaction',
-      '/tools/digital-signature',
-      '/tools/metadata',
-      '/tools/image-converter',
-      '/tools/image-compressor',
-      '/tools/image-manipulator',
-      '/tools/media-downloader',
-      '/tools/audio-converter',
-      '/tools/video-converter',
-      '/tools/video-compressor',
-      '/tools/archive-studio',
-      '/ai/ask',
-      '/ai/summarize',
-      '/ai/ocr',
-      '/ai/compare',
-      '/ai/similarity-matrix',
-      '/ai/search',
-      '/ai/classify',
-      '/ai/extract-info',
-      '/ai/translate',
-      '/ai/writing-assistant',
-      '/ai/quality-checker',
-      '/ai/extract-tables',
-      '/ai/image-enhancer',
-    ];
-
-    for (final prefix in toolPrefixes) {
-      if (path.startsWith(prefix)) return true;
+    if (path == '/' ||
+        path == '/tools' ||
+        path == '/scanner' ||
+        path == '/files' ||
+        path == '/profile' ||
+        path == '/storage' ||
+        path == '/history' ||
+        path == '/help' ||
+        path == '/about' ||
+        path == '/welcome' ||
+        path == '/splash' ||
+        path == '/onboarding' ||
+        path == '/ai' ||
+        path == '/ai/hub' ||
+        path.startsWith('/category/') ||
+        path.startsWith('/tools/category/')) {
+      return false;
     }
-    return false;
+    return path.startsWith('/tools/') ||
+        path.startsWith('/security/') ||
+        path.startsWith('/ai/');
   }
 
   String? _detectActiveCategory(String path) {
@@ -206,7 +184,11 @@ class AppShell extends StatelessWidget {
                 inactiveColor: inactiveColor,
                 onTap: () {
                   HapticFeedback.selectionClick();
-                  context.push(tool.route);
+                  try {
+                    context.push(tool.route);
+                  } catch (_) {
+                    context.go(tool.route);
+                  }
                 },
               ),
             );
