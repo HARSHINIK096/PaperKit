@@ -104,9 +104,39 @@ def extract_spotify_metadata(url: str) -> Tuple[str, str]:
         
     return title or "Spotify Track", artists
 
-def resolve_audio_stream_url_for_query(search_query: str) -> Optional[str]:
+def get_or_create_cookie_file(output_dir: str = ".", job_id: Optional[str] = None) -> Optional[str]:
     """
-    Resolves a direct audio stream URL for a given search query across YouTube, YouTube Music, and SoundCloud.
+    Extracts and returns the path to a valid YouTube Netscape cookies file from env vars.
+    """
+    cookie_file = os.getenv("YOUTUBE_COOKIES_FILE") or os.getenv("COOKIES_FILE")
+    if cookie_file and os.path.isfile(cookie_file):
+        return cookie_file
+
+    cookie_content = os.getenv("YOUTUBE_COOKIES")
+    cookie_b64 = os.getenv("YOUTUBE_COOKIES_BASE64")
+
+    if not cookie_content and cookie_b64:
+        import base64
+        try:
+            cookie_content = base64.b64decode(cookie_b64.strip()).decode("utf-8", errors="ignore")
+        except Exception as be:
+            print(f"Warning: Failed to decode YOUTUBE_COOKIES_BASE64 in Spotify downloader: {be}")
+
+    if cookie_content:
+        os.makedirs(output_dir, exist_ok=True)
+        cookie_path = os.path.join(output_dir, f"yt_cookies_{job_id or 'global'}.txt")
+        try:
+            with open(cookie_path, "w", encoding="utf-8") as f:
+                f.write(cookie_content)
+            return cookie_path
+        except Exception as ce:
+            print(f"Warning: Could not write cookie file: {ce}")
+
+    return None
+
+def resolve_audio_sources_for_query(search_query: str, cookie_file: Optional[str] = None) -> list:
+    """
+    Resolves a list of candidate audio stream URLs across YouTube, YouTube Music, and SoundCloud.
     """
     import yt_dlp
     
@@ -114,7 +144,7 @@ def resolve_audio_stream_url_for_query(search_query: str) -> Optional[str]:
         f"ytsearch5:{search_query}",
         f"ytsearch5:{search_query} audio",
         f"ytsearch5:{search_query} official",
-        f"scsearch3:{search_query}",  # SoundCloud fallback (never blocks cloud/Render IPs)
+        f"scsearch5:{search_query}",  # SoundCloud fallback (never blocks cloud/Render IPs)
     ]
     
     search_opts = {
@@ -130,9 +160,15 @@ def resolve_audio_stream_url_for_query(search_query: str) -> Optional[str]:
         }
     }
     
+    if cookie_file and os.path.exists(cookie_file):
+        search_opts["cookiefile"] = cookie_file
+
     proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
     if proxy_url:
         search_opts["proxy"] = proxy_url
+
+    sources = []
+    seen = set()
 
     for q in queries:
         try:
@@ -140,25 +176,42 @@ def resolve_audio_stream_url_for_query(search_query: str) -> Optional[str]:
                 info = ydl.extract_info(q, download=False)
                 if info and "entries" in info and info["entries"]:
                     for entry in info["entries"]:
-                        if entry:
-                            url = entry.get("webpage_url") or entry.get("url")
-                            vid_id = entry.get("id")
-                            if url and ("youtube.com" in url or "soundcloud.com" in url or "youtu.be" in url):
-                                print(f"Resolved audio source for '{search_query}': {url} ({entry.get('title', '')})")
-                                return url
-                            elif vid_id and not vid_id.startswith("http"):
-                                target = f"https://www.youtube.com/watch?v={vid_id}"
-                                print(f"Resolved YouTube video for '{search_query}': {target} ({entry.get('title', '')})")
-                                return target
+                        if not entry:
+                            continue
+                        url = entry.get("webpage_url") or entry.get("url")
+                        vid_id = entry.get("id")
+                        target = None
+                        if url and ("youtube.com" in url or "soundcloud.com" in url or "youtu.be" in url):
+                            target = url
+                        elif vid_id and not vid_id.startswith("http"):
+                            target = f"https://www.youtube.com/watch?v={vid_id}"
+                        
+                        if target and target not in seen:
+                            seen.add(target)
+                            sources.append(target)
+                            print(f"Candidate audio source found: {target} ({entry.get('title', '')})")
         except Exception as e:
             print(f"Search provider '{q}' note: {e}")
             continue
 
-    return None
+    # Append direct search fallbacks as last resort
+    if f"scsearch1:{search_query}" not in seen:
+        sources.append(f"scsearch1:{search_query}")
+    if f"ytsearch1:{search_query}" not in seen:
+        sources.append(f"ytsearch1:{search_query}")
+
+    return sources
+
+def resolve_audio_stream_url_for_query(search_query: str) -> Optional[str]:
+    """
+    Backwards-compatible helper returning the top resolved stream source.
+    """
+    sources = resolve_audio_sources_for_query(search_query)
+    return sources[0] if sources else None
 
 def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str] = None) -> str:
     """
-    Downloads audio stream using yt-dlp and converts to standard 192kbps MP3.
+    Downloads audio stream using yt-dlp across multiple candidate sources and converts to standard 192kbps MP3.
     """
     import yt_dlp
     
@@ -166,40 +219,30 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
     out_tmpl = os.path.join(output_dir, f"{prefix}%(title)s.%(ext)s")
     ffmpeg_bin = find_ffmpeg_path()
     
-    target_video_url = resolve_audio_stream_url_for_query(search_query)
-    download_targets = [target_video_url] if target_video_url else [f"ytsearch1:{search_query}"]
-    
-    cookie_file = os.getenv("YOUTUBE_COOKIES_FILE") or os.getenv("COOKIES_FILE")
-    cookie_content = os.getenv("YOUTUBE_COOKIES")
-    cookie_b64 = os.getenv("YOUTUBE_COOKIES_BASE64")
-
-    if not cookie_file and cookie_b64:
-        import base64
-        try:
-            cookie_content = base64.b64decode(cookie_b64.strip()).decode("utf-8")
-        except Exception as be:
-            print(f"Warning: Failed to decode YOUTUBE_COOKIES_BASE64 in Spotify downloader: {be}")
-
-    if not cookie_file and cookie_content:
-        cookie_file = os.path.join(output_dir, f"yt_cookies_{job_id or 'default'}.txt")
-        try:
-            with open(cookie_file, "w", encoding="utf-8") as f:
-                f.write(cookie_content)
-        except Exception:
-            cookie_file = None
+    cookie_file = get_or_create_cookie_file(output_dir, job_id)
+    download_targets = resolve_audio_sources_for_query(search_query, cookie_file=cookie_file)
+    if not download_targets:
+        download_targets = [f"ytsearch1:{search_query}", f"scsearch1:{search_query}"]
 
     proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
 
-    client_strategies = [
-        None,
-        ["web", "android"],
-        ["ios", "mweb"],
-        ["tv_embedded", "ios"],
-        ["mweb", "android_vr"],
-    ]
+    # If cookies are provided, standard player client (None or web) should be used
+    if cookie_file and os.path.exists(cookie_file):
+        yt_client_strategies = [None, ["web"], ["mweb"]]
+    else:
+        yt_client_strategies = [
+            None,
+            ["web", "android"],
+            ["ios", "mweb"],
+            ["tv_embedded", "ios"],
+            ["mweb", "android_vr"],
+        ]
 
     last_error = None
     for target in download_targets:
+        is_soundcloud = "soundcloud.com" in target or target.startswith("scsearch")
+        client_strategies = [None] if is_soundcloud else yt_client_strategies
+
         for clients in client_strategies:
             ydl_opts = {
                 "outtmpl": out_tmpl,
@@ -222,9 +265,9 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
                 }]
             if proxy_url:
                 ydl_opts["proxy"] = proxy_url
-            if cookie_file and os.path.exists(cookie_file):
+            if cookie_file and os.path.exists(cookie_file) and not is_soundcloud:
                 ydl_opts["cookiefile"] = cookie_file
-            if clients:
+            if clients and not is_soundcloud:
                 ydl_opts["extractor_args"] = {
                     "youtube": {
                         "player_client": clients,
@@ -254,7 +297,10 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
                     return max(matching_files, key=os.path.getctime)
             except Exception as e:
                 last_error = e
-                print(f"yt-dlp download attempt failed with clients {clients}: {e}. Retrying with next client...")
+                print(f"yt-dlp attempt failed for {target} (clients: {clients}): {e}. Trying next...")
+                if "Sign in to confirm" in str(e) or "bot" in str(e).lower():
+                    print(f"YouTube bot detection encountered for {target}. Moving to next source candidate...")
+                    break
                 continue
 
     # Locate output file
@@ -281,6 +327,7 @@ def download_via_spotdl_fallback(url: str, output_dir: str, job_id: Optional[str
     """
     import subprocess
     prefix = f"{job_id}_" if job_id else ""
+    cookie_file = get_or_create_cookie_file(output_dir, job_id)
     try:
         cmd = [
             sys.executable, "-m", "spotdl",
@@ -290,6 +337,9 @@ def download_via_spotdl_fallback(url: str, output_dir: str, job_id: Optional[str
             "--bitrate", "192k",
             "--threads", "1",
         ]
+        if cookie_file and os.path.isfile(cookie_file):
+            cmd.extend(["--cookie-file", cookie_file])
+            
         ffmpeg_bin = find_ffmpeg_path()
         if ffmpeg_bin:
             cmd.extend(["--ffmpeg", ffmpeg_bin])
