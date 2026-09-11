@@ -26,39 +26,28 @@ def cleanup_file(filepath: str):
 
 import asyncio
 
+from spotify_downloader import get_or_create_cookie_file, format_netscape_cookies
+
 def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
-    # Check for cookies from env var (file path, raw Netscape content, or base64 encoded)
-    cookie_file = os.getenv("YOUTUBE_COOKIES_FILE") or os.getenv("COOKIES_FILE")
-    cookie_content = os.getenv("YOUTUBE_COOKIES")
-    cookie_b64 = os.getenv("YOUTUBE_COOKIES_BASE64")
-    
-    if not cookie_file and cookie_b64:
-        import base64
-        try:
-            cookie_content = base64.b64decode(cookie_b64.strip()).decode("utf-8", errors="ignore")
-        except Exception as be:
-            print(f"Warning: Failed to decode YOUTUBE_COOKIES_BASE64: {be}")
-
-    if not cookie_file and cookie_content:
-        from spotify_downloader import format_netscape_cookies
-        cookie_file = os.path.join(DOWNLOAD_DIR, "yt_cookies.txt")
-        try:
-            sanitized = format_netscape_cookies(cookie_content)
-            with open(cookie_file, "w", encoding="utf-8") as f:
-                f.write(sanitized)
-        except Exception as ce:
-            print(f"Warning: Could not write YouTube cookies: {ce}")
-            cookie_file = None
-
+    cookie_file = get_or_create_cookie_file(DOWNLOAD_DIR)
     ffmpeg_bin = find_ffmpeg_path()
+    
     if cookie_file and os.path.exists(cookie_file):
-        client_strategies = [None, ['ios', 'mweb'], ['web'], ['mweb']]
+        client_strategies = [
+            None,
+            ['web'],
+            ['mweb'],
+            ['android', 'ios'],
+            ['android_vr', 'mweb'],
+            ['ios'],
+        ]
     else:
         client_strategies = [
-            None,  # Standard auto detection (visionos/web/android)
+            None,
+            ['android', 'ios'],
+            ['android_vr', 'mweb'],
             ['ios', 'mweb'],
-            ['android', 'web'],
-            ['tv_embedded', 'web'],
+            ['web'],
         ]
 
     proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")

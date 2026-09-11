@@ -127,12 +127,36 @@ def format_netscape_cookies(raw_content: str) -> str:
 
 def get_or_create_cookie_file(output_dir: str = ".", job_id: Optional[str] = None) -> Optional[str]:
     """
-    Extracts and returns the path to a valid YouTube Netscape cookies file from env vars.
+    Extracts and returns the path to a valid YouTube Netscape cookies file from:
+    1. Render Secret Files (/etc/secrets/cookies.txt, /etc/secrets/youtube_cookies.txt)
+    2. Local files (cookies.txt, YOUTUBE_COOKIES_FILE env var)
+    3. Environment variables (YOUTUBE_COOKIES_BASE64, YOUTUBE_COOKIES)
     """
-    cookie_file = os.getenv("YOUTUBE_COOKIES_FILE") or os.getenv("COOKIES_FILE")
-    if cookie_file and os.path.isfile(cookie_file):
-        return cookie_file
+    # 1. Check known file paths
+    candidate_paths = [
+        os.getenv("YOUTUBE_COOKIES_FILE"),
+        os.getenv("COOKIES_FILE"),
+        "/etc/secrets/cookies.txt",
+        "/etc/secrets/youtube_cookies.txt",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "cookies.txt"),
+        os.path.join(os.getcwd(), "cookies.txt"),
+    ]
+    for cp in candidate_paths:
+        if cp and os.path.isfile(cp):
+            try:
+                with open(cp, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                if content.strip():
+                    os.makedirs(output_dir, exist_ok=True)
+                    sanitized_path = os.path.join(output_dir, f"yt_cookies_{job_id or 'global'}.txt")
+                    with open(sanitized_path, "w", encoding="utf-8") as f_out:
+                        f_out.write(format_netscape_cookies(content))
+                    return sanitized_path
+            except Exception as e:
+                print(f"Warning: Failed reading cookie file at {cp}: {e}")
+                return cp
 
+    # 2. Check base64 or raw string environment variables
     cookie_content = os.getenv("YOUTUBE_COOKIES")
     cookie_b64 = os.getenv("YOUTUBE_COOKIES_BASE64")
 
@@ -141,9 +165,9 @@ def get_or_create_cookie_file(output_dir: str = ".", job_id: Optional[str] = Non
         try:
             cookie_content = base64.b64decode(cookie_b64.strip()).decode("utf-8", errors="ignore")
         except Exception as be:
-            print(f"Warning: Failed to decode YOUTUBE_COOKIES_BASE64 in Spotify downloader: {be}")
+            print(f"Warning: Failed to decode YOUTUBE_COOKIES_BASE64: {be}")
 
-    if cookie_content:
+    if cookie_content and cookie_content.strip():
         os.makedirs(output_dir, exist_ok=True)
         cookie_path = os.path.join(output_dir, f"yt_cookies_{job_id or 'global'}.txt")
         try:
