@@ -23,12 +23,12 @@ export default function TopBar({ onMenuOpen }) {
         </button>
 
         <div className="topbar__brand" onClick={() => navigate('/')} role="link" tabIndex={0}>
-          {/* PaperKit P Logo */}
+          {/* MASKERV Logo */}
           <div className="topbar__logo-mark" aria-hidden="true">
-            <img src="/icon-48.png" alt="PaperKit Logo" width="28" height="28" style={{ borderRadius: '6px' }} />
+            <img src="/icon-48.png" alt="MASKERV Logo" width="28" height="28" style={{ borderRadius: '6px' }} />
           </div>
           <div className="topbar__brand-text">
-            <span className="topbar__brand-name">PaperKit</span>
+            <span className="topbar__brand-name">MASKERV</span>
             <span className="topbar__brand-tagline">All-in-One PDF Solution</span>
           </div>
         </div>

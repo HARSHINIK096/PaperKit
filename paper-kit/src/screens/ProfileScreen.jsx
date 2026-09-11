@@ -114,7 +114,7 @@ export default function ProfileScreen() {
 
   function handleItem(item) {
     if (item.action === 'share') {
-      shareUrl('PaperKit', 'Check out PaperKit — All-in-One Open-Source PDF Suite!', 'https://paperkit-web.onrender.com');
+      shareUrl('MASKERV', 'Check out MASKERV — All-in-One Open-Source PDF Suite!', 'https://paperkit-web.onrender.com');
       return;
     }
     if (item.isSettings || item.id === 'settings') {

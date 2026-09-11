@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final filesProv = context.watch<FilesProvider>();
 
     return AppShell(
-      title: 'PaperKit',
+      title: 'MASKERV',
       actions: [
         // Live Server Sync Beacon (Green = Online, Red = Offline)
         InkWell(
@@ -157,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'PaperKit Intelligent Platform',
+                  'MASKERV Intelligent Platform',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,

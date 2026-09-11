@@ -85,7 +85,7 @@ export default function AppRouter() {
 
   const [healthState, setHealthState] = useState({
     stage: 'connecting',
-    statusMessage: 'Connecting to PaperKit Cloud...',
+    statusMessage: 'Connecting to MASKERV Cloud...',
     isWakingUp: false,
     elapsedSeconds: 0,
     services: { backend: false, web: false },
@@ -214,7 +214,7 @@ export default function AppRouter() {
             <Route path="/history" element={<AppShell headerProps={{ title: 'Processing History' }}><HistoryScreen /></AppShell>} />
             <Route path="/storage" element={<AppShell headerProps={{ title: 'Storage Dashboard' }}><StorageScreen /></AppShell>} />
             <Route path="/help" element={<AppShell headerProps={{ title: 'Help & Support' }}><HelpScreen /></AppShell>} />
-            <Route path="/about" element={<AppShell headerProps={{ title: 'About PaperKit' }}><AboutScreen /></AppShell>} />
+            <Route path="/about" element={<AppShell headerProps={{ title: 'About MASKERV' }}><AboutScreen /></AppShell>} />
 
             {/* Category Hubs — Dedicated container pages */}
             <Route path="/category/:categoryId" element={<AppShell headerProps={{ title: 'Tools Hub' }}><CategoryHubScreen /></AppShell>} />

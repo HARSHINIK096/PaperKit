@@ -14,10 +14,10 @@ export default function HelpScreen() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         <section style={{ background: 'var(--color-surface)', padding: 'var(--space-5)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-divider)' }}>
           <h2 style={{ fontSize: 'var(--font-size-lg)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <Compass size={20} color="var(--color-primary)" /> PaperKit Feature Walkthrough
+            <Compass size={20} color="var(--color-primary)" /> MASKERV Feature Walkthrough
           </h2>
           <p style={{ color: 'var(--color-text-muted)', marginBottom: 'var(--space-4)' }}>
-            Want to explore all key features, client-side security benefits, and AI tools in PaperKit?
+            Want to explore all key features, client-side security benefits, and AI tools in MASKERV?
           </p>
           <button className="btn-primary" onClick={() => navigate('/onboarding')}>
             <Compass size={18} /> View 13-Page Feature Tour
@@ -39,7 +39,7 @@ export default function HelpScreen() {
             </div>
             <div>
               <h3 style={{ fontWeight: 'bold', marginBottom: 'var(--space-1)' }}>Are my files private?</h3>
-              <p style={{ color: 'var(--color-text-muted)' }}>Yes! PaperKit is designed for privacy. Most operations run directly on your device, meaning your files never leave your phone.</p>
+              <p style={{ color: 'var(--color-text-muted)' }}>Yes! MASKERV is designed for privacy. Most operations run directly on your device, meaning your files never leave your phone.</p>
             </div>
           </div>
         </section>

@@ -94,7 +94,7 @@ class _SimilarityMatrixScreenState extends State<SimilarityMatrixScreen> {
       setState(() => _isProcessing = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PaperKit Similarity Matrix Error: $e')),
+          SnackBar(content: Text('MASKERV Similarity Matrix Error: $e')),
         );
       }
     }

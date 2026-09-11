@@ -28,7 +28,7 @@ class _WritingAssistantScreenState extends State<WritingAssistantScreen> {
       final res = await ApiService().writingAssistant(text: text, task: _mode);
       final improved = res['improved_text'] ?? res['result'] ?? '';
       if (improved.trim().isEmpty) {
-        throw Exception('PaperKit writing engine did not return improved text.');
+        throw Exception('MASKERV writing engine did not return improved text.');
       }
 
       setState(() {
@@ -39,7 +39,7 @@ class _WritingAssistantScreenState extends State<WritingAssistantScreen> {
       setState(() => _isProcessing = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PaperKit Writing Assistant Error: $e')),
+          SnackBar(content: Text('MASKERV Writing Assistant Error: $e')),
         );
       }
     }

@@ -344,7 +344,7 @@ def download_spotify_track(url: str, output_dir: str = ".", output_template: Opt
         raise err
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="PaperKit Spotify Media Downloader CLI")
+    parser = argparse.ArgumentParser(description="MASKERV Spotify Media Downloader CLI")
     parser.add_argument("url", nargs="?", help="Spotify track, album, or playlist URL")
     parser.add_argument("-o", "--output", default=".", help="Target output directory")
     args = parser.parse_args()

@@ -59,7 +59,7 @@ class _TranslatePDFScreenState extends State<TranslatePDFScreen> {
       );
       final translated = res['translation'] ?? res['result'] ?? '';
       if (translated.trim().isEmpty) {
-        throw Exception('PaperKit server did not return a translation.');
+        throw Exception('MASKERV server did not return a translation.');
       }
 
       setState(() {
@@ -70,7 +70,7 @@ class _TranslatePDFScreenState extends State<TranslatePDFScreen> {
       setState(() => _isTranslating = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PaperKit Translation Error: $e')),
+          SnackBar(content: Text('MASKERV Translation Error: $e')),
         );
       }
     }

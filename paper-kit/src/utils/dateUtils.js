@@ -1,4 +1,4 @@
-/* dateUtils.js — Centralized date and timestamp formatting for PaperKit */
+/* dateUtils.js — Centralized date and timestamp formatting for MASKERV */
 
 /**
  * Parses a date input into a valid Date object.

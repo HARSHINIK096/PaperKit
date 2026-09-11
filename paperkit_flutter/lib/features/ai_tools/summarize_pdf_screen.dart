@@ -49,7 +49,7 @@ class _SummarizePDFScreenState extends State<SummarizePDFScreen> {
       );
       final summary = res['summary'] ?? res['result'] ?? '';
       if (summary.trim().isEmpty) {
-        throw Exception('PaperKit server did not return a valid summary. Please check your network connection.');
+        throw Exception('MASKERV server did not return a valid summary. Please check your network connection.');
       }
 
       if (mounted) {

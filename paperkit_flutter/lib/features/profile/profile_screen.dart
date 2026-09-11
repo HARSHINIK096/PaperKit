@@ -61,7 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Configure the FastAPI endpoint for PaperKit Cloud and AI services:',
+              'Configure the FastAPI endpoint for MASKERV Cloud and AI services:',
               style: TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 14),
@@ -325,18 +325,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildSettingsTile(
                     icon: LucideIcons.info,
                     iconColor: AppColors.toolPurple,
-                    title: 'About PaperKit',
+                    title: 'About MASKERV',
                     subtitle: 'Version 1.0.0 • Architecture & Credits',
                     onTap: () => context.push('/about'),
                   ),
                   _buildSettingsTile(
                     icon: LucideIcons.share2,
                     iconColor: AppColors.primary,
-                    title: 'Share PaperKit',
+                    title: 'Share MASKERV',
                     subtitle: 'Invite peers and classmates',
                     onTap: () {
                       Share.share(
-                        'Check out PaperKit - The all-in-one local-first document suite with AI intelligence & PDF editing!',
+                        'Check out MASKERV - The all-in-one local-first document suite with AI intelligence & PDF editing!',
                       );
                     },
                   ),

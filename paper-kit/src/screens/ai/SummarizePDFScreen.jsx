@@ -125,7 +125,7 @@ export default function SummarizePDFScreen() {
       const docTitle = selectedFile?.name ? selectedFile.name.replace(/\.[^/.]+$/, "") : "Document";
       const res = await api.post('/ai/generate-report-pdf', {
         title: `${docTitle} — Executive Summary`,
-        subtitle: `PaperKit AI Summarization Report (${mode.toUpperCase()})`,
+        subtitle: `MASKERV AI Summarization Report (${mode.toUpperCase()})`,
         content: summary,
       });
 

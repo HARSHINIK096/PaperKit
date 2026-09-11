@@ -587,7 +587,7 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Saved directly to your PaperKit workspace.',
+                'Saved directly to your MASKERV workspace.',
                 style: TextStyle(fontSize: 13, color: Colors.grey[600]),
               ),
               const SizedBox(height: 24),

@@ -48,7 +48,7 @@ class _ClassifyPDFScreenState extends State<ClassifyPDFScreen> {
       setState(() => _isClassifying = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PaperKit Classification Error: $e')),
+          SnackBar(content: Text('MASKERV Classification Error: $e')),
         );
       }
     }

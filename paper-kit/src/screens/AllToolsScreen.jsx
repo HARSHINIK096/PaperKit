@@ -104,7 +104,7 @@ export default function AllToolsScreen() {
         <SearchBar
           value={search}
           onChange={setSearch}
-          placeholder="Search all 30+ PaperKit tools &amp; capabilities..."
+          placeholder="Search all 30+ MASKERV tools &amp; capabilities..."
           id="all-tools-search"
         />
 

@@ -123,7 +123,7 @@ export default function ConvertScreen() {
   const acceptAttr = acceptedExts.join(',');
   const activeEngineKey = currentTool?.defaultEngine || 'python';
   const engineInfo = currentTool?.engines?.[activeEngineKey] || {};
-  const engineName = engineInfo.name || 'PaperKit High-Fidelity Engine';
+  const engineName = engineInfo.name || 'MASKERV High-Fidelity Engine';
 
   async function handleFileSelect(fileOrEvent) {
     const file = fileOrEvent?.target?.files?.[0] || fileOrEvent;

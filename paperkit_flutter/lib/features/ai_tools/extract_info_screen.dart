@@ -61,7 +61,7 @@ class _ExtractInfoScreenState extends State<ExtractInfoScreen> {
       setState(() => _isExtracting = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PaperKit Extraction Error: $e')),
+          SnackBar(content: Text('MASKERV Extraction Error: $e')),
         );
       }
     }

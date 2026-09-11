@@ -12,16 +12,16 @@ class HelpScreen extends StatelessWidget {
 
     final faqs = [
       {
-        'q': 'Does PaperKit work completely offline?',
+        'q': 'Does MASKERV work completely offline?',
         'a': 'Yes! All core PDF operations (Merge, Split, Rotate, Watermark, Reorder, Metadata, Protect) run 100% locally on your device without sending any data over the network.',
       },
       {
         'q': 'How do AI Document tools work?',
-        'a': 'AI tools (Summarization, Chat, OCR, Semantic Search, Translations) connect to the PaperKit FastAPI backend or local AI pipeline for inference.',
+        'a': 'AI tools (Summarization, Chat, OCR, Semantic Search, Translations) connect to the MASKERV FastAPI backend or local AI pipeline for inference.',
       },
       {
         'q': 'Is my data secure?',
-        'a': 'PaperKit uses 256-bit AES encryption for PDF password protection and zero persistent data collection on third-party servers.',
+        'a': 'MASKERV uses 256-bit AES encryption for PDF password protection and zero persistent data collection on third-party servers.',
       },
       {
         'q': 'What file formats are supported?',

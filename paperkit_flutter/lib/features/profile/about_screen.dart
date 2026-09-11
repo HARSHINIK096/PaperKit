@@ -10,7 +10,7 @@ class AboutScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppShell(
-      title: 'About PaperKit',
+      title: 'About MASKERV',
       showBottomNav: false,
       child: Center(
         child: Padding(
@@ -18,24 +18,18 @@ class AboutScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primary, Color(0xFF6366F1)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Center(
-                  child: Icon(Icons.description_rounded, size: 40, color: Colors.white),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  'assets/icons/app_icon.png',
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
                 ),
               ),
               const SizedBox(height: 18),
               Text(
-                'PaperKit',
+                'MASKERV',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,

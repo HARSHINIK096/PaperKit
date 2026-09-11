@@ -5,7 +5,7 @@ import './SplashScreen.css';
 
 export default function SplashScreen({
   fadeOut = false,
-  statusMessage = 'Connecting to PaperKit Cloud...',
+  statusMessage = 'Connecting to MASKERV Cloud...',
   stage: _stage = 'connecting',
   isWakingUp: _isWakingUp = false,
   elapsedSeconds: _elapsedSeconds = 0,
@@ -28,7 +28,7 @@ export default function SplashScreen({
           <div className="splash-screen__logo">
             <img
               src="/icon-192.png"
-              alt="PaperKit Logo"
+              alt="MASKERV Logo"
               width="72"
               height="72"
               style={{ borderRadius: '20px', boxShadow: '0 12px 30px rgba(37, 99, 235, 0.3)' }}
@@ -36,7 +36,7 @@ export default function SplashScreen({
           </div>
         </div>
 
-        <h1 className="splash-screen__app-name">PaperKit</h1>
+        <h1 className="splash-screen__app-name">MASKERV</h1>
         <p className="splash-screen__tagline">All-in-One PDF &amp; Document Intelligence</p>
 
         {/* Dynamic Status & Loader Section */}
@@ -55,11 +55,11 @@ export default function SplashScreen({
               <div className="splash-screen__services-row">
                 <span className={`splash-screen__service-chip ${services?.backend ? 'splash-screen__service-chip--online' : 'splash-screen__service-chip--syncing'}`} title="https://paperkit-backend.onrender.com">
                   <span className="splash-screen__service-dot" />
-                  <span>PaperKit Backend {services?.backend ? '(Ready)' : '(Connecting...)'}</span>
+                  <span>MASKERV Backend {services?.backend ? '(Ready)' : '(Connecting...)'}</span>
                 </span>
                 <span className={`splash-screen__service-chip ${services?.web ? 'splash-screen__service-chip--online' : 'splash-screen__service-chip--syncing'}`} title="https://paperkit-web.onrender.com">
                   <span className="splash-screen__service-dot" />
-                  <span>PaperKit Web {services?.web ? '(Ready)' : '(Syncing...)'}</span>
+                  <span>MASKERV Web {services?.web ? '(Ready)' : '(Syncing...)'}</span>
                 </span>
               </div>
             </div>
@@ -70,7 +70,7 @@ export default function SplashScreen({
                 type="button"
                 className="splash-screen__skip-btn"
                 onClick={onProceedAnyway}
-                title="Enter PaperKit workspace immediately"
+                title="Enter MASKERV workspace immediately"
                 id="splash-enter-workspace-btn"
               >
                 <span>Enter Workspace Direct</span>
@@ -117,7 +117,7 @@ export default function SplashScreen({
 
         <div className="splash-screen__footer-brand">
           <Sparkles size={13} color="var(--color-primary, #2563EB)" />
-          <span>PaperKit Studio Cloud</span>
+          <span>MASKERV Studio Cloud</span>
         </div>
       </div>
     </div>

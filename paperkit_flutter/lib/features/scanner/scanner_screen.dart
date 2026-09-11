@@ -152,7 +152,7 @@ class _ScannerScreenState extends State<ScannerScreen> with TickerProviderStateM
 
       final outputDir = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'PaperKit_Scan_$timestamp.pdf';
+      final fileName = 'MASKERV_Scan_$timestamp.pdf';
       final outputFile = File('${outputDir.path}/$fileName');
       await outputFile.writeAsBytes(await pdf.save());
       final fileSize = await outputFile.length();

@@ -205,7 +205,7 @@ export default function ClassifyPDFScreen() {
               <Grid size={28} color="var(--color-primary)" />
             </div>
             <p className="ai-screen__unavailable-title">Automated Document Classifier</p>
-            <p className="ai-screen__unavailable-sub">PaperKit identifies whether a document is a research paper, resume, invoice, contract, or form.</p>
+            <p className="ai-screen__unavailable-sub">MASKERV identifies whether a document is a research paper, resume, invoice, contract, or form.</p>
           </div>
         )}
       </div>

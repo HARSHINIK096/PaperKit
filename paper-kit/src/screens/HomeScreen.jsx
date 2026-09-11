@@ -97,7 +97,7 @@ export default function HomeScreen() {
     <div className="home-screen">
       <header className="home-screen__header">
         <h1 className="home-screen__greeting">
-          {user?.name && user.name !== 'Guest User' ? `Welcome, ${user.name}` : 'PaperKit Intelligent PDF Platform'}
+          {user?.name && user.name !== 'Guest User' ? `Welcome, ${user.name}` : 'MASKERV Intelligent PDF Platform'}
         </h1>
         <p className="home-screen__subtitle">Process, summarize, compare, and protect your documents with zero friction.</p>
       </header>
@@ -218,7 +218,7 @@ export default function HomeScreen() {
       {storageData && (
         <div className="home-screen__storage-summary" onClick={() => navigate('/storage')} style={{ cursor: 'pointer', background: 'var(--color-surface)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-3) var(--space-4)', border: '1px solid var(--color-divider)', marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)' }}>
-            <span style={{ color: 'var(--color-text-secondary)' }}>Paperkit Storage Usage: <strong>{storageData.totalMB} MB</strong> used</span>
+            <span style={{ color: 'var(--color-text-secondary)' }}>MASKERV Storage Usage: <strong>{storageData.totalMB} MB</strong> used</span>
             <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>{storageData.fileCount} Files</span>
           </div>
           <div style={{ height: '6px', background: 'var(--color-divider)', borderRadius: '3px', overflow: 'hidden' }}>

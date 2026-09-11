@@ -68,7 +68,7 @@ class _ExtractTablesScreenState extends State<ExtractTablesScreen> {
       setState(() => _isExtracting = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PaperKit Table Extraction Error: $e')),
+          SnackBar(content: Text('MASKERV Table Extraction Error: $e')),
         );
       }
     }

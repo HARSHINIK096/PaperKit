@@ -60,7 +60,7 @@ class _SemanticSearchScreenState extends State<SemanticSearchScreen> {
       setState(() => _isSearching = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PaperKit Search Error: $e')),
+          SnackBar(content: Text('MASKERV Search Error: $e')),
         );
       }
     }

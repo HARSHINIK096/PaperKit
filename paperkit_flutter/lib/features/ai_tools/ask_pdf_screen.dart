@@ -63,7 +63,7 @@ class _AskPDFScreenState extends State<AskPDFScreen> {
         file: _selectedFile!,
         question: text,
       );
-      final answer = res['answer'] ?? res['response'] ?? 'No answer provided by PaperKit AI server.';
+      final answer = res['answer'] ?? res['response'] ?? 'No answer provided by MASKERV AI server.';
 
       setState(() {
         _messages.add(_ChatMessage(text: answer, isUser: false, timestamp: DateTime.now()));
@@ -72,7 +72,7 @@ class _AskPDFScreenState extends State<AskPDFScreen> {
     } catch (e) {
       setState(() {
         _messages.add(_ChatMessage(
-          text: 'PaperKit AI Processing Error: Unable to complete request ($e). Please verify server connection.',
+          text: 'MASKERV AI Processing Error: Unable to complete request ($e). Please verify server connection.',
           isUser: false,
           timestamp: DateTime.now(),
         ));

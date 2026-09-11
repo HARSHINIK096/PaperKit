@@ -1,4 +1,4 @@
-package com.theoriongd.paperkit
+package com.theoriongd.maskerv
 
 import io.flutter.embedding.android.FlutterActivity
 

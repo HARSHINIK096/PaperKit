@@ -9,7 +9,7 @@ async def test_root_endpoint(client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "online"
-    assert data["service"] == "PaperKit API"
+    assert data["service"] == "MASKERV API"
     assert "version" in data
     assert "health" in data
     assert "docs" in data
@@ -22,7 +22,7 @@ async def test_health_endpoint(client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "ok"
-    assert data["service"] == "PaperKit API"
+    assert data["service"] == "MASKERV API"
 
 
 @pytest.mark.asyncio

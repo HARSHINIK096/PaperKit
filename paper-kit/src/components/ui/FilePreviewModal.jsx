@@ -608,7 +608,7 @@ export default function FilePreviewModal({
                 type="button"
                 className="preview-btn preview-btn--subtle"
                 onClick={() => setShowShortcutsMenu(s => !s)}
-                title="Open in PaperKit tools"
+                title="Open in MASKERV tools"
               >
                 <Sparkles size={16} color="var(--color-primary)" />
                 <span className="preview-btn__label">Smart Tools</span>
@@ -1079,7 +1079,7 @@ export default function FilePreviewModal({
                           </div>
                           <h3 className="preview-modal__office-title">{actualFileName}</h3>
                           <p className="preview-modal__office-desc">
-                            This is a Microsoft Office document ({ext.toUpperCase()}). Click below to convert it into an interactive high-fidelity PDF to view, zoom, and print directly inside PaperKit.
+                            This is a Microsoft Office document ({ext.toUpperCase()}). Click below to convert it into an interactive high-fidelity PDF to view, zoom, and print directly inside MASKERV.
                           </p>
 
                           <div className="preview-modal__office-actions">

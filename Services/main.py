@@ -1,4 +1,4 @@
-"""PaperKit FastAPI application entry point — Open-Source PDF & Document Suite"""
+"""MASKERV FastAPI application entry point — Open-Source PDF & Document Suite"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="PaperKit API",
+    title="MASKERV API",
     description="Open-Source PDF & Document Suite — backend API",
     version="2.1.0",
     lifespan=lifespan,
@@ -186,7 +186,7 @@ from fastapi.responses import Response
 async def root():
     return {
         "status": "online",
-        "service": "PaperKit API",
+        "service": "MASKERV API",
         "version": "2.1.0",
         "docs": "/docs",
         "health": "/health",
@@ -199,4 +199,4 @@ async def favicon():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-    return {"status": "ok", "service": "PaperKit API", "version": "2.1.0"}
+    return {"status": "ok", "service": "MASKERV API", "version": "2.1.0"}

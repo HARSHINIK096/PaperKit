@@ -60,8 +60,8 @@ export default function PDFToPDFAScreen() {
         updateProgress(50, `Injecting ${profile} ISO Compliance metadata...`);
         if (embedMetadata) {
           pdfDoc.setTitle(selectedFile.name.replace(/\.pdf$/i, ''));
-          pdfDoc.setProducer('PaperKit PDF/A Archival Engine');
-          pdfDoc.setCreator('PaperKit Studio');
+          pdfDoc.setProducer('MASKERV PDF/A Archival Engine');
+          pdfDoc.setCreator('MASKERV Studio');
           pdfDoc.setCreationDate(new Date());
           pdfDoc.setModificationDate(new Date());
         }

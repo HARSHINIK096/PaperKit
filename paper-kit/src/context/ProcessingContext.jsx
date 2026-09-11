@@ -241,7 +241,7 @@ function ProcessingOverlay({ task }) {
     <div className="processing-overlay" role="status" aria-live="polite">
       <div className="processing-tag-pill">
         <span className="processing-tag-dot" />
-        <span className="processing-tag-text">PaperKit Processing....</span>
+        <span className="processing-tag-text">MASKERV Processing....</span>
       </div>
     </div>
   );

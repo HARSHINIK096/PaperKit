@@ -55,7 +55,7 @@ class _QualityCheckerScreenState extends State<QualityCheckerScreen> {
       setState(() => _isAuditing = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PaperKit Quality Checker Error: $e')),
+          SnackBar(content: Text('MASKERV Quality Checker Error: $e')),
         );
       }
     }

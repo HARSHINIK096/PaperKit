@@ -1,6 +1,6 @@
 {
-  "appId": "com.theoriongd.paperkit",
-  "appName": "PaperKit",
+  "appId": "com.theoriongd.maskerv",
+  "appName": "MASKERV",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",

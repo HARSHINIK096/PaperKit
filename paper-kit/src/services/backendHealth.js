@@ -115,7 +115,7 @@ export async function waitForBackendReady({
     const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
     const isWakingUp = elapsedSeconds > 3;
 
-    let message = 'Loading PaperKit services...';
+    let message = 'Loading MASKERV services...';
     let stage = 'connecting';
 
     if (elapsedSeconds >= 3 && elapsedSeconds < 12) {

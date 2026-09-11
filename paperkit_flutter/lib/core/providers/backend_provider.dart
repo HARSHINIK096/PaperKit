@@ -31,7 +31,7 @@ class BackendProvider extends ChangeNotifier {
     if (_isDisposed) return false;
     if (!isSilent) {
       _isChecking = true;
-      _statusMessage = 'Connecting to PaperKit Server...';
+      _statusMessage = 'Connecting to MASKERV Server...';
       if (!_isDisposed) notifyListeners();
     }
 

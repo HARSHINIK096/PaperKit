@@ -231,7 +231,7 @@ export default function SemanticSearchScreen() {
               <Search size={28} color="var(--color-primary)" />
             </div>
             <p className="ai-screen__unavailable-title">Search by Meaning, Not Just Keywords</p>
-            <p className="ai-screen__unavailable-sub">PaperKit understands synonyms, intent, and concepts across your document.</p>
+            <p className="ai-screen__unavailable-sub">MASKERV understands synonyms, intent, and concepts across your document.</p>
           </div>
         )}
       </div>

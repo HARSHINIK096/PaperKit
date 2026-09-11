@@ -412,7 +412,7 @@ class _FilesScreenState extends State<FilesScreen> with SingleTickerProviderStat
       return EmptyStateView(
         icon: LucideIcons.folderOpen,
         title: 'No Documents Found',
-        description: 'Import files from your device or process documents using PaperKit tools.',
+        description: 'Import files from your device or process documents using MASKERV tools.',
         actionLabel: 'Import Files',
         onAction: _importFiles,
       );

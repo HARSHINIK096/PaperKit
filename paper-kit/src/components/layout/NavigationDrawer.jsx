@@ -48,14 +48,14 @@ export default function NavigationDrawer({ isOpen, onClose }) {
     { id: 'trash', label: t('trash') || 'Trash', icon: Trash2, path: '/files?filter=trash' },
     { id: 'settings', label: t('settings') || 'Settings', icon: Settings, path: '/profile' },
     { id: 'help', label: t('help') || 'Help & Support', icon: HelpCircle, path: '/help' },
-    { id: 'share', label: t('share') || 'Share PaperKit', icon: Share2, action: 'share' },
-    { id: 'about', label: t('about') || 'About PaperKit', icon: Info, path: '/about' },
+    { id: 'share', label: t('share') || 'Share MASKERV', icon: Share2, action: 'share' },
+    { id: 'about', label: t('about') || 'About MASKERV', icon: Info, path: '/about' },
   ];
 
   function handleItemClick(item) {
     onClose();
     if (item.action === 'share') {
-      shareUrl('PaperKit', 'Check out PaperKit — All-in-One Open-Source Suite!', 'https://paperkit-web.onrender.com');
+      shareUrl('MASKERV', 'Check out MASKERV — All-in-One Open-Source Suite!', 'https://paperkit-web.onrender.com');
       return;
     }
     if (item.path) {
@@ -87,7 +87,7 @@ export default function NavigationDrawer({ isOpen, onClose }) {
             <div className="nav-drawer__avatar">{initials}</div>
             <div className="nav-drawer__user-details">
               <h2 className="nav-drawer__user-name">{user?.name || 'My Workspace'}</h2>
-              <p className="nav-drawer__user-email">{user?.email || 'PaperKit Studio'}</p>
+              <p className="nav-drawer__user-email">{user?.email || 'MASKERV Studio'}</p>
               <div className="nav-drawer__workspace-badge">
                 <ShieldCheck size={11} style={{ marginRight: '3px' }} />
                 <span>OPEN SOURCE STUDIO</span>
@@ -160,10 +160,9 @@ export default function NavigationDrawer({ isOpen, onClose }) {
 
         {/* Footer info */}
         <div className="nav-drawer__footer">
-          <span>PaperKit Open-Source PDF Suite</span>
+          <span>MASKERV Open-Source PDF Suite</span>
         </div>
       </div>
     </div>
   );
 }
-

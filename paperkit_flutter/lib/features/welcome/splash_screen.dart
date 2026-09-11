@@ -131,7 +131,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   const SizedBox(height: 28),
 
                   Text(
-                    'PaperKit',
+                    'MASKERV',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,

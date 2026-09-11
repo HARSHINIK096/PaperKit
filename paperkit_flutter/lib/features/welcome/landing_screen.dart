@@ -59,20 +59,18 @@ class _LandingScreenState extends State<LandingScreen> {
                         ),
                         child: Row(
                           children: [
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0F172A),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Center(
-                                child: Icon(LucideIcons.fileText, size: 13, color: Color(0xFF60A5FA)),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Image.asset(
+                                'assets/icons/app_icon.png',
+                                width: 22,
+                                height: 22,
+                                fit: BoxFit.cover,
                               ),
                             ),
                             const SizedBox(width: 7),
                             Text(
-                              'PaperKit',
+                              'MASKERV',
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w800,

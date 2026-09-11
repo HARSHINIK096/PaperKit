@@ -219,7 +219,7 @@ export default function MergePDFScreen() {
       const totalCombinedPages = files.reduce((acc, f) => acc + (f.pageCount || 1), 0);
       const outputFilename = files[0]?.file?.name 
         ? `${files[0].file.name.replace(/\.pdf$/i, '')}_merged.pdf`
-        : 'PaperKit_Merged.pdf';
+        : 'MASKERV_Merged.pdf';
 
       setMergeResult({
         download_url: result.download_url,

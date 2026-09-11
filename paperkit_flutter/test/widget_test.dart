@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:paperkit_flutter/core/providers/backend_provider.dart';
-import 'package:paperkit_flutter/core/providers/files_provider.dart';
-import 'package:paperkit_flutter/core/providers/history_provider.dart';
-import 'package:paperkit_flutter/core/providers/theme_provider.dart';
-import 'package:paperkit_flutter/main.dart';
+import 'package:maskerv_flutter/core/providers/backend_provider.dart';
+import 'package:maskerv_flutter/core/providers/files_provider.dart';
+import 'package:maskerv_flutter/core/providers/history_provider.dart';
+import 'package:maskerv_flutter/core/providers/theme_provider.dart';
+import 'package:maskerv_flutter/main.dart';
 
 void main() {
   testWidgets('PaperKit app launches smoke test', (WidgetTester tester) async {

@@ -69,7 +69,7 @@ export default function LandingScreen({ onFinish = null }) {
     { 
       name: 'TheOrionGD', 
       role: 'Engineering Student', 
-      content: 'The offline PDF compression and CAD report merging in PaperKit is insane. Cut our 180MB semester project submission down to 8MB in 2 seconds with zero formatting loss.', 
+      content: 'The offline PDF compression and CAD report merging in MASKERV is insane. Cut our 180MB semester project submission down to 8MB in 2 seconds with zero formatting loss.', 
       rating: 5 
     },
     { 
@@ -129,8 +129,8 @@ export default function LandingScreen({ onFinish = null }) {
       {/* Top Frosted Bar with Language Selector */}
       <header className="landing-screen__topbar">
         <div className="landing-screen__brand-pill">
-          <img src="/icon-48.png" alt="PaperKit Logo" width="24" height="24" style={{ borderRadius: '6px' }} />
-          <span className="landing-screen__brand-name">PaperKit</span>
+          <img src="/icon-48.png" alt="MASKERV Logo" width="24" height="24" style={{ borderRadius: '6px' }} />
+          <span className="landing-screen__brand-name">MASKERV</span>
         </div>
 
         <div className="landing-screen__top-actions">
@@ -263,7 +263,7 @@ export default function LandingScreen({ onFinish = null }) {
 
           {/* Bottom Glass Panel */}
           <div className="landing-glass-card__feature-panel">
-            <span className="landing-glass-card__feature-pill">PaperKit Studio</span>
+            <span className="landing-glass-card__feature-pill">MASKERV Studio</span>
             <h3 className="landing-glass-card__feature-title">
               {t('studio_speed_title').split('\n').map((line, i) => (
                 <span key={i}>{line}<br /></span>

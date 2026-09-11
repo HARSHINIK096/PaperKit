@@ -241,7 +241,7 @@ class AppDrawer extends StatelessWidget {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('PaperKit Open Source PDF Studio • Offline First & AI Powered'),
+                        content: Text('MASKERV Open Source PDF Studio • Offline First & AI Powered'),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -251,12 +251,12 @@ class AppDrawer extends StatelessWidget {
                 _buildNavTile(
                   context,
                   icon: LucideIcons.share2,
-                  title: 'Share PaperKit',
+                  title: 'Share MASKERV',
                   onTap: () {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Sharing PaperKit PDF & Media Studio...'),
+                        content: Text('Sharing MASKERV PDF & Media Studio...'),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -281,7 +281,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             child: Text(
-              'PaperKit Open-Source PDF Suite',
+              'MASKERV Open-Source PDF Suite',
               style: TextStyle(
                 fontSize: 11.5,
                 color: isDark ? AppColors.textMutedDark : const Color(0xFF94A3B8),

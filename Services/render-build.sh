@@ -2,7 +2,7 @@
 # exit on error
 set -o errexit
 
-echo "Starting PaperKit Render build process..."
+echo "Starting MASKERV Render build process..."
 
 # Upgrade pip
 python -m pip install --upgrade pip setuptools wheel

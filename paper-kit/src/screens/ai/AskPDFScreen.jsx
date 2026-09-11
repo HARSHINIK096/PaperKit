@@ -104,7 +104,7 @@ export default function AskPDFScreen() {
 
   function handleDownloadChatReport() {
     if (messages.length === 0) return;
-    const transcript = `# PaperKit AI Document Chat Report
+    const transcript = `# MASKERV AI Document Chat Report
 Document: ${selectedFile?.name || 'Document.pdf'}
 Timestamp: ${new Date().toLocaleString()}
 
@@ -219,7 +219,7 @@ ${messages.map(m => `### ${m.role === 'user' ? 'USER QUESTION' : 'AI ANSWER'}\n$
           {messages.length === 0 && !asking && (
             <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--color-text-muted)', fontSize: '13px' }}>
               <Bot size={32} color="var(--color-primary)" style={{ margin: '0 auto 8px', display: 'block' }} />
-              Ask any question about your document — PaperKit provides grounded answers with exact page citations.
+              Ask any question about your document — MASKERV provides grounded answers with exact page citations.
             </div>
           )}
 

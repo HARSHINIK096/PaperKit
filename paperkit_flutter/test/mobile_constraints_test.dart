@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:paperkit_flutter/core/providers/backend_provider.dart';
-import 'package:paperkit_flutter/core/providers/files_provider.dart';
-import 'package:paperkit_flutter/core/providers/history_provider.dart';
-import 'package:paperkit_flutter/core/providers/theme_provider.dart';
-import 'package:paperkit_flutter/core/theme/app_theme.dart';
-import 'package:paperkit_flutter/features/image_media_tools/media_downloader_screen.dart';
-import 'package:paperkit_flutter/features/pdf_tools/pdf_editor_screen.dart';
-import 'package:paperkit_flutter/features/home/home_screen.dart';
-import 'package:paperkit_flutter/features/tools/all_tools_screen.dart';
+import 'package:maskerv_flutter/core/providers/backend_provider.dart';
+import 'package:maskerv_flutter/core/providers/files_provider.dart';
+import 'package:maskerv_flutter/core/providers/history_provider.dart';
+import 'package:maskerv_flutter/core/providers/theme_provider.dart';
+import 'package:maskerv_flutter/core/theme/app_theme.dart';
+import 'package:maskerv_flutter/features/image_media_tools/media_downloader_screen.dart';
+import 'package:maskerv_flutter/features/pdf_tools/pdf_editor_screen.dart';
+import 'package:maskerv_flutter/features/home/home_screen.dart';
+import 'package:maskerv_flutter/features/tools/all_tools_screen.dart';
 
 Widget createMobileTestApp(Widget child, {Size mobileSize = const Size(390, 844)}) {
   return MultiProvider(
@@ -119,7 +119,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('PaperKit'), findsWidgets);
+      expect(find.text('MASKERV'), findsWidgets);
       expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(
