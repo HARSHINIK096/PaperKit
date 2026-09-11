@@ -596,3 +596,377 @@ async def create_searchable_pdf_route(request: Request, current_user: dict = Dep
         "size": len(pdf_bytes)
     }
 
+
+@router.post("/parse-invoice")
+async def parse_invoice_route(request: Request, current_user: dict = Depends(get_current_user)):
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    res = await ai_service.parse_invoice(text)
+    return {"result": res}
+
+
+@router.post("/parse-cv")
+async def parse_cv_route(request: Request, current_user: dict = Depends(get_current_user)):
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    res = await ai_service.parse_cv(text)
+    return {"result": res}
+
+
+@router.post("/generate-quiz")
+async def generate_quiz_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Generate structured quiz questions grounded in the supplied document.
+
+    Body params:
+    - file / file_id / text (required)
+    - question_types: comma-separated list, e.g. "mcq,true_false,short_answer" (optional)
+    - difficulty: easy | medium | hard (optional, default: medium)
+    - count: number of questions (optional, default: 10, max: 30)
+    """
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    raw_types = body.get("question_types", "")
+    question_types = [t.strip() for t in raw_types.split(",") if t.strip()] if raw_types else None
+    difficulty = body.get("difficulty", "medium")
+    try:
+        count = max(1, min(30, int(body.get("count", 10))))
+    except (ValueError, TypeError):
+        count = 10
+
+    try:
+        result = await ai_service.generate_quiz(text, question_types=question_types, difficulty=difficulty, count=count)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Quiz generation failed: {str(e)}")
+
+    return result
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ACADEMIC / RESEARCH ENDPOINTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@router.post("/analyze-research")
+async def analyze_research_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Deep structured analysis of a research paper.
+
+    Returns title, authors, abstract, methodology, results, limitations,
+    future work, references, and document sections with confidence labels.
+    """
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    try:
+        result = await ai_service.analyze_research_paper(text)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Research paper analysis failed: {str(e)}")
+
+    return result
+
+
+@router.post("/literature-review")
+async def literature_review_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Generate a structured literature review from multiple uploaded papers.
+
+    Accepts 2-8 file uploads or file_ids. Returns themes, methodology
+    comparison, key findings, conflicts, and synthesis.
+    """
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, _ = await _extract_ai_payload(request, user_id, db)
+
+    uploaded_files = body.get("_uploaded_files", [])
+    file_ids = body.get("file_ids", [])
+    if isinstance(file_ids, str):
+        try:
+            file_ids = json.loads(file_ids)
+        except Exception:
+            file_ids = [f.strip() for f in file_ids.split(",") if f.strip()]
+
+    texts: list[dict] = []
+
+    for file_bytes, meta in uploaded_files:
+        name = meta.get("original_filename", "Uploaded Paper")
+        try:
+            from services.processing import extract_text as _extract_text
+            t = _extract_text(file_bytes)
+            if not t.strip():
+                t = await ai_service.ocr_pdf(file_bytes, max_pages=8)
+        except Exception as e:
+            raise HTTPException(status_code=422, detail=f"Could not extract text from '{name}': {str(e)}")
+        if t.strip():
+            texts.append({"name": name, "text": t})
+
+    for fid in file_ids:
+        if not ObjectId.is_valid(fid):
+            continue
+        f = await db.files.find_one({"_id": ObjectId(fid), "user_id": user_id, "is_deleted": False})
+        if not f:
+            continue
+        from services.storage import get_file_bytes
+        file_bytes = get_file_bytes(f["storage_url"])
+        try:
+            from services.processing import extract_text as _extract_text
+            t = _extract_text(file_bytes)
+            if not t.strip():
+                t = await ai_service.ocr_pdf(file_bytes, max_pages=8)
+        except Exception as e:
+            raise HTTPException(status_code=422, detail=f"Could not extract text from file '{fid}': {str(e)}")
+        if t.strip():
+            texts.append({"name": f.get("original_filename", fid), "text": t})
+
+    if not texts:
+        raise HTTPException(status_code=400, detail="At least one document with extractable text is required.")
+    if len(texts) < 2:
+        raise HTTPException(status_code=400, detail="At least two documents are required for a literature review.")
+
+    try:
+        result = await ai_service.literature_review(texts)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Literature review generation failed: {str(e)}")
+
+    return result
+
+
+@router.post("/research-gaps")
+async def research_gaps_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Identify research gaps, limitations, and future work from research paper(s)."""
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    try:
+        result = await ai_service.research_gaps(text)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Research gap analysis failed: {str(e)}")
+
+    return result
+
+
+@router.post("/extract-citations")
+async def extract_citations_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Extract in-text citations and bibliography entries from a document."""
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    try:
+        result = await ai_service.extract_citations(text)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Citation extraction failed: {str(e)}")
+
+    return result
+
+
+@router.post("/format-citation")
+async def format_citation_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Format citations into a requested style (APA, MLA, IEEE, Chicago, Harvard, Vancouver).
+
+    Body params:
+    - citations: list of raw citation strings, OR
+    - text / file / file_id: document to extract citations from
+    - style: apa | mla | ieee | chicago | harvard | vancouver (default: apa)
+    """
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+
+    style = (body.get("style") or "apa").lower().strip()
+    valid_styles = {"apa", "mla", "ieee", "chicago", "harvard", "vancouver"}
+    if style not in valid_styles:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported citation style '{style}'. Supported: {', '.join(sorted(valid_styles))}"
+        )
+
+    raw_citations = body.get("citations")
+    if isinstance(raw_citations, str):
+        try:
+            raw_citations = json.loads(raw_citations)
+        except Exception:
+            raw_citations = [c.strip() for c in raw_citations.split("\n") if c.strip()]
+
+    if not raw_citations:
+        text = await _resolve_ai_text(body, file_tuple, user_id, db)
+        if not text:
+            raise HTTPException(status_code=400, detail="citations list, text, file, or file_id required")
+        try:
+            extracted = await ai_service.extract_citations(text)
+            raw_citations = [
+                e.get("bibliography_entry") or e.get("in_text") or ""
+                for e in extracted.get("bibliography", [])
+            ]
+            raw_citations = [c for c in raw_citations if c]
+        except Exception as e:
+            raise HTTPException(status_code=422, detail=f"Could not extract citations to format: {str(e)}")
+
+    if not raw_citations:
+        raise HTTPException(status_code=400, detail="No citations found to format.")
+
+    try:
+        result = await ai_service.format_citations(raw_citations, style=style)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Citation formatting failed: {str(e)}")
+
+    return result
+
+
+@router.post("/reference-check")
+async def reference_check_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Audit a document for reference consistency: missing, duplicates, formatting issues."""
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    try:
+        result = await ai_service.check_references(text)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Reference check failed: {str(e)}")
+
+    return result
+
+
+@router.post("/study-notes")
+async def study_notes_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Generate structured study notes with key concepts, definitions, and exam focus points.
+
+    Optional body param: focus_areas (comma-separated topics).
+    """
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    raw_focus = body.get("focus_areas", "")
+    focus_areas = [f.strip() for f in raw_focus.split(",") if f.strip()] if raw_focus else None
+
+    try:
+        result = await ai_service.generate_study_notes(text, focus_areas=focus_areas)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Study notes generation failed: {str(e)}")
+
+    return result
+
+
+@router.post("/generate-flashcards")
+async def generate_flashcards_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Generate spaced-repetition flashcards from document content.
+
+    Optional body params:
+    - card_types: comma-separated, e.g. "term_definition,question_answer"
+    - count: number of cards (default: 20, max: 50)
+    """
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    raw_types = body.get("card_types", "")
+    card_types = [t.strip() for t in raw_types.split(",") if t.strip()] if raw_types else None
+    try:
+        count = max(1, min(50, int(body.get("count", 20))))
+    except (ValueError, TypeError):
+        count = 20
+
+    try:
+        result = await ai_service.generate_flashcards(text, card_types=card_types, count=count)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Flashcard generation failed: {str(e)}")
+
+    return result
+
+
+@router.post("/generate-mindmap")
+async def generate_mindmap_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Generate a hierarchical mind map structure from document content."""
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    try:
+        result = await ai_service.generate_mindmap(text)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Mind map generation failed: {str(e)}")
+
+    return result
+
+
+@router.post("/generate-presentation")
+async def generate_presentation_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Generate presentation slide outline from document content.
+
+    Optional body param: slide_count (default: 10, max: 20).
+    """
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    try:
+        slide_count = max(3, min(20, int(body.get("slide_count", 10))))
+    except (ValueError, TypeError):
+        slide_count = 10
+
+    try:
+        result = await ai_service.generate_presentation(text, slide_count=slide_count)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Presentation generation failed: {str(e)}")
+
+    return result

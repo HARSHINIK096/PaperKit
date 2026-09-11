@@ -157,22 +157,6 @@ class _ToolHowItWorksCardState extends State<ToolHowItWorksCard> {
           ),
         ];
 
-      case 'media-downloader':
-      case 'youtube-downloader':
-      case 'spotify-downloader':
-        return const [
-          ToolHowItWorksItem(
-            icon: LucideIcons.downloadCloud,
-            title: 'Direct High-Bitrate Stream',
-            description: 'Download HD MP4 video streams and pristine 320kbps MP3 tracks.',
-          ),
-          ToolHowItWorksItem(
-            icon: LucideIcons.music,
-            title: 'Auto ID3 Tag Embedding',
-            description: 'Preserves track cover art, artist metadata, and album timestamps.',
-          ),
-        ];
-
       case 'video-converter':
       case 'video-to-mp4':
         return const [

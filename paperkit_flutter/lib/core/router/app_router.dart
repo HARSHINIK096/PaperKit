@@ -25,6 +25,10 @@ import '../../features/pdf_tools/organize_pages_screen.dart';
 import '../../features/pdf_tools/extract_pages_screen.dart';
 import '../../features/pdf_tools/pdf_to_pdfa_screen.dart';
 import '../../features/pdf_tools/pdf_editor_screen.dart';
+import '../../features/pdf_tools/nup_pdf_screen.dart';
+import '../../features/pdf_tools/booklet_pdf_screen.dart';
+import '../../features/pdf_tools/bates_stamping_screen.dart';
+import '../../features/pdf_tools/header_footer_screen.dart';
 
 // Security Tools
 import '../../features/security_tools/protect_pdf_screen.dart';
@@ -36,11 +40,13 @@ import '../../features/security_tools/metadata_screen.dart';
 import '../../features/image_media_tools/image_converter_screen.dart';
 import '../../features/image_media_tools/image_compressor_screen.dart';
 import '../../features/image_media_tools/image_manipulator_screen.dart';
-import '../../features/image_media_tools/media_downloader_screen.dart';
 import '../../features/image_media_tools/audio_converter_screen.dart';
 import '../../features/image_media_tools/video_converter_screen.dart';
 import '../../features/image_media_tools/video_compressor_screen.dart';
 import '../../features/image_media_tools/archive_studio_screen.dart';
+import '../../features/image_media_tools/image_resizer_screen.dart';
+import '../../features/image_media_tools/qr_generator_screen.dart';
+import '../../features/image_media_tools/barcode_generator_screen.dart';
 
 // AI Tools
 import '../../features/ai_tools/ai_tools_hub_screen.dart';
@@ -57,6 +63,23 @@ import '../../features/ai_tools/writing_assistant_screen.dart';
 import '../../features/ai_tools/quality_checker_screen.dart';
 import '../../features/ai_tools/extract_tables_screen.dart';
 import '../../features/ai_tools/image_enhancer_screen.dart';
+
+// Academic Tools
+import '../../features/academic/research_analyzer_screen.dart';
+import '../../features/academic/literature_review_screen.dart';
+import '../../features/academic/research_gap_screen.dart';
+import '../../features/academic/citation_extractor_screen.dart';
+import '../../features/academic/citation_formatter_screen.dart';
+import '../../features/academic/reference_checker_screen.dart';
+import '../../features/academic/study_notes_screen.dart';
+import '../../features/academic/quiz_generator_screen.dart';
+import '../../features/academic/flashcard_screen.dart';
+import '../../features/academic/mind_map_screen.dart';
+import '../../features/academic/presentation_generator_screen.dart';
+
+// Forms
+import '../../features/forms/form_filler_screen.dart';
+import '../../features/forms/form_creator_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -145,6 +168,10 @@ class AppRouter {
       GoRoute(path: '/tools/extract', builder: (context, state) => const ExtractPagesScreen()),
       GoRoute(path: '/tools/pdf-to-pdfa', builder: (context, state) => const PDFToPDFAScreen()),
       GoRoute(path: '/tools/pdf-editor', builder: (context, state) => const PDFEditorScreen()),
+      GoRoute(path: '/tools/nup', builder: (context, state) => const NupPdfScreen()),
+      GoRoute(path: '/tools/booklet', builder: (context, state) => const BookletPdfScreen()),
+      GoRoute(path: '/tools/bates', builder: (context, state) => const BatesStampingScreen()),
+      GoRoute(path: '/tools/headers', builder: (context, state) => const HeaderFooterScreen()),
 
       // Security Tools
       GoRoute(path: '/security/protect', builder: (context, state) => const ProtectPDFScreen()),
@@ -176,12 +203,9 @@ class AppRouter {
         ),
       ),
       GoRoute(path: '/tools/image-manipulator', builder: (context, state) => const ImageManipulatorScreen()),
-      GoRoute(
-        path: '/tools/media-downloader',
-        builder: (context, state) => MediaDownloaderScreen(
-          initialType: state.uri.queryParameters['type'],
-        ),
-      ),
+      GoRoute(path: '/tools/image-resizer', builder: (context, state) => const ImageResizerScreen()),
+      GoRoute(path: '/tools/qr-generator', builder: (context, state) => const QrGeneratorScreen()),
+      GoRoute(path: '/tools/barcode-generator', builder: (context, state) => const BarcodeGeneratorScreen()),
       GoRoute(
         path: '/tools/audio-converter',
         builder: (context, state) => AudioConverterScreen(
@@ -232,6 +256,23 @@ class AppRouter {
       GoRoute(path: '/ai/quality-checker', builder: (context, state) => const QualityCheckerScreen()),
       GoRoute(path: '/ai/extract-tables', builder: (context, state) => const ExtractTablesScreen()),
       GoRoute(path: '/ai/image-enhancer', builder: (context, state) => const ImageEnhancerScreen()),
+
+      // Academic Tools
+      GoRoute(path: '/academic/research-analyzer', builder: (context, state) => const ResearchAnalyzerScreen()),
+      GoRoute(path: '/academic/literature-review', builder: (context, state) => const LiteratureReviewScreen()),
+      GoRoute(path: '/academic/research-gap', builder: (context, state) => const ResearchGapScreen()),
+      GoRoute(path: '/academic/citation-extractor', builder: (context, state) => const CitationExtractorScreen()),
+      GoRoute(path: '/academic/citation-formatter', builder: (context, state) => const CitationFormatterScreen()),
+      GoRoute(path: '/academic/reference-checker', builder: (context, state) => const ReferenceCheckerScreen()),
+      GoRoute(path: '/academic/study-notes', builder: (context, state) => const StudyNotesScreen()),
+      GoRoute(path: '/academic/quiz-generator', builder: (context, state) => const QuizGeneratorScreen()),
+      GoRoute(path: '/academic/flashcards', builder: (context, state) => const FlashcardScreen()),
+      GoRoute(path: '/academic/mind-map', builder: (context, state) => const MindMapScreen()),
+      GoRoute(path: '/academic/presentation-generator', builder: (context, state) => const PresentationGeneratorScreen()),
+
+      // Forms
+      GoRoute(path: '/forms/filler', builder: (context, state) => const FormFillerScreen()),
+      GoRoute(path: '/forms/creator', builder: (context, state) => const FormCreatorScreen()),
     ],
     errorBuilder: (context, state) => const AllToolsScreen(),
   );

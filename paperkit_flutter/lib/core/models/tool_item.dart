@@ -4,12 +4,16 @@ import '../theme/app_colors.dart';
 enum ToolCategory {
   pdf,
   ai,
+  scanner,
   security,
   convert,
   image,
   video,
   audio,
   archive,
+  academic,
+  forms,
+  utilities,
   media,
 }
 
@@ -25,6 +29,8 @@ class ToolItem {
   final bool isNew;
   final bool isPro;
   final bool isAi;
+  /// Searchable keywords for tool discovery (in addition to label/description)
+  final List<String> tags;
 
   const ToolItem({
     required this.id,
@@ -38,6 +44,7 @@ class ToolItem {
     this.isNew = false,
     this.isPro = false,
     this.isAi = false,
+    this.tags = const [],
   });
 
   static Color getSoftColor(Color baseColor) {
@@ -52,3 +59,4 @@ class ToolItem {
     return AppColors.primarySoft;
   }
 }
+

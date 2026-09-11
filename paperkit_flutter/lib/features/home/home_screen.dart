@@ -266,15 +266,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 26),
 
-          // ── 8. Media Downloader (YouTube & Spotify) Section ──────
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Media Downloader (YouTube & Spotify)',
-            categoryId: 'media',
-            tools: AppTools.mediaDownloaderTools,
-          ),
-          const SizedBox(height: 26),
 
           // ── 9. Video Format Converter Section ────────────────────
           _buildCategorySection(

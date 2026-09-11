@@ -70,10 +70,6 @@ export const DEFAULT_REGISTRY = [
   { toolId: 'audio-to-mp3', name: 'Convert to MP3', category: 'Audio Tools', route: '/tools/audio-converter?to=mp3', description: 'Convert audio tracks to standard MP3 format', availability: { available: true } },
   { toolId: 'audio-to-wav', name: 'Convert to WAV', category: 'Audio Tools', route: '/tools/audio-converter?to=wav', description: 'Convert audio to lossless uncompressed WAV', availability: { available: true } },
   { toolId: 'audio-to-ogg', name: 'Convert to OGG', category: 'Audio Tools', route: '/tools/audio-converter?to=ogg', description: 'Convert audio to web-optimized OGG Vorbis', availability: { available: true } },
-
-  // Media Downloader
-  { toolId: 'youtube-downloader', name: 'YouTube Video Downloader', category: 'Media Downloader', route: '/tools/media-downloader?type=youtube', description: 'Download YouTube videos as high-res MP4', availability: { available: true } },
-  { toolId: 'spotify-downloader', name: 'Spotify Audio Downloader', category: 'Media Downloader', route: '/tools/media-downloader?type=spotify', description: 'Download Spotify tracks as high-bitrate MP3', availability: { available: true } },
 ];
 
 let cachedRegistry = DEFAULT_REGISTRY;

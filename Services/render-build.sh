@@ -29,18 +29,7 @@ python -m pip install --upgrade pip setuptools wheel
 
 # Install Python dependencies
 pip install -r requirements.txt
-pip install --upgrade "yt-dlp[default]" yt-dlp-ejs bgutil-ytdlp-pot-provider imageio-ffmpeg certifi
-
-# Install POT Server Node dependencies if available
-if [ -d "pot_server" ] && [ -f "pot_server/package.json" ]; then
-  echo "Installing PO-token provider dependencies..."
-  if command -v npm >/dev/null 2>&1 || [ -f "bin/npm" ]; then
-    (cd pot_server && (npm ci || npm install || ../bin/npm install))
-    echo "PO-token provider setup complete."
-  else
-    echo "Warning: npm not found. Local PO-token server dependencies could not be installed."
-  fi
-fi
+pip install --upgrade imageio-ffmpeg certifi
 
 # Attempt to download static FFmpeg binary from reliable GitHub release mirror
 echo "Downloading FFmpeg binary for Linux..."
@@ -51,17 +40,10 @@ if [ -f ffmpeg.tar.xz ]; then
   tar -xf ffmpeg.tar.xz 2>/dev/null || true
   find . -maxdepth 3 -type f -name "ffmpeg" -exec cp {} bin/ \; 2>/dev/null || true
   find . -maxdepth 3 -type f -name "ffprobe" -exec cp {} bin/ \; 2>/dev/null || true
-  chmod +x bin/ffmpeg bin/ffprobe bin/node bin/npm 2>/dev/null || true
+  chmod +x bin/ffmpeg bin/ffprobe 2>/dev/null || true
   rm -rf ffmpeg.tar.xz ffmpeg-* 2>/dev/null || true
 fi
 
-# Print safe diagnostic version info
-echo "Build verification:"
-python -c "import yt_dlp.version; print('yt-dlp version:', yt_dlp.version.__version__)"
-if command -v node >/dev/null 2>&1 || [ -f "bin/node" ]; then
-  node_ver=$(node -v 2>/dev/null || bin/node -v 2>/dev/null || echo "unknown")
-  echo "Node.js available: $node_ver"
-fi
-
 echo "Build process completed successfully."
+
 

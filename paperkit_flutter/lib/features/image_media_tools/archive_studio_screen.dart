@@ -25,14 +25,17 @@ class ArchiveStudioScreen extends StatefulWidget {
 class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   
-  // Create ZIP state
+  // Create Archive state
   final List<File> _filesToZip = [];
   final TextEditingController _zipNameController = TextEditingController(text: 'Archive');
+  final TextEditingController _createPasswordController = TextEditingController();
+  String _selectedFormat = 'zip';
   bool _isZipping = false;
   File? _createdZip;
 
-  // Extract ZIP state
+  // Extract Archive state
   File? _archiveToExtract;
+  final TextEditingController _extractPasswordController = TextEditingController();
   bool _isExtracting = false;
   List<File> _extractedFiles = [];
 
@@ -63,16 +66,20 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
 
     try {
       final name = _zipNameController.text.trim().isEmpty ? 'Archive' : _zipNameController.text.trim();
-      final outputFile = await ArchiveEngine.createZip(
+      final password = _createPasswordController.text.trim().isEmpty ? null : _createPasswordController.text.trim();
+      
+      final outputFile = await ArchiveEngine.createArchive(
         files: _filesToZip,
         archiveName: '${name}_${DateTime.now().millisecondsSinceEpoch}',
+        format: _selectedFormat,
+        password: password,
       );
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = outputFile.uri.pathSegments.last;
 
       final doc = DocumentFile(
-        id: 'zip_$timestamp',
+        id: 'archive_$timestamp',
         name: fileName,
         path: outputFile.path,
         size: await outputFile.length(),
@@ -86,7 +93,7 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
               HistoryItem(
                 id: 'hist_$timestamp',
                 toolId: 'archive-studio',
-                toolName: 'Create ZIP Archive',
+                toolName: 'Create Archive (${_selectedFormat.toUpperCase()})',
                 fileName: fileName,
                 outputPath: outputFile.path,
                 fileSize: await outputFile.length(),
@@ -100,14 +107,14 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Created ZIP archive with ${_filesToZip.length} files!')),
+          SnackBar(content: Text('Created ${_selectedFormat.toUpperCase()} archive with ${_filesToZip.length} files!')),
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isZipping = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Zip creation failed: $e')),
+          SnackBar(content: Text('Archive creation failed: $e')),
         );
       }
     }
@@ -116,7 +123,7 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
   Future<void> _pickArchiveToExtract() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['zip', 'tar', 'gz', 'rar', '7z', 'bz2'],
+      allowedExtensions: ['zip', 'tar', 'gz', 'rar', '7z', 'bz2', 'tgz'],
     );
 
     if (result != null && result.files.single.path != null) {
@@ -132,7 +139,8 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
     setState(() => _isExtracting = true);
 
     try {
-      final files = await ArchiveEngine.extractArchive(_archiveToExtract!);
+      final password = _extractPasswordController.text.trim().isEmpty ? null : _extractPasswordController.text.trim();
+      final files = await ArchiveEngine.extractArchive(_archiveToExtract!, password: password);
       final filesProv = context.read<FilesProvider>();
 
       for (final f in files) {
@@ -216,6 +224,34 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
             prefixIcon: Icon(LucideIcons.archive, size: 18),
           ),
         ),
+        const SizedBox(height: 12),
+
+        DropdownButtonFormField<String>(
+          value: _selectedFormat,
+          decoration: const InputDecoration(
+            labelText: 'Archive Format',
+            prefixIcon: Icon(LucideIcons.package, size: 18),
+          ),
+          items: const [
+            DropdownMenuItem(value: 'zip', child: Text('ZIP (.zip)')),
+            DropdownMenuItem(value: 'tar', child: Text('TAR (.tar)')),
+            DropdownMenuItem(value: 'tar.gz', child: Text('TAR.GZ (.tar.gz)')),
+          ],
+          onChanged: (val) {
+            if (val != null) setState(() => _selectedFormat = val);
+          },
+        ),
+        const SizedBox(height: 12),
+
+        TextField(
+          controller: _createPasswordController,
+          obscureText: true,
+          decoration: const InputDecoration(
+            labelText: 'Encryption Password (Optional)',
+            hintText: 'Leave empty for no password',
+            prefixIcon: Icon(LucideIcons.lock, size: 18),
+          ),
+        ),
         const SizedBox(height: 16),
 
         Row(
@@ -253,7 +289,7 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
         const SizedBox(height: 24),
 
         ActionButton(
-          label: 'Create .ZIP Archive',
+          label: 'Create ${_selectedFormat.toUpperCase()} Archive',
           icon: LucideIcons.archive,
           isLoading: _isZipping,
           onPressed: _filesToZip.isNotEmpty ? _createZip : null,
@@ -262,7 +298,7 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
         if (_createdZip != null) ...[
           const SizedBox(height: 16),
           ActionButton(
-            label: 'Open Created ZIP',
+            label: 'Open Created Archive',
             icon: LucideIcons.externalLink,
             isSecondary: true,
             onPressed: () => OpenFilex.open(_createdZip!.path),
@@ -281,7 +317,7 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
             child: OutlinedButton.icon(
               onPressed: _pickArchiveToExtract,
               icon: const Icon(LucideIcons.archive, size: 20),
-              label: const Text('Choose .ZIP / .TAR / .RAR File'),
+              label: const Text('Choose .ZIP / .TAR / .GZ / .7Z / .RAR File'),
               style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(18)),
             ),
           )
@@ -290,6 +326,17 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
             leading: const Icon(LucideIcons.archive, color: AppColors.toolOrange),
             title: Text(_archiveToExtract!.uri.pathSegments.last, style: const TextStyle(fontWeight: FontWeight.bold)),
             trailing: TextButton(onPressed: _pickArchiveToExtract, child: const Text('Change')),
+          ),
+          const SizedBox(height: 12),
+
+          TextField(
+            controller: _extractPasswordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Decryption Password (If Encrypted)',
+              hintText: 'Enter password if archive is protected',
+              prefixIcon: Icon(LucideIcons.key, size: 18),
+            ),
           ),
           const SizedBox(height: 20),
 

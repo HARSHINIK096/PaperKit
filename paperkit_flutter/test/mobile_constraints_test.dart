@@ -6,7 +6,6 @@ import 'package:maskerv_flutter/core/providers/files_provider.dart';
 import 'package:maskerv_flutter/core/providers/history_provider.dart';
 import 'package:maskerv_flutter/core/providers/theme_provider.dart';
 import 'package:maskerv_flutter/core/theme/app_theme.dart';
-import 'package:maskerv_flutter/features/image_media_tools/media_downloader_screen.dart';
 import 'package:maskerv_flutter/features/pdf_tools/pdf_editor_screen.dart';
 import 'package:maskerv_flutter/features/home/home_screen.dart';
 import 'package:maskerv_flutter/features/tools/all_tools_screen.dart';
@@ -43,45 +42,6 @@ void main() {
   });
 
   group('Mobile Phone Constraints Tests (360px & 390px Viewports)', () {
-    testWidgets('MediaDownloaderScreen - YouTube & Spotify UI on mobile constraints (360x780)', (tester) async {
-      tester.view.physicalSize = const Size(1080, 2340); // 360 x 780 @ 3.0x
-      tester.view.devicePixelRatio = 3.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        createMobileTestApp(
-          const MediaDownloaderScreen(initialType: 'youtube'),
-          mobileSize: const Size(360, 780),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Verify header and UI render without overflow
-      expect(find.text('Media Downloader'), findsOneWidget);
-      expect(find.text('YouTube Video'), findsOneWidget);
-      expect(find.text('Spotify Audio'), findsOneWidget);
-      expect(find.text('Download Media'), findsOneWidget);
-
-      // Enter YouTube URL
-      final textField = find.byType(TextField);
-      expect(textField, findsOneWidget);
-      await tester.enterText(textField, 'https://youtu.be/SoZu9nu6m0o');
-      await tester.pumpAndSettle();
-      expect(find.text('https://youtu.be/SoZu9nu6m0o'), findsOneWidget);
-
-      // Switch to Spotify on mobile touch
-      await tester.tap(find.text('Spotify Audio'));
-      await tester.pumpAndSettle();
-
-      // Enter Spotify URL
-      await tester.enterText(textField, 'https://open.spotify.com/track/47RTQoh3pzjhWLUMllNRRJ');
-      await tester.pumpAndSettle();
-      expect(find.text('https://open.spotify.com/track/47RTQoh3pzjhWLUMllNRRJ'), findsOneWidget);
-
-      // Verify no RenderFlex overflows
-      expect(tester.takeException(), isNull);
-    });
 
     testWidgets('PDFEditorScreen - Mobile Phone Constraints (390x844)', (tester) async {
       tester.view.physicalSize = const Size(1170, 2532); // 390 x 844 @ 3.0x

@@ -639,3 +639,580 @@ Document:
 {text[:16000]}"""
     return await generate_text(prompt)
 
+
+async def parse_invoice(text: str) -> str:
+    """Extract structured JSON invoice details (vendor, total, tax, items, date)."""
+    prompt = f"""Extract structured invoice/receipt data from this document.
+Return a valid JSON object with keys: vendor_name, invoice_date, total_amount, currency, tax_amount, line_items (list of description, quantity, price).
+
+Document:
+{text[:12000]}"""
+    return await generate_text(prompt)
+
+
+async def parse_cv(text: str) -> str:
+    """Extract structured CV/Resume candidate summary, skills, experience, and contact."""
+    prompt = f"""Extract key candidate profile information from this resume/CV.
+Return a clean Markdown summary containing:
+- Contact Information
+- Professional Summary
+- Technical & Soft Skills
+- Work Experience
+- Education & Certifications
+
+Resume Text:
+{text[:12000]}"""
+    return await generate_text(prompt)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ACADEMIC / RESEARCH FUNCTIONS
+# All functions return structured JSON parsed from real document content.
+# No hardcoded fallback content is generated when the document lacks data.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+async def generate_quiz(text: str, question_types: list[str] = None, difficulty: str = "medium", count: int = 10) -> dict:
+    """Generate structured quiz questions grounded in the supplied document text.
+
+    Returns a dict with a 'questions' list, each containing:
+    - type, difficulty, question, options, answer, explanation, source_section, source_page_ref
+    """
+    if not text or not text.strip():
+        raise ValueError("Document text is required to generate quiz questions.")
+
+    types_str = ", ".join(question_types) if question_types else "mcq, true_false, short_answer"
+    prompt = f"""You are an expert educational assessment designer.
+
+Generate exactly {count} quiz questions based ONLY on the content of the document below.
+- Allowed types: {types_str}
+- Target difficulty: {difficulty}
+- Every question MUST be directly grounded in the document text.
+- For MCQ: provide exactly 4 options (A, B, C, D). The answer must match one of the option letters.
+- For true_false: provide "True" or "False" as the answer.
+- Cite the source section or concept in source_section when available.
+- Do NOT invent content, facts, or details not present in the document.
+
+Return ONLY a valid JSON object in this exact format (no markdown, no explanation before or after):
+{{
+  "questions": [
+    {{
+      "type": "mcq",
+      "difficulty": "medium",
+      "question": "...",
+      "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+      "answer": "A",
+      "explanation": "...",
+      "source_section": "...",
+      "source_page_ref": null
+    }}
+  ]
+}}
+
+Document:
+{text[:18000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "questions" not in data or not isinstance(data["questions"], list):
+        raise ValueError(f"AI did not return a valid quiz structure. Response: {raw[:300]}")
+    if len(data["questions"]) == 0:
+        raise ValueError("AI returned an empty question list. The document may not contain enough content for quiz generation.")
+    return data
+
+
+async def analyze_research_paper(text: str) -> dict:
+    """Perform deep structured analysis of a research paper.
+
+    Returns structured JSON with sections, metadata, methodology, results, etc.
+    Confidence labels ('detected', 'inferred', 'unavailable') reflect how each
+    field was derived from the document.
+    """
+    if not text or not text.strip():
+        raise ValueError("Document text is required to analyze a research paper.")
+
+    prompt = f"""You are an expert academic document analyzer.
+
+Perform a comprehensive structural analysis of the research paper below.
+- Extract only information that is present or clearly implied in the document.
+- For each field that cannot be determined from the document, set it to null and mark confidence as "unavailable".
+- Do NOT invent or hallucinate any metadata, citations, methodology details, or results.
+- Confidence values: "detected" (explicitly stated), "inferred" (clearly implied), "unavailable" (not in document).
+
+Return ONLY a valid JSON object in this exact format:
+{{
+  "title": "...",
+  "authors": [],
+  "year": "...",
+  "abstract": "...",
+  "keywords": [],
+  "research_problem": "...",
+  "objectives": [],
+  "research_questions": [],
+  "hypothesis": "...",
+  "methodology": "...",
+  "dataset": "...",
+  "experiments": "...",
+  "results": "...",
+  "metrics": [],
+  "limitations": [],
+  "conclusion": "...",
+  "future_work": [],
+  "important_findings": [],
+  "overall_confidence": "detected",
+  "sections": [
+    {{
+      "title": "...",
+      "content": "...",
+      "page_start": null,
+      "page_end": null,
+      "confidence": "detected"
+    }}
+  ],
+  "references": [
+    {{
+      "in_text": "...",
+      "bibliography_entry": "...",
+      "doi": null,
+      "url": null,
+      "title": null,
+      "authors": [],
+      "year": null,
+      "journal": null,
+      "is_complete": false,
+      "missing_fields": [],
+      "source_page_ref": null
+    }}
+  ]
+}}
+
+Research Paper:
+{text[:22000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "title" not in data and "sections" not in data:
+        raise ValueError(f"AI did not return a valid research analysis structure. Response: {raw[:300]}")
+    return data
+
+
+async def literature_review(texts: list[dict]) -> dict:
+    """Generate a structured literature review from multiple paper texts.
+
+    texts: list of dicts with keys 'name' and 'text'.
+    """
+    if not texts:
+        raise ValueError("At least one document is required for literature review.")
+
+    papers_blob = ""
+    for i, p in enumerate(texts[:8]):  # cap at 8 papers to stay within context window
+        snippet = p.get("text", "")[:4000]
+        papers_blob += f"\n\n### Paper {i+1}: {p.get('name', f'Paper {i+1}')}\n{snippet}"
+
+    prompt = f"""You are an expert academic researcher conducting a systematic literature review.
+
+Based ONLY on the papers provided below, produce a structured literature review.
+- Do NOT include information not present in any of the supplied papers.
+- Clearly cite which paper (Paper 1, Paper 2, etc.) supports each finding.
+- Identify common themes, methodological differences, and conflicting results across papers.
+
+Return ONLY a valid JSON object:
+{{
+  "overview": "...",
+  "research_themes": [
+    {{
+      "theme": "...",
+      "description": "...",
+      "supporting_papers": ["Paper 1", "Paper 2"]
+    }}
+  ],
+  "methodology_comparison": [
+    {{
+      "aspect": "...",
+      "comparison": {{"Paper 1": "...", "Paper 2": "..."}}
+    }}
+  ],
+  "key_findings": [
+    {{
+      "finding": "...",
+      "source_papers": ["Paper 1"],
+      "strength": "strong"
+    }}
+  ],
+  "conflicts": [
+    {{
+      "topic": "...",
+      "positions": {{"Paper 1": "...", "Paper 2": "..."}}
+    }}
+  ],
+  "synthesis": "...",
+  "identified_gaps": [],
+  "recommended_future_directions": []
+}}
+
+Papers:
+{papers_blob}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "overview" not in data and "key_findings" not in data:
+        raise ValueError(f"AI did not return a valid literature review structure. Response: {raw[:300]}")
+    return data
+
+
+async def research_gaps(text: str) -> dict:
+    """Identify research gaps, limitations, and future work from paper(s)."""
+    if not text or not text.strip():
+        raise ValueError("Document text is required to identify research gaps.")
+
+    prompt = f"""You are an expert research gap analyst.
+
+Identify research gaps, methodological limitations, unresolved problems, and suggested future work
+from the paper(s) below. Base your analysis ONLY on what the document explicitly or implicitly states.
+
+Do NOT invent gaps not suggested by the document.
+
+Return ONLY a valid JSON object:
+{{
+  "summary": "...",
+  "gaps": [
+    {{
+      "gap": "...",
+      "evidence": "...",
+      "source_papers": [],
+      "source_section": "...",
+      "gap_type": "methodology",
+      "potential_research_questions": ["...", "..."]
+    }}
+  ],
+  "limitations_stated_by_authors": [],
+  "methodological_concerns": [],
+  "dataset_gaps": [],
+  "evaluation_gaps": []
+}}
+
+Document:
+{text[:20000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "gaps" not in data:
+        raise ValueError(f"AI did not return a valid gap analysis structure. Response: {raw[:300]}")
+    return data
+
+
+async def extract_citations(text: str) -> dict:
+    """Extract in-text citations and bibliography entries with metadata."""
+    if not text or not text.strip():
+        raise ValueError("Document text is required to extract citations.")
+
+    prompt = f"""You are an expert academic citation extractor.
+
+Extract ALL in-text citations and ALL bibliography/reference entries from the document below.
+- For each citation, identify whether it is complete or has missing fields.
+- Extract DOI, URL, journal, volume, issue, pages, year, authors where available.
+- Do NOT invent any citation metadata not present in the document text.
+
+Return ONLY a valid JSON object:
+{{
+  "total_in_text": 0,
+  "total_bibliography": 0,
+  "in_text_citations": [
+    {{
+      "in_text": "...",
+      "source_page_ref": null
+    }}
+  ],
+  "bibliography": [
+    {{
+      "bibliography_entry": "...",
+      "title": "...",
+      "authors": [],
+      "year": null,
+      "journal": null,
+      "volume": null,
+      "issue": null,
+      "pages": null,
+      "doi": null,
+      "url": null,
+      "publisher": null,
+      "is_complete": false,
+      "missing_fields": [],
+      "source_page_ref": null
+    }}
+  ]
+}}
+
+Document:
+{text[:20000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "bibliography" not in data and "in_text_citations" not in data:
+        raise ValueError(f"AI did not return a valid citation extraction structure. Response: {raw[:300]}")
+    return data
+
+
+async def format_citations(citations: list[str], style: str = "apa") -> dict:
+    """Format raw citation strings into the requested citation style.
+
+    citations: list of raw citation strings (e.g. bibliography entries, DOIs, titles).
+    style: apa | mla | ieee | chicago | harvard | vancouver
+    """
+    if not citations:
+        raise ValueError("At least one citation is required.")
+
+    valid_styles = {"apa", "mla", "ieee", "chicago", "harvard", "vancouver"}
+    style = style.lower().strip()
+    if style not in valid_styles:
+        raise ValueError(f"Unsupported citation style '{style}'. Supported: {', '.join(sorted(valid_styles))}")
+
+    citations_text = "\n".join([f"{i+1}. {c}" for i, c in enumerate(citations[:50])])
+
+    prompt = f"""You are an expert academic citation formatter.
+
+Format each of the following citations in {style.upper()} style.
+- Format ONLY the citations provided below using the information available in them.
+- Do NOT invent missing author names, years, journal names, or other metadata.
+- If a field is genuinely missing from the input, format it as best as possible or omit it gracefully.
+- Output each citation on a numbered line.
+
+Return ONLY a valid JSON object:
+{{
+  "style": "{style}",
+  "formatted": [
+    {{
+      "original": "...",
+      "formatted": "...",
+      "is_complete": true,
+      "missing_fields": []
+    }}
+  ]
+}}
+
+Citations to format:
+{citations_text}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "formatted" not in data or not isinstance(data["formatted"], list):
+        raise ValueError(f"AI did not return valid formatted citations. Response: {raw[:300]}")
+    return data
+
+
+async def check_references(text: str) -> dict:
+    """Check reference consistency: missing citations, uncited references, formatting issues."""
+    if not text or not text.strip():
+        raise ValueError("Document text is required to check references.")
+
+    prompt = f"""You are an expert academic reference auditor.
+
+Audit the references and citations in the document below for:
+1. In-text citations that have no matching bibliography entry (missing_reference)
+2. Bibliography entries not cited in the body text (uncited_reference)
+3. Duplicate references (duplicate_reference)
+4. Inconsistent author names across in-text and bibliography (inconsistent_author)
+5. Inconsistent years (inconsistent_year)
+6. Inconsistent formatting within the bibliography (inconsistent_formatting)
+7. Missing DOIs where expected (missing_doi)
+8. Malformed or truncated references (malformed_reference)
+9. References not in the expected ordering (ordering_issue)
+10. Numbering inconsistencies in numbered reference styles (numbering_inconsistency)
+
+Base your audit ONLY on what is present in the document. Do NOT flag issues that don't exist.
+
+Return ONLY a valid JSON object:
+{{
+  "total_issues": 0,
+  "overall_score": 85,
+  "summary": "...",
+  "issues": [
+    {{
+      "type": "missing_reference",
+      "description": "...",
+      "source_text": "...",
+      "source_page_ref": null
+    }}
+  ],
+  "total_in_text_citations": 0,
+  "total_bibliography_entries": 0,
+  "matched_citations": 0,
+  "unmatched_citations": 0
+}}
+
+Document:
+{text[:20000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "issues" not in data:
+        raise ValueError(f"AI did not return a valid reference check structure. Response: {raw[:300]}")
+    return data
+
+
+async def generate_study_notes(text: str, focus_areas: list[str] = None) -> dict:
+    """Generate structured study notes from document content."""
+    if not text or not text.strip():
+        raise ValueError("Document text is required to generate study notes.")
+
+    focus_str = f"\nFocus especially on: {', '.join(focus_areas)}" if focus_areas else ""
+
+    prompt = f"""You are an expert educational content summarizer and study guide creator.
+
+Generate comprehensive, structured study notes from the document below.{focus_str}
+- Extract content ONLY from the document. Do NOT add information not present in the text.
+- Organize by logical sections matching the document structure.
+- For each section, identify key points, definitions, formulas, examples, and exam-relevant facts.
+
+Return ONLY a valid JSON object:
+{{
+  "document_title": "...",
+  "total_sections": 0,
+  "notes": [
+    {{
+      "section": "...",
+      "key_points": [],
+      "definitions": {{"term": "definition"}},
+      "important_facts": [],
+      "formulas": [],
+      "examples": [],
+      "exam_focus_points": [],
+      "source_page_ref": null
+    }}
+  ]
+}}
+
+Document:
+{text[:20000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "notes" not in data or not isinstance(data["notes"], list):
+        raise ValueError(f"AI did not return valid study notes. Response: {raw[:300]}")
+    if len(data["notes"]) == 0:
+        raise ValueError("AI returned empty study notes. The document may not contain enough structured content.")
+    return data
+
+
+async def generate_flashcards(text: str, card_types: list[str] = None, count: int = 20) -> dict:
+    """Generate flashcards from document content."""
+    if not text or not text.strip():
+        raise ValueError("Document text is required to generate flashcards.")
+
+    types_str = ", ".join(card_types) if card_types else "term_definition, question_answer, concept_example"
+
+    prompt = f"""You are an expert spaced-repetition learning content creator.
+
+Generate exactly {count} flashcards from the document below.
+- Card types to include: {types_str}
+- Every flashcard MUST be grounded in the document content. Do NOT invent facts.
+- For term_definition: front = term, back = definition.
+- For question_answer: front = question, back = answer.
+- For concept_example: front = concept, back = example from document.
+- For formula_explanation: front = formula, back = explanation.
+
+Return ONLY a valid JSON object:
+{{
+  "total": 0,
+  "flashcards": [
+    {{
+      "front": "...",
+      "back": "...",
+      "type": "term_definition",
+      "source_section": "...",
+      "source_page_ref": null
+    }}
+  ]
+}}
+
+Document:
+{text[:18000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "flashcards" not in data or not isinstance(data["flashcards"], list):
+        raise ValueError(f"AI did not return valid flashcards. Response: {raw[:300]}")
+    if len(data["flashcards"]) == 0:
+        raise ValueError("AI returned empty flashcard list. The document may not contain enough distinct concepts.")
+    return data
+
+
+async def generate_mindmap(text: str) -> dict:
+    """Generate a hierarchical mind map structure from document content."""
+    if not text or not text.strip():
+        raise ValueError("Document text is required to generate a mind map.")
+
+    prompt = f"""You are an expert knowledge graph and mind map architect.
+
+Generate a hierarchical mind map of the document's key concepts and structure.
+- The root node should be the document's main topic or title.
+- Each branch should represent a major section, theme, or concept.
+- Sub-nodes represent supporting details, definitions, or examples from the document.
+- Base the structure ONLY on the document content.
+- Each node must have a unique id.
+
+Return ONLY a valid JSON object:
+{{
+  "root": {{
+    "id": "root",
+    "label": "...",
+    "source_ref": null,
+    "children": [
+      {{
+        "id": "node_1",
+        "label": "...",
+        "source_ref": "...",
+        "children": [
+          {{
+            "id": "node_1_1",
+            "label": "...",
+            "source_ref": null,
+            "children": []
+          }}
+        ]
+      }}
+    ]
+  }}
+}}
+
+Document:
+{text[:18000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "root" not in data:
+        raise ValueError(f"AI did not return a valid mind map structure. Response: {raw[:300]}")
+    return data
+
+
+async def generate_presentation(text: str, slide_count: int = 10) -> dict:
+    """Generate presentation slide structure from document content."""
+    if not text or not text.strip():
+        raise ValueError("Document text is required to generate a presentation.")
+
+    prompt = f"""You are an expert academic presentation designer.
+
+Create a structured {slide_count}-slide presentation outline from the document below.
+- Base ALL content on the document. Do NOT add content not present in the document.
+- Slide types: title, agenda, intro, methodology, results, discussion, conclusion, references
+- Each slide must have a clear title, up to 6 bullet points, and speaker notes.
+- The final slide should list key references from the document.
+
+Return ONLY a valid JSON object:
+{{
+  "presentation_title": "...",
+  "total_slides": 0,
+  "slides": [
+    {{
+      "slide_number": 1,
+      "slide_type": "title",
+      "title": "...",
+      "bullet_points": [],
+      "notes": "...",
+      "source_ref": null
+    }}
+  ]
+}}
+
+Document:
+{text[:18000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "slides" not in data or not isinstance(data["slides"], list):
+        raise ValueError(f"AI did not return valid presentation slides. Response: {raw[:300]}")
+    if len(data["slides"]) == 0:
+        raise ValueError("AI returned empty slide list. The document may not contain enough content.")
+    return data
+
+
+

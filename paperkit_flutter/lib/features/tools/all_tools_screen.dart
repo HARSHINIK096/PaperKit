@@ -340,16 +340,6 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // 8. Media Downloader (YouTube & Spotify)
-                          _buildFunctionalCard(
-                            context,
-                            title: 'Media Downloader (YouTube & Spotify)',
-                            viewAllRoute: '/category/media-downloader',
-                            tools: AppTools.mediaDownloaderTools,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
-
                           // 9. Video Format Converter & Compressor
                           _buildFunctionalCard(
                             context,

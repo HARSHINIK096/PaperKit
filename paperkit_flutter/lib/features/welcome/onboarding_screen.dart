@@ -19,6 +19,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Timer? _progressTicker;
   Timer? _cloudBootPoller;
   double _stepProgress = 0.0;
+  bool _serverReady = false;
 
   // 14 Superpower Slides with COC-style vibrant gradient cloud backgrounds
   final List<_CloudTourSlide> _slides = [
@@ -271,6 +272,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         final ok = await ApiService().checkHealth(timeoutMs: 3000);
         if (ok) {
           timer.cancel();
+          if (mounted) {
+            setState(() {
+              _serverReady = true;
+            });
+          }
         }
       } catch (_) {}
     });
@@ -403,42 +409,112 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Column(
                   children: [
-                    // Top Progress Bar Track (14-Step Progress)
+                    // Top Row: Progress Bars + optional Skip button
                     Row(
-                      children: List.generate(_slides.length, (idx) {
-                        double val = 0.0;
-                        if (idx < _currentIndex) {
-                          val = 1.0;
-                        } else if (idx == _currentIndex) {
-                          val = _stepProgress;
-                        }
-                        return Expanded(
-                          child: Container(
-                            height: 4,
-                            margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                            child: FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: val,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(2),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: slide.accentColor.withValues(alpha: 0.8),
-                                      blurRadius: 4,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Progress bar segments
+                        Expanded(
+                          child: Row(
+                            children: List.generate(_slides.length, (idx) {
+                              double val = 0.0;
+                              if (idx < _currentIndex) {
+                                val = 1.0;
+                              } else if (idx == _currentIndex) {
+                                val = _stepProgress;
+                              }
+                              return Expanded(
+                                child: Container(
+                                  height: 4,
+                                  margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                  child: FractionallySizedBox(
+                                    alignment: Alignment.centerLeft,
+                                    widthFactor: val,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(2),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: slide.accentColor.withValues(alpha: 0.8),
+                                            blurRadius: 4,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                              );
+                            }),
+                          ),
+                        ),
+
+                        // Skip button — appears with fade+slide when server pings back
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 500),
+                          transitionBuilder: (child, anim) => FadeTransition(
+                            opacity: anim,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.4, 0),
+                                end: Offset.zero,
+                              ).animate(CurvedAnimation(
+                                parent: anim,
+                                curve: Curves.easeOutCubic,
+                              )),
+                              child: child,
                             ),
                           ),
-                        );
-                      }),
+                          child: _serverReady
+                              ? GestureDetector(
+                                  key: const ValueKey('skip_btn'),
+                                  onTap: _finishTour,
+                                  child: Container(
+                                    margin: const EdgeInsets.only(left: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.35),
+                                        width: 1.2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: slide.accentColor.withValues(alpha: 0.35),
+                                          blurRadius: 10,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Skip',
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(alpha: 0.9),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          LucideIcons.skipForward,
+                                          size: 14,
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink(key: ValueKey('skip_hidden')),
+                        ),
+                      ],
                     ),
 
                     const Spacer(flex: 2),
@@ -691,12 +767,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'Step ${_currentIndex + 1} of ${_slides.length} • Initializing Cloud Studio...',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 600),
+                          child: Text(
+                            _serverReady
+                                ? 'Step ${_currentIndex + 1} of ${_slides.length} • Cloud Studio Ready ✓'
+                                : 'Step ${_currentIndex + 1} of ${_slides.length} • Initializing Cloud Studio...',
+                            key: ValueKey(_serverReady),
+                            style: TextStyle(
+                              color: _serverReady
+                                  ? slide.accentColor.withValues(alpha: 0.95)
+                                  : Colors.white.withValues(alpha: 0.75),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],

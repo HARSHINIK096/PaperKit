@@ -2,18 +2,14 @@ import os
 import sys
 import uuid
 import subprocess
-import yt_dlp
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+import shutil
+from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 router = APIRouter()
 
-
-class DownloadRequest(BaseModel):
-    url: str
-
-# Use the scratch folder or temp dir to store downloads temporarily
+# Use the scratch folder or temp dir to store downloads/conversions temporarily
 DOWNLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scratch", "downloads")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
@@ -24,113 +20,20 @@ def cleanup_file(filepath: str):
     except Exception as e:
         print(f"Error cleaning up file {filepath}: {e}")
 
-import asyncio
-
-from spotify_downloader import get_or_create_cookie_file, format_netscape_cookies
-
-from services.youtube_service import (
-    YouTubeService,
-    YouTubeExtractionError,
-    YouTubeErrorCode,
-    check_pot_provider_health,
-    check_pot_provider_operational,
-    get_pot_provider_url,
-    get_node_version,
-)
-import yt_dlp.version
-from fastapi.responses import JSONResponse
-
-youtube_service = YouTubeService(DOWNLOAD_DIR)
-
-
-@router.get("/youtube-health")
-async def youtube_health():
-    """Health & operational readiness check for YouTube extraction subsystem & PO-Token provider."""
-    pot_url = get_pot_provider_url()
-    reachable = await check_pot_provider_health(pot_url)
-    operational = await check_pot_provider_operational(pot_url) if reachable else False
-    ffmpeg_path = youtube_service.find_ffmpeg_location()
-    node_ver = get_node_version()
-
-    status = "healthy" if operational else ("degraded" if reachable else "unhealthy")
-
-    return {
-        "status": status,
-        "pot_provider_configured": bool(pot_url),
-        "pot_provider_reachable": reachable,
-        "pot_provider_operational": operational,
-        "pot_provider_available": operational,  # Backward compatibility flag
-        "pot_provider_url": pot_url,
-        "node_available": bool(node_ver),
-        "node_version": node_ver or "not_found",
-        "ytdlp_version": getattr(yt_dlp.version, "__version__", "unknown"),
-        "ffmpeg_available": bool(ffmpeg_path),
-    }
-
-
-@router.post("/download-youtube")
-async def download_youtube(req: DownloadRequest, background_tasks: BackgroundTasks):
+def find_ffmpeg_path() -> str:
+    cmd = shutil.which("ffmpeg")
+    if cmd:
+        return cmd
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    bin_ffmpeg = os.path.join(base_dir, "bin", "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg")
+    if os.path.isfile(bin_ffmpeg):
+        return bin_ffmpeg
     try:
-        downloaded_file, display_filename = await youtube_service.download_video(req.url)
-        
-        # Schedule cleanup after streaming the file to the client
-        background_tasks.add_task(cleanup_file, downloaded_file)
-        
-        return FileResponse(
-            downloaded_file, 
-            filename=display_filename,
-            media_type="video/mp4"
-        )
-        
-    except YouTubeExtractionError as yte:
-        return JSONResponse(status_code=yte.status_code, content=yte.to_dict())
-    except Exception as e:
-        print(f"YouTube Download Unexpected Error: {e}")
-        unknown_err = YouTubeExtractionError(YouTubeErrorCode.YOUTUBE_UNKNOWN_ERROR, "Unexpected server error during extraction.")
-        return JSONResponse(status_code=500, content=unknown_err.to_dict())
-
-
-
-from spotify_downloader import download_spotify_track
-
-@router.post("/download-spotify")
-async def download_spotify(req: DownloadRequest, background_tasks: BackgroundTasks):
-    if not req.url or ("spotify.com" not in req.url and "spotify:" not in req.url):
-        raise HTTPException(status_code=400, detail="Valid Spotify URL required")
-
-    job_id = str(uuid.uuid4())
-    
-    try:
-        downloaded_file = await asyncio.to_thread(
-            download_spotify_track, 
-            req.url, 
-            DOWNLOAD_DIR, 
-            None, 
-            job_id
-        )
-        
-        if not downloaded_file or not os.path.exists(downloaded_file):
-            raise Exception("Downloaded audio file not found")
-            
-        background_tasks.add_task(cleanup_file, downloaded_file)
-        
-        filename = os.path.basename(downloaded_file)
-        if filename.startswith(f"{job_id}_"):
-            filename = filename[len(f"{job_id}_"):]
-            
-        return FileResponse(
-            downloaded_file, 
-            filename=filename,
-            media_type="audio/mpeg"
-        )
-        
-    except Exception as e:
-        print(f"Spotify Download Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-from fastapi import UploadFile, File, Form
-from spotify_downloader import find_ffmpeg_path
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        pass
+    return "ffmpeg"
 
 def get_ffmpeg_cmd():
     cmd = find_ffmpeg_path()
@@ -260,6 +163,72 @@ async def convert_audio(
         cleanup_file(in_path)
         cleanup_file(out_path)
         raise HTTPException(status_code=500, detail=f"Audio conversion error: {str(e)}")
+
+
+@router.post("/audio/speed-pitch")
+async def audio_speed_pitch(
+    file: UploadFile = File(...),
+    speed: float = Form(1.25),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+):
+    job_id = str(uuid.uuid4())
+    in_path = os.path.join(DOWNLOAD_DIR, f"{job_id}_in.mp3")
+    out_path = os.path.join(DOWNLOAD_DIR, f"{job_id}_speed.mp3")
+
+    content = await file.read()
+    with open(in_path, "wb") as f:
+        f.write(content)
+
+    ffmpeg = get_ffmpeg_cmd()
+    try:
+        filter_str = f"atempo={speed}"
+        cmd = [ffmpeg, "-y", "-i", in_path, "-filter:a", filter_str, "-vn", out_path]
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+        if res.returncode != 0 or not os.path.exists(out_path):
+            raise Exception(f"FFmpeg speed adjustment failed")
+
+        background_tasks.add_task(cleanup_file, in_path)
+        background_tasks.add_task(cleanup_file, out_path)
+
+        orig_stem = file.filename.rsplit(".", 1)[0]
+        return FileResponse(out_path, filename=f"{orig_stem}_speed_{speed}.mp3", media_type="audio/mp3")
+    except Exception as e:
+        cleanup_file(in_path)
+        cleanup_file(out_path)
+        raise HTTPException(status_code=500, detail=f"Audio speed error: {str(e)}")
+
+
+@router.post("/video/strip-audio")
+async def video_strip_audio(
+    file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+):
+    job_id = str(uuid.uuid4())
+    in_path = os.path.join(DOWNLOAD_DIR, f"{job_id}_in.mp4")
+    out_path = os.path.join(DOWNLOAD_DIR, f"{job_id}_audio.mp3")
+
+    content = await file.read()
+    with open(in_path, "wb") as f:
+        f.write(content)
+
+    ffmpeg = get_ffmpeg_cmd()
+    try:
+        cmd = [ffmpeg, "-y", "-i", in_path, "-vn", "-acodec", "libmp3lame", "-b:a", "192k", out_path]
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+        if res.returncode != 0 or not os.path.exists(out_path):
+            raise Exception(f"FFmpeg audio extraction failed")
+
+        background_tasks.add_task(cleanup_file, in_path)
+        background_tasks.add_task(cleanup_file, out_path)
+
+        orig_stem = file.filename.rsplit(".", 1)[0]
+        return FileResponse(out_path, filename=f"{orig_stem}_extracted.mp3", media_type="audio/mp3")
+    except Exception as e:
+        cleanup_file(in_path)
+        cleanup_file(out_path)
+        raise HTTPException(status_code=500, detail=f"Video audio extraction error: {str(e)}")
+
+
 
 
 

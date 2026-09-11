@@ -136,7 +136,7 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
         return [...AppTools.videoConverterTools, ...AppTools.videoCompressorTools];
       case 'media':
       case 'audio':
-        return [...AppTools.mediaDownloaderTools, ...AppTools.audioConverterTools];
+        return AppTools.audioConverterTools;
       default:
         return AppTools.pdfTools;
     }

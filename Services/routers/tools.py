@@ -10,6 +10,9 @@ from services.processing import (
     pdf_to_txt, pdf_to_html, pdf_to_word_fallback, pdf_to_excel_fallback, pdf_to_ppt_fallback,
     word_to_pdf_fallback, excel_to_pdf_fallback, ppt_to_pdf_fallback, html_to_word_bytes,
     protect_pdf, sign_pdf, manage_metadata, redact_pdf_text,
+    create_archive_bytes, extract_archive_bytes,
+    generate_nup_pdf, generate_booklet_pdf, add_headers_footers_pdf, apply_bates_stamping,
+    flatten_pdf_forms, sanitize_image_exif, verify_pdf_checksum,
 )
 from services.scanner import detect_document_corners, warp_perspective_and_enhance
 from config import get_settings
@@ -1131,3 +1134,185 @@ async def process_scan(body: dict, current_user: dict = Depends(get_current_user
         }
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Failed to process scan: {str(e)}")
+
+
+from fastapi.responses import FileResponse, Response
+from pydantic import BaseModel
+
+class ArchiveCreateRequest(BaseModel):
+    file_ids: list[str]
+    format_type: str = "zip"
+    password: Optional[str] = None
+    output_name: Optional[str] = "archive"
+
+class ArchiveExtractRequest(BaseModel):
+    file_id: str
+    password: Optional[str] = None
+
+
+@router.post("/archive/create")
+async def create_archive_endpoint(
+    req: ArchiveCreateRequest,
+    current_user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """Creates a ZIP, TAR, or TAR.GZ archive from input files with optional password encryption."""
+    if not req.file_ids:
+        raise HTTPException(status_code=400, detail="file_ids list cannot be empty")
+
+    user_id = str(current_user["_id"])
+    files_data = []
+
+    for fid in req.file_ids:
+        file_bytes, fdoc = await _get_file_bytes(fid, user_id, db)
+        fname = fdoc.get("original_filename", f"file_{fid}")
+        files_data.append((fname, file_bytes))
+
+    archive_bytes, out_fname, mime = create_archive_bytes(
+        files=files_data,
+        format_type=req.format_type,
+        password=req.password,
+    )
+
+    clean_name = req.output_name.strip() if req.output_name else "archive"
+    if not clean_name.endswith(out_fname[out_fname.rfind("."):]):
+        out_fname = f"{clean_name}{out_fname[out_fname.rfind('.'):]}"
+
+    storage_url, file_id = await _save_result(
+        archive_bytes,
+        out_fname,
+        mime,
+        user_id,
+        db,
+    )
+
+    return {
+        "file_id": file_id,
+        "storage_url": storage_url,
+        "filename": out_fname,
+        "content_type": mime,
+        "size": len(archive_bytes),
+    }
+
+
+@router.post("/archive/extract")
+async def extract_archive_endpoint(
+    req: ArchiveExtractRequest,
+    current_user: dict = Depends(get_current_user),
+    db=Depends(get_db),
+):
+    """Extracts files from an archive (ZIP, TAR, GZ, 7Z, RAR) with optional password decryption."""
+    user_id = str(current_user["_id"])
+    archive_bytes, fdoc = await _get_file_bytes(req.file_id, user_id, db)
+    archive_fname = fdoc.get("original_filename", "archive.zip")
+
+    try:
+        extracted = extract_archive_bytes(
+            archive_bytes,
+            archive_fname,
+            password=req.password,
+        )
+
+        extracted_results = []
+        for fname, fbytes in extracted:
+            content_type = "application/octet-stream"
+            if fname.lower().endswith(".pdf"): content_type = "application/pdf"
+            elif fname.lower().endswith(".png"): content_type = "image/png"
+            elif fname.lower().endswith((".jpg", ".jpeg")): content_type = "image/jpeg"
+            elif fname.lower().endswith(".txt"): content_type = "text/plain"
+
+            s_url, f_id = await _save_result(fbytes, fname, content_type, user_id, db)
+            extracted_results.append({
+                "file_id": f_id,
+                "filename": fname,
+                "storage_url": s_url,
+                "size": len(fbytes),
+            })
+
+        return {
+            "archive_filename": archive_fname,
+            "extracted_count": len(extracted_results),
+            "files": extracted_results,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Archive extraction failed: {str(e)}")
+
+
+class NUpRequest(BaseModel):
+    file_id: str
+    pages_per_sheet: int = 2
+
+class HeaderFooterRequest(BaseModel):
+    file_id: str
+    header_text: Optional[str] = ""
+    footer_text: Optional[str] = ""
+    show_page_numbers: bool = True
+
+class BatesRequest(BaseModel):
+    file_id: str
+    prefix: Optional[str] = "BATES-"
+    start_number: int = 1
+
+
+@router.post("/pdf/nup")
+async def nup_pdf_endpoint(req: NUpRequest, current_user: dict = Depends(get_current_user), db=Depends(get_db)):
+    user_id = str(current_user["_id"])
+    pdf_bytes, meta = await _get_file_bytes(req.file_id, user_id, db)
+    out_bytes = generate_nup_pdf(pdf_bytes, req.pages_per_sheet)
+    s_url, f_id = await _save_result(out_bytes, f"nup_{req.pages_per_sheet}_" + meta.get("original_filename", "doc.pdf"), "application/pdf", user_id, db)
+    return {"file_id": f_id, "storage_url": s_url}
+
+
+@router.post("/pdf/booklet")
+async def booklet_pdf_endpoint(file_id: str, current_user: dict = Depends(get_current_user), db=Depends(get_db)):
+    user_id = str(current_user["_id"])
+    pdf_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    out_bytes = generate_booklet_pdf(pdf_bytes)
+    s_url, f_id = await _save_result(out_bytes, "booklet_" + meta.get("original_filename", "doc.pdf"), "application/pdf", user_id, db)
+    return {"file_id": f_id, "storage_url": s_url}
+
+
+@router.post("/pdf/headers")
+async def headers_footers_endpoint(req: HeaderFooterRequest, current_user: dict = Depends(get_current_user), db=Depends(get_db)):
+    user_id = str(current_user["_id"])
+    pdf_bytes, meta = await _get_file_bytes(req.file_id, user_id, db)
+    out_bytes = add_headers_footers_pdf(pdf_bytes, req.header_text or "", req.footer_text or "", req.show_page_numbers)
+    s_url, f_id = await _save_result(out_bytes, "numbered_" + meta.get("original_filename", "doc.pdf"), "application/pdf", user_id, db)
+    return {"file_id": f_id, "storage_url": s_url}
+
+
+@router.post("/pdf/bates")
+async def bates_stamping_endpoint(req: BatesRequest, current_user: dict = Depends(get_current_user), db=Depends(get_db)):
+    user_id = str(current_user["_id"])
+    pdf_bytes, meta = await _get_file_bytes(req.file_id, user_id, db)
+    out_bytes = apply_bates_stamping(pdf_bytes, req.prefix or "BATES-", req.start_number)
+    s_url, f_id = await _save_result(out_bytes, "bates_" + meta.get("original_filename", "doc.pdf"), "application/pdf", user_id, db)
+    return {"file_id": f_id, "storage_url": s_url}
+
+
+@router.post("/pdf/flatten")
+async def flatten_forms_endpoint(file_id: str, current_user: dict = Depends(get_current_user), db=Depends(get_db)):
+    user_id = str(current_user["_id"])
+    pdf_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    out_bytes = flatten_pdf_forms(pdf_bytes)
+    s_url, f_id = await _save_result(out_bytes, "flattened_" + meta.get("original_filename", "doc.pdf"), "application/pdf", user_id, db)
+    return {"file_id": f_id, "storage_url": s_url}
+
+
+@router.post("/image/exif-sanitize")
+async def sanitize_exif_endpoint(file_id: str, current_user: dict = Depends(get_current_user), db=Depends(get_db)):
+    user_id = str(current_user["_id"])
+    img_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    clean_bytes = sanitize_image_exif(img_bytes)
+    s_url, f_id = await _save_result(clean_bytes, "clean_" + meta.get("original_filename", "image.jpg"), "image/jpeg", user_id, db)
+    return {"file_id": f_id, "storage_url": s_url}
+
+
+@router.post("/checksum/verify")
+async def verify_checksum_endpoint(file_id: str, current_user: dict = Depends(get_current_user), db=Depends(get_db)):
+    user_id = str(current_user["_id"])
+    pdf_bytes, _ = await _get_file_bytes(file_id, user_id, db)
+    res = verify_pdf_checksum(pdf_bytes)
+    return res
+
+

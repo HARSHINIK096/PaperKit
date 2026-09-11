@@ -18,9 +18,17 @@ class PdfEngine {
       final PdfDocument inputDocument = PdfDocument(inputBytes: bytes);
 
       for (int i = 0; i < inputDocument.pages.count; i++) {
-        final PdfTemplate template = inputDocument.pages[i].createTemplate();
+        final PdfPage inputPage = inputDocument.pages[i];
+        final PdfTemplate template = inputPage.createTemplate();
+        finalDocument.pageSettings.margins.all = 0;
+        finalDocument.pageSettings.size = inputPage.size;
         final PdfPage page = finalDocument.pages.add();
-        page.graphics.drawPdfTemplate(template, const Offset(0, 0));
+        page.rotation = inputPage.rotation;
+        page.graphics.drawPdfTemplate(
+          template,
+          const Offset(0, 0),
+          Size(inputPage.size.width, inputPage.size.height),
+        );
       }
       inputDocument.dispose();
     }
@@ -196,10 +204,17 @@ class PdfEngine {
 
     for (final pageIndex in pageOrderZeroIndexed) {
       if (pageIndex >= 0 && pageIndex < inputDocument.pages.count) {
-        final PdfTemplate template = inputDocument.pages[pageIndex]
-            .createTemplate();
+        final PdfPage inputPage = inputDocument.pages[pageIndex];
+        final PdfTemplate template = inputPage.createTemplate();
+        newDocument.pageSettings.margins.all = 0;
+        newDocument.pageSettings.size = inputPage.size;
         final PdfPage newPage = newDocument.pages.add();
-        newPage.graphics.drawPdfTemplate(template, const Offset(0, 0));
+        newPage.rotation = inputPage.rotation;
+        newPage.graphics.drawPdfTemplate(
+          template,
+          const Offset(0, 0),
+          Size(inputPage.size.width, inputPage.size.height),
+        );
       }
     }
 

@@ -77,12 +77,6 @@ export const AUDIO_FORMAT_TOOLS = [
   { id: 'audio-to-wav', label: 'Convert to WAV', description: 'Lossless audio format', path: '/tools/audio-converter?to=wav', color: 'blue' },
   { id: 'audio-to-ogg', label: 'Convert to OGG', description: 'Web audio format', path: '/tools/audio-converter?to=ogg', color: 'orange' },
 ];
-
-export const MEDIA_DOWNLOADER_TOOLS = [
-  { id: 'youtube-downloader', label: 'YouTube Video', description: 'Download YouTube videos as MP4', path: '/tools/media-downloader?type=youtube', color: 'red' },
-  { id: 'spotify-downloader', label: 'Spotify Audio', description: 'Download Spotify tracks as MP3', path: '/tools/media-downloader?type=spotify', color: 'green' },
-];
-
 export const ARCHIVE_TOOLS = [
   { id: 'extract-archive', label: 'Extract & View Archive', description: 'Extract .ZIP, .RAR, .TAR, .GZ, .7Z & .BZ2 files', path: '/tools/archive?mode=extract', color: 'orange' },
   { id: 'create-zip',       label: 'Create ZIP Archive',    description: 'Compress and package multiple files to .ZIP', path: '/tools/archive?mode=create&format=zip', color: 'blue' },
@@ -113,8 +107,8 @@ export const ALL_TOOLS = {
   videoFormat: VIDEO_FORMAT_TOOLS,
   videoCompress: VIDEO_COMPRESS_TOOLS,
   audioFormat: AUDIO_FORMAT_TOOLS,
-  mediaDownloader: MEDIA_DOWNLOADER_TOOLS,
 };
+
 
 
 

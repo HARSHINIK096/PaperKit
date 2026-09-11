@@ -41,7 +41,6 @@ const DuplicatePagesScreen  = lazy(() => import('../screens/tools/DuplicatePages
 const PDFToPDFAScreen       = lazy(() => import('../screens/tools/PDFToPDFAScreen'));
 const ImageConverterScreen  = lazy(() => import('../screens/tools/ImageConverterScreen'));
 const ImageCompressorScreen = lazy(() => import('../screens/tools/ImageCompressorScreen'));
-const MediaDownloaderScreen = lazy(() => import('../screens/tools/MediaDownloaderScreen'));
 const AudioConverterScreen  = lazy(() => import('../screens/tools/AudioConverterScreen'));
 const VideoConverterScreen  = lazy(() => import('../screens/tools/VideoConverterScreen'));
 const VideoCompressorScreen = lazy(() => import('../screens/tools/VideoCompressorScreen'));
@@ -235,7 +234,6 @@ export default function AppRouter() {
             <Route path="/tools/pdf-to-pdfa"     element={<AppShell headerProps={{ title: 'PDF to PDF/A' }}><PDFToPDFAScreen /></AppShell>} />
             <Route path="/tools/image-converter" element={<AppShell headerProps={{ title: 'Image Converter' }}><ImageConverterScreen /></AppShell>} />
             <Route path="/tools/image-compressor" element={<AppShell headerProps={{ title: 'Image Compressor' }}><ImageCompressorScreen /></AppShell>} />
-            <Route path="/tools/media-downloader" element={<AppShell headerProps={{ title: 'Media Downloader' }}><MediaDownloaderScreen /></AppShell>} />
             <Route path="/tools/audio-converter" element={<AppShell headerProps={{ title: 'Audio Converter' }}><AudioConverterScreen /></AppShell>} />
             <Route path="/tools/video-converter" element={<AppShell headerProps={{ title: 'Video Converter' }}><VideoConverterScreen /></AppShell>} />
             <Route path="/tools/video-compressor" element={<AppShell headerProps={{ title: 'Video Compressor' }}><VideoCompressorScreen /></AppShell>} />

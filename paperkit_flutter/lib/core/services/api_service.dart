@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
@@ -7,23 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_config.dart';
 import 'pdf_engine.dart';
 import 'storage_service.dart';
-
-class MediaDownloadException implements Exception {
-  final String errorCode;
-  final String message;
-  final String? detail;
-  final int? statusCode;
-
-  MediaDownloadException({
-    required this.errorCode,
-    required this.message,
-    this.detail,
-    this.statusCode,
-  });
-
-  @override
-  String toString() => message;
-}
 
 class ApiService {
 
@@ -687,86 +669,6 @@ class ApiService {
     return {'result': res.data};
   }
 
-  // Media Downloader: YouTube Video (streams actual MP4 file)
-  Future<File> downloadYouTube({required String url}) async {
-    try {
-      final response = await dio.post<List<int>>(
-        '/api/media/download-youtube',
-        data: {'url': url},
-        options: Options(
-          responseType: ResponseType.bytes,
-          receiveTimeout: const Duration(seconds: 45),
-          sendTimeout: const Duration(seconds: 15),
-        ),
-      );
-      if (response.data == null || response.data!.isEmpty) {
-        throw MediaDownloadException(
-          errorCode: 'YOUTUBE_UNKNOWN_ERROR',
-          message: 'Received empty response from server.',
-        );
-      }
-      final outputDir = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputFile = File('${outputDir.path}/YouTube_Video_$timestamp.mp4');
-      await outputFile.writeAsBytes(response.data!);
-      return outputFile;
-    } on DioException catch (dioErr) {
-      if (dioErr.response?.data != null) {
-        try {
-          final rawData = dioErr.response!.data;
-          String rawString = '';
-          if (rawData is List<int>) {
-            rawString = utf8.decode(rawData);
-          } else if (rawData is String) {
-            rawString = rawData;
-          }
-          final jsonMap = jsonDecode(rawString) as Map<String, dynamic>;
-          throw MediaDownloadException(
-            errorCode: jsonMap['error_code'] ?? 'YOUTUBE_UNKNOWN_ERROR',
-            message: jsonMap['message'] ?? 'YouTube extraction failed.',
-            detail: jsonMap['detail'],
-            statusCode: dioErr.response?.statusCode,
-          );
-        } catch (e) {
-          if (e is MediaDownloadException) rethrow;
-        }
-      }
-      if (dioErr.type == DioExceptionType.connectionTimeout || dioErr.type == DioExceptionType.receiveTimeout) {
-        throw MediaDownloadException(
-          errorCode: 'YOUTUBE_EXTRACTION_TIMEOUT',
-          message: 'YouTube download timed out. The video may be too long or temporarily congested.',
-          statusCode: 504,
-        );
-      }
-      throw MediaDownloadException(
-        errorCode: 'YOUTUBE_NETWORK_ERROR',
-        message: 'Could not connect to the media server. Please check your connection.',
-        statusCode: dioErr.response?.statusCode,
-      );
-    }
-  }
-
-
-  // Media Downloader: Spotify Audio (streams actual MP3 file)
-  Future<File> downloadSpotify({required String url}) async {
-    final response = await dio.post<List<int>>(
-      '/api/media/download-spotify',
-      data: {'url': url},
-      options: Options(
-        responseType: ResponseType.bytes,
-        receiveTimeout: const Duration(minutes: 5),
-        sendTimeout: const Duration(minutes: 1),
-      ),
-    );
-    if (response.data == null || response.data!.isEmpty) {
-      throw Exception('Failed to download Spotify audio stream.');
-    }
-    final outputDir = await getApplicationDocumentsDirectory();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final outputFile = File('${outputDir.path}/Spotify_Track_$timestamp.mp3');
-    await outputFile.writeAsBytes(response.data!);
-    return outputFile;
-  }
 
   // Convert Video via backend FFmpeg
   Future<File> convertVideo({required File file, required String targetFormat}) async {
@@ -843,6 +745,285 @@ class ApiService {
     await outputFile.writeAsBytes(response.data!);
     return outputFile;
   }
+
+  // Parse Invoice details via AI
+  Future<String> parseInvoice(File file) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post('/api/ai/parse-invoice', data: formData);
+    return response.data['result']?.toString() ?? 'Invoice analysis complete.';
+  }
+
+  // Parse Resume/CV details via AI
+  Future<String> parseCv(File file) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post('/api/ai/parse-cv', data: formData);
+    return response.data['result']?.toString() ?? 'Resume analysis complete.';
+  }
+
+  // Generate Quiz — legacy unstructured string response (kept for backward compat)
+  // Use generateQuiz() instead for the new structured JSON response.
+  Future<String> generateQuizLegacy(File file) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post('/ai/generate-quiz', data: formData);
+    return response.data['result']?.toString() ?? '';
+  }
+
+  // N-Up PDF generation
+  Future<File> nupPdf(File file, int pagesPerSheet) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      'pages_per_sheet': pagesPerSheet,
+    });
+    final response = await dio.post<List<int>>('/api/tools/pdf/nup', data: formData, options: Options(responseType: ResponseType.bytes));
+    final outputDir = await getApplicationDocumentsDirectory();
+    final outputFile = File('${outputDir.path}/NUp_${pagesPerSheet}_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Booklet PDF creation
+  Future<File> bookletPdf(File file) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post<List<int>>('/api/tools/pdf/booklet', data: formData, options: Options(responseType: ResponseType.bytes));
+    final outputDir = await getApplicationDocumentsDirectory();
+    final outputFile = File('${outputDir.path}/Booklet_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Add Headers & Footers
+  Future<File> headersPdf(File file, String headerText, String footerText) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      'header_text': headerText,
+      'footer_text': footerText,
+    });
+    final response = await dio.post<List<int>>('/api/tools/pdf/headers', data: formData, options: Options(responseType: ResponseType.bytes));
+    final outputDir = await getApplicationDocumentsDirectory();
+    final outputFile = File('${outputDir.path}/Numbered_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Bates Stamping
+  Future<File> batesPdf(File file, String prefix) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      'prefix': prefix,
+    });
+    final response = await dio.post<List<int>>('/api/tools/pdf/bates', data: formData, options: Options(responseType: ResponseType.bytes));
+    final outputDir = await getApplicationDocumentsDirectory();
+    final outputFile = File('${outputDir.path}/Bates_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Flatten PDF Forms
+  Future<File> flattenPdf(File file) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post<List<int>>('/api/tools/pdf/flatten', data: formData, options: Options(responseType: ResponseType.bytes));
+    final outputDir = await getApplicationDocumentsDirectory();
+    final outputFile = File('${outputDir.path}/Flattened_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Sanitize Image EXIF
+  Future<File> sanitizeExif(File file) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post<List<int>>('/api/tools/image/exif-sanitize', data: formData, options: Options(responseType: ResponseType.bytes));
+    final outputDir = await getApplicationDocumentsDirectory();
+    final outputFile = File('${outputDir.path}/Sanitized_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Verify Checksum
+  Future<Map<String, dynamic>> verifyChecksum(File file) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post('/api/tools/checksum/verify', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  // ── Academic / Research API Methods ─────────────────────────────────────
+
+  /// Analyze a research paper — returns structured JSON with confidence labels.
+  Future<Map<String, dynamic>> analyzeResearchPaper({required File file}) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post('/ai/analyze-research', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  /// Literature review from 2–8 files.
+  Future<Map<String, dynamic>> literatureReview({required List<File> files}) async {
+    final fields = <String, dynamic>{};
+    for (int i = 0; i < files.length; i++) {
+      final bytes = await files[i].readAsBytes();
+      fields['file_$i'] = MultipartFile.fromBytes(
+        bytes,
+        filename: files[i].uri.pathSegments.last,
+        contentType: MediaType('application', 'pdf'),
+      );
+    }
+    final formData = FormData.fromMap(fields);
+    final response = await dio.post('/ai/literature-review', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  /// Research gap analysis — returns structured JSON with gap list.
+  Future<Map<String, dynamic>> researchGaps({required File file}) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post('/ai/research-gaps', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  /// Extract citations and bibliography entries.
+  Future<Map<String, dynamic>> extractCitations({required File file}) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post('/ai/extract-citations', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  /// Format citations by style (apa, mla, ieee, chicago, harvard, vancouver).
+  /// Accepts a list of raw citation strings or extracts them from a file.
+  Future<Map<String, dynamic>> formatCitations({
+    File? file,
+    List<String>? citations,
+    String style = 'apa',
+  }) async {
+    if (citations != null && citations.isNotEmpty) {
+      final response = await dio.post('/ai/format-citation', data: {
+        'citations': citations,
+        'style': style,
+      });
+      return Map<String, dynamic>.from(response.data);
+    }
+
+    if (file == null) throw ArgumentError('Either citations or file must be provided.');
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      'style': style,
+    });
+    final response = await dio.post('/ai/format-citation', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  /// Reference consistency check — returns issues, missing refs, duplicates.
+  Future<Map<String, dynamic>> checkReferences({required File file}) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post('/ai/reference-check', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  /// Generate structured study notes.
+  Future<Map<String, dynamic>> generateStudyNotes({
+    required File file,
+    List<String>? focusAreas,
+  }) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      if (focusAreas != null && focusAreas.isNotEmpty)
+        'focus_areas': focusAreas.join(','),
+    });
+    final response = await dio.post('/ai/study-notes', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  /// Generate structured quiz questions.
+  Future<Map<String, dynamic>> generateQuiz({
+    required File file,
+    List<String>? questionTypes,
+    String difficulty = 'medium',
+    int count = 10,
+  }) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      if (questionTypes != null && questionTypes.isNotEmpty)
+        'question_types': questionTypes.join(','),
+      'difficulty': difficulty,
+      'count': count.toString(),
+    });
+    final response = await dio.post('/ai/generate-quiz', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  /// Generate spaced-repetition flashcards.
+  Future<Map<String, dynamic>> generateFlashcards({
+    required File file,
+    List<String>? cardTypes,
+    int count = 20,
+  }) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      if (cardTypes != null && cardTypes.isNotEmpty)
+        'card_types': cardTypes.join(','),
+      'count': count.toString(),
+    });
+    final response = await dio.post('/ai/generate-flashcards', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  /// Generate a hierarchical mind map structure.
+  Future<Map<String, dynamic>> generateMindMap({required File file}) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+    });
+    final response = await dio.post('/ai/generate-mindmap', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  /// Generate a slide presentation outline.
+  Future<Map<String, dynamic>> generatePresentation({
+    required File file,
+    int slideCount = 10,
+  }) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+      'slide_count': slideCount.toString(),
+    });
+    final response = await dio.post('/ai/generate-presentation', data: formData);
+    return Map<String, dynamic>.from(response.data);
+  }
 }
-
-
