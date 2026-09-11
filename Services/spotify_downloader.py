@@ -18,7 +18,7 @@ except ImportError:
 
 def find_ffmpeg_path() -> Optional[str]:
     """
-    Locates ffmpeg binary in the local bin/ folder, system PATH, or common Linux/Render paths.
+    Locates ffmpeg binary in the local bin/ folder, system PATH, common Linux/Render paths, or imageio-ffmpeg.
     """
     import shutil
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +35,15 @@ def find_ffmpeg_path() -> Optional[str]:
     for p in ["/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/opt/homebrew/bin/ffmpeg"]:
         if os.path.isfile(p):
             return p
+
+    try:
+        import importlib
+        imageio_ffmpeg = importlib.import_module("imageio_ffmpeg")
+        ffmpeg_exe = getattr(imageio_ffmpeg, "get_ffmpeg_exe", lambda: None)()
+        if ffmpeg_exe and os.path.isfile(ffmpeg_exe):
+            return ffmpeg_exe
+    except Exception:
+        pass
         
     return None
 
@@ -257,9 +266,7 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
         and (not job_id or f.startswith(job_id))
         and not f.endswith(".part")
         and not f.endswith(".ytdl")
-        and not f.endswith(".txt")
     ]
-    
     if matching_files:
         mp3s = [f for f in matching_files if f.endswith(".mp3")]
         if mp3s:
@@ -267,6 +274,43 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
         return max(matching_files, key=os.path.getctime)
         
     raise RuntimeError(f"Download completed but output audio file was not found. Last error: {last_error}")
+
+def download_via_spotdl_fallback(url: str, output_dir: str, job_id: Optional[str] = None) -> Optional[str]:
+    """
+    Tertiary fallback using spotdl CLI subprocess if available.
+    """
+    import subprocess
+    prefix = f"{job_id}_" if job_id else ""
+    try:
+        cmd = [
+            sys.executable, "-m", "spotdl",
+            "download", url,
+            "--output", os.path.join(output_dir, f"{prefix}{{title}} - {{artists}}.{{output-ext}}"),
+            "--format", "mp3",
+            "--bitrate", "192k",
+            "--threads", "1",
+        ]
+        ffmpeg_bin = find_ffmpeg_path()
+        if ffmpeg_bin:
+            cmd.extend(["--ffmpeg", ffmpeg_bin])
+
+        print(f"Attempting spotdl fallback execution: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        print(f"spotdl result code: {result.returncode}")
+        
+        matching_files = [
+            os.path.join(output_dir, f)
+            for f in os.listdir(output_dir)
+            if os.path.isfile(os.path.join(output_dir, f))
+            and os.path.getsize(os.path.join(output_dir, f)) > 1024
+            and (not job_id or f.startswith(job_id))
+            and f.endswith(".mp3")
+        ]
+        if matching_files:
+            return max(matching_files, key=os.path.getctime)
+    except Exception as e:
+        print(f"spotdl fallback exception: {e}")
+    return None
 
 def download_spotify_track(url: str, output_dir: str = ".", output_template: Optional[str] = None, job_id: Optional[str] = None) -> str:
     """
@@ -287,9 +331,17 @@ def download_spotify_track(url: str, output_dir: str = ".", output_template: Opt
     print(f"Identified Track: '{title}' by '{artists}'")
     print(f"Search Query: '{search_query}'")
     
-    downloaded_file = download_via_ytdlp(search_query, output_dir, job_id=job_id)
-    print(f"\nSuccessfully downloaded track: {downloaded_file}")
-    return downloaded_file
+    try:
+        downloaded_file = download_via_ytdlp(search_query, output_dir, job_id=job_id)
+        print(f"\nSuccessfully downloaded track: {downloaded_file}")
+        return downloaded_file
+    except Exception as err:
+        print(f"Primary multi-provider downloader note: {err}. Checking spotdl fallback...")
+        spotdl_file = download_via_spotdl_fallback(url, output_dir, job_id=job_id)
+        if spotdl_file:
+            print(f"\nSuccessfully downloaded track via spotdl: {spotdl_file}")
+            return spotdl_file
+        raise err
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PaperKit Spotify Media Downloader CLI")
