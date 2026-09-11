@@ -1,4 +1,4 @@
-package com.theoriongd.maskerv
+package com.maskerv.app
 
 import io.flutter.embedding.android.FlutterActivity
 
