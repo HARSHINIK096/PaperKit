@@ -32,23 +32,13 @@ def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
     cookie_file = get_or_create_cookie_file(DOWNLOAD_DIR)
     ffmpeg_bin = find_ffmpeg_path()
     
-    if cookie_file and os.path.exists(cookie_file):
-        client_strategies = [
-            None,
-            ['web'],
-            ['mweb'],
-            ['android', 'ios'],
-            ['android_vr', 'mweb'],
-            ['ios'],
-        ]
-    else:
-        client_strategies = [
-            None,
-            ['android', 'ios'],
-            ['android_vr', 'mweb'],
-            ['ios', 'mweb'],
-            ['web'],
-        ]
+    client_strategies = [
+        ['android', 'ios'],
+        ['ios', 'mweb'],
+        ['android_vr', 'mweb'],
+        ['web'],
+        None,
+    ]
 
     proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
 
@@ -56,16 +46,12 @@ def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
     for clients in client_strategies:
         ydl_opts = {
             'outtmpl': output_template,
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/bestvideo+bestaudio/best',
+            'format': 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best',
             'merge_output_format': 'mp4',
             'quiet': False,
             'no_warnings': True,
             'nocheckcertificate': True,
             'ignoreerrors': False,
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                'Accept-Language': 'en-US,en;q=0.9',
-            }
         }
         if proxy_url:
             ydl_opts['proxy'] = proxy_url
