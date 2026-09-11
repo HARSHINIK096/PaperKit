@@ -48,14 +48,15 @@ def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
             print(f"Warning: Could not write YouTube cookies: {ce}")
             cookie_file = None
 
+    ffmpeg_bin = find_ffmpeg_path()
     if cookie_file and os.path.exists(cookie_file):
-        client_strategies = [None, ['web'], ['mweb']]
+        client_strategies = [None, ['ios', 'mweb'], ['web'], ['mweb']]
     else:
         client_strategies = [
             None,  # Standard auto detection (visionos/web/android)
+            ['ios', 'mweb'],
             ['android', 'web'],
             ['tv_embedded', 'web'],
-            ['ios', 'mweb'],
         ]
 
     proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
@@ -64,13 +65,12 @@ def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
     for clients in client_strategies:
         ydl_opts = {
             'outtmpl': output_template,
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/bestvideo+bestaudio/best',
             'merge_output_format': 'mp4',
             'quiet': False,
             'no_warnings': True,
             'nocheckcertificate': True,
             'ignoreerrors': False,
-            'js_runtimes': {'node': {}},
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
                 'Accept-Language': 'en-US,en;q=0.9',
@@ -84,7 +84,9 @@ def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
                     'player_client': clients,
                 }
             }
-        if os.path.exists(bin_dir):
+        if ffmpeg_bin:
+            ydl_opts['ffmpeg_location'] = os.path.dirname(ffmpeg_bin) if os.path.isfile(ffmpeg_bin) else ffmpeg_bin
+        elif os.path.exists(bin_dir):
             ydl_opts['ffmpeg_location'] = bin_dir
         if cookie_file and os.path.exists(cookie_file):
             ydl_opts['cookiefile'] = cookie_file
