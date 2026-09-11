@@ -277,9 +277,13 @@ class YouTubeService:
             "extractor_args": {
                 "youtubepot-bgutilhttp": {
                     "base_url": [active_pot_url],
-                }
+                },
+                "youtube": {
+                    "player_client": ["mweb", "web_safari", "web"],
+                },
             },
         }
+
 
         if ffmpeg_bin:
             ydl_opts["ffmpeg_location"] = os.path.dirname(ffmpeg_bin) if os.path.isfile(ffmpeg_bin) else ffmpeg_bin
