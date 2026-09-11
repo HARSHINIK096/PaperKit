@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:http_parser/http_parser.dart';
@@ -7,7 +8,25 @@ import '../constants/api_config.dart';
 import 'pdf_engine.dart';
 import 'storage_service.dart';
 
+class MediaDownloadException implements Exception {
+  final String errorCode;
+  final String message;
+  final String? detail;
+  final int? statusCode;
+
+  MediaDownloadException({
+    required this.errorCode,
+    required this.message,
+    this.detail,
+    this.statusCode,
+  });
+
+  @override
+  String toString() => message;
+}
+
 class ApiService {
+
   static const String defaultBaseUrl = ApiConfig.defaultBackendUrl;
   static const String productionBaseUrl = ApiConfig.defaultBackendUrl;
   late final Dio dio;
@@ -670,24 +689,63 @@ class ApiService {
 
   // Media Downloader: YouTube Video (streams actual MP4 file)
   Future<File> downloadYouTube({required String url}) async {
-    final response = await dio.post<List<int>>(
-      '/api/media/download-youtube',
-      data: {'url': url},
-      options: Options(
-        responseType: ResponseType.bytes,
-        receiveTimeout: const Duration(minutes: 5),
-        sendTimeout: const Duration(minutes: 1),
-      ),
-    );
-    if (response.data == null || response.data!.isEmpty) {
-      throw Exception('Failed to download YouTube video stream.');
+    try {
+      final response = await dio.post<List<int>>(
+        '/api/media/download-youtube',
+        data: {'url': url},
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(seconds: 45),
+          sendTimeout: const Duration(seconds: 15),
+        ),
+      );
+      if (response.data == null || response.data!.isEmpty) {
+        throw MediaDownloadException(
+          errorCode: 'YOUTUBE_UNKNOWN_ERROR',
+          message: 'Received empty response from server.',
+        );
+      }
+      final outputDir = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final outputFile = File('${outputDir.path}/YouTube_Video_$timestamp.mp4');
+      await outputFile.writeAsBytes(response.data!);
+      return outputFile;
+    } on DioException catch (dioErr) {
+      if (dioErr.response?.data != null) {
+        try {
+          final rawData = dioErr.response!.data;
+          String rawString = '';
+          if (rawData is List<int>) {
+            rawString = utf8.decode(rawData);
+          } else if (rawData is String) {
+            rawString = rawData;
+          }
+          final jsonMap = jsonDecode(rawString) as Map<String, dynamic>;
+          throw MediaDownloadException(
+            errorCode: jsonMap['error_code'] ?? 'YOUTUBE_UNKNOWN_ERROR',
+            message: jsonMap['message'] ?? 'YouTube extraction failed.',
+            detail: jsonMap['detail'],
+            statusCode: dioErr.response?.statusCode,
+          );
+        } catch (e) {
+          if (e is MediaDownloadException) rethrow;
+        }
+      }
+      if (dioErr.type == DioExceptionType.connectionTimeout || dioErr.type == DioExceptionType.receiveTimeout) {
+        throw MediaDownloadException(
+          errorCode: 'YOUTUBE_EXTRACTION_TIMEOUT',
+          message: 'YouTube download timed out. The video may be too long or temporarily congested.',
+          statusCode: 504,
+        );
+      }
+      throw MediaDownloadException(
+        errorCode: 'YOUTUBE_NETWORK_ERROR',
+        message: 'Could not connect to the media server. Please check your connection.',
+        statusCode: dioErr.response?.statusCode,
+      );
     }
-    final outputDir = await getApplicationDocumentsDirectory();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final outputFile = File('${outputDir.path}/YouTube_Video_$timestamp.mp4');
-    await outputFile.writeAsBytes(response.data!);
-    return outputFile;
   }
+
 
   // Media Downloader: Spotify Audio (streams actual MP3 file)
   Future<File> downloadSpotify({required String url}) async {

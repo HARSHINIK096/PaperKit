@@ -28,100 +28,56 @@ import asyncio
 
 from spotify_downloader import get_or_create_cookie_file, format_netscape_cookies
 
-def _sync_download_youtube(url: str, output_template: str, bin_dir: str):
-    cookie_file = get_or_create_cookie_file(DOWNLOAD_DIR)
-    ffmpeg_bin = find_ffmpeg_path()
-    
-    client_strategies = [
-        ['android', 'ios'],
-        ['ios', 'mweb'],
-        ['android_vr', 'mweb'],
-        ['web'],
-        None,
-    ]
+from services.youtube_service import (
+    YouTubeService,
+    YouTubeExtractionError,
+    YouTubeErrorCode,
+    check_pot_provider_health,
+    get_pot_provider_url,
+)
+import yt_dlp.version
+from fastapi.responses import JSONResponse
 
-    proxy_url = os.getenv("YTDL_PROXY") or os.getenv("HTTP_PROXY") or os.getenv("HTTPS_PROXY")
+youtube_service = YouTubeService(DOWNLOAD_DIR)
 
-    cookie_modes = [cookie_file, None] if (cookie_file and os.path.exists(cookie_file)) else [None]
 
-    last_error = None
-    for use_cookie in cookie_modes:
-        for clients in client_strategies:
-            ydl_opts = {
-                'outtmpl': output_template,
-                'format': 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best',
-                'merge_output_format': 'mp4',
-                'quiet': False,
-                'no_warnings': True,
-                'nocheckcertificate': True,
-                'ignoreerrors': False,
-            }
-            if proxy_url:
-                ydl_opts['proxy'] = proxy_url
-            if clients is not None:
-                ydl_opts['extractor_args'] = {
-                    'youtube': {
-                        'player_client': clients,
-                    }
-                }
-            if ffmpeg_bin:
-                ydl_opts['ffmpeg_location'] = os.path.dirname(ffmpeg_bin) if os.path.isfile(ffmpeg_bin) else ffmpeg_bin
-            elif os.path.exists(bin_dir):
-                ydl_opts['ffmpeg_location'] = bin_dir
-            if use_cookie and os.path.exists(use_cookie):
-                ydl_opts['cookiefile'] = use_cookie
+@router.get("/youtube-health")
+async def youtube_health():
+    """Health check for YouTube extraction subsystem & PO-Token provider."""
+    pot_url = get_pot_provider_url()
+    pot_healthy = await check_pot_provider_health(pot_url)
+    ffmpeg_path = youtube_service.find_ffmpeg_location()
 
-            try:
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
-                return  # Succeeded
-            except Exception as e:
-                last_error = e
-                print(f"yt-dlp attempt with clients {clients} (cookie: {bool(use_cookie)}) failed: {e}. Trying next strategy...")
-                continue
+    return {
+        "status": "healthy" if pot_healthy else "degraded",
+        "pot_provider_available": pot_healthy,
+        "pot_provider_url": pot_url,
+        "ytdlp_version": getattr(yt_dlp.version, "__version__", "unknown"),
+        "ffmpeg_available": bool(ffmpeg_path),
+    }
 
-    if last_error:
-        raise last_error
 
 @router.post("/download-youtube")
 async def download_youtube(req: DownloadRequest, background_tasks: BackgroundTasks):
-    if not req.url or ("youtube.com" not in req.url and "youtu.be" not in req.url):
-        raise HTTPException(status_code=400, detail="Valid YouTube URL required")
-
-    job_id = str(uuid.uuid4())
-    output_template = os.path.join(DOWNLOAD_DIR, f"{job_id}_%(title)s.%(ext)s")
-    bin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "bin")
-    
     try:
-        await asyncio.to_thread(_sync_download_youtube, req.url, output_template, bin_dir)
-            
-        # Find the downloaded file
-        downloaded_file = None
-        for filename in os.listdir(DOWNLOAD_DIR):
-            if filename.startswith(job_id):
-                downloaded_file = os.path.join(DOWNLOAD_DIR, filename)
-                break
-                
-        if not downloaded_file:
-            files = [os.path.join(DOWNLOAD_DIR, f) for f in os.listdir(DOWNLOAD_DIR) if os.path.isfile(os.path.join(DOWNLOAD_DIR, f))]
-            if files:
-                downloaded_file = max(files, key=os.path.getctime)
-
-        if not downloaded_file or not os.path.exists(downloaded_file):
-            raise Exception("Downloaded file not found")
-            
-        # Schedule cleanup after sending response
+        downloaded_file, display_filename = await youtube_service.download_video(req.url)
+        
+        # Schedule cleanup after streaming the file to the client
         background_tasks.add_task(cleanup_file, downloaded_file)
         
         return FileResponse(
             downloaded_file, 
-            filename=os.path.basename(downloaded_file).replace(f"{job_id}_", ""),
+            filename=display_filename,
             media_type="video/mp4"
         )
         
+    except YouTubeExtractionError as yte:
+        return JSONResponse(status_code=yte.status_code, content=yte.to_dict())
     except Exception as e:
-        print(f"YouTube Download Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"YouTube Download Unexpected Error: {e}")
+        unknown_err = YouTubeExtractionError(YouTubeErrorCode.YOUTUBE_UNKNOWN_ERROR, "Unexpected server error during extraction.")
+        return JSONResponse(status_code=500, content=unknown_err.to_dict())
+
 
 
 from spotify_downloader import download_spotify_track

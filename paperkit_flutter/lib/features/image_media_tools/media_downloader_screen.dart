@@ -88,15 +88,46 @@ class _MediaDownloaderScreenState extends State<MediaDownloaderScreen> {
           fileSize: '${(fileSize / (1024 * 1024)).toStringAsFixed(2)} MB',
         );
       }
+    } on MediaDownloadException catch (mde) {
+      if (mounted) {
+        setState(() => _isDownloading = false);
+        String userMessage = mde.message;
+        if (mde.errorCode == 'YOUTUBE_BOT_PROTECTION') {
+          userMessage = 'YouTube Bot Protection: The video request was challenged. Please try again in a few moments.';
+        } else if (mde.errorCode == 'YOUTUBE_FORMAT_UNAVAILABLE') {
+          userMessage = 'Format Unavailable: The requested video quality is not available.';
+        } else if (mde.errorCode == 'YOUTUBE_EXTRACTION_TIMEOUT') {
+          userMessage = 'Download Timed Out: Video took too long to process. Try a shorter video or retry later.';
+        } else if (mde.errorCode == 'YOUTUBE_PRIVATE_VIDEO' || mde.errorCode == 'YOUTUBE_AUTH_REQUIRED') {
+          userMessage = 'Access Restricted: This video is private, age-restricted, or requires authentication.';
+        } else if (mde.errorCode == 'YOUTUBE_VIDEO_UNAVAILABLE') {
+          userMessage = 'Video Not Found: The video does not exist or has been removed from YouTube.';
+        } else if (mde.errorCode == 'YOUTUBE_URL_INVALID') {
+          userMessage = 'Invalid Link: Please paste a valid YouTube video link.';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(userMessage),
+            backgroundColor: AppColors.toolRed,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isDownloading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Download failed: $e')),
+          SnackBar(
+            content: Text('Download failed: $e'),
+            backgroundColor: AppColors.toolRed,
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

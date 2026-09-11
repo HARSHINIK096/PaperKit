@@ -48,6 +48,9 @@ GoogleService-Info.plist
 paperkit_flutter/lib/core/constants/api_config.dart
 **/api_config.dart
 !**/api_config.dart.example
+cookies.txt
+**/cookies.txt
+
 
 # ==============================================================================
 # Legacy React JS & Capacitor Codebase (paper-kit)

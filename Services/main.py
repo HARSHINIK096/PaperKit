@@ -46,16 +46,30 @@ async def _guest_cleanup_loop():
             await asyncio.sleep(180)
 
 
+from services.youtube_service import (
+    start_local_pot_server,
+    stop_local_pot_server,
+    check_pot_provider_health,
+    get_pot_provider_url,
+)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup — launch background job worker & guest cleanup task
     await job_service.start_worker()
     cleanup_task = asyncio.create_task(_guest_cleanup_loop())
+    
+    # Initialize local PO-token provider if applicable
+    if not os.getenv("POT_PROVIDER_URL"):
+        start_local_pot_server()
+        
     yield
     # Shutdown
     cleanup_task.cancel()
     await job_service.stop_worker()
+    stop_local_pot_server()
     await close_client()
+
 
 
 app = FastAPI(
@@ -199,4 +213,12 @@ async def favicon():
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
-    return {"status": "ok", "service": "MASKERV API", "version": "2.1.0"}
+    pot_url = get_pot_provider_url()
+    pot_healthy = await check_pot_provider_health(pot_url)
+    return {
+        "status": "ok",
+        "service": "MASKERV API",
+        "version": "2.1.0",
+        "youtube_extraction": "ready" if pot_healthy else "degraded",
+    }
+
