@@ -96,6 +96,116 @@ class ApiService {
     return false;
   }
 
+  // Generic File Upload to /files/upload
+  Future<Map<String, dynamic>> uploadFile(File file, {ProgressCallback? onProgress}) async {
+    final bytes = await file.readAsBytes();
+    final filename = file.uri.pathSegments.last;
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+
+    final res = await dio.post(
+      '/files/upload',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+      onSendProgress: onProgress,
+    );
+    if (res.data is Map<String, dynamic>) {
+      return res.data;
+    }
+    return {'_id': res.data.toString(), 'filename': filename};
+  }
+
+  // Convert Document Bi-directional
+  Future<File> convertDocument({
+    required File file,
+    required String fromFormat,
+    required String toFormat,
+    Map<String, dynamic>? options,
+    ProgressCallback? onProgress,
+  }) async {
+    // 1. Upload file to get file_id
+    String? fileId;
+    try {
+      final uploadRes = await uploadFile(file, onProgress: (sent, total) {
+        if (onProgress != null && total > 0) {
+          onProgress((sent / total * 40).round(), 100);
+        }
+      });
+      fileId = uploadRes['_id']?.toString() ?? uploadRes['id']?.toString();
+    } catch (_) {
+      // Fallback: direct multipart convert
+    }
+
+    Response res;
+    if (fileId != null && fileId.isNotEmpty) {
+      final payload = <String, dynamic>{
+        'file_id': fileId,
+        'from_format': fromFormat,
+        'to_format': toFormat,
+        if (options != null) ...options,
+      };
+      res = await dio.post('/tools/convert', data: payload);
+    } else {
+      final bytes = await file.readAsBytes();
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+        'from_format': fromFormat,
+        'to_format': toFormat,
+        if (options != null) ...options,
+      });
+      res = await dio.post(
+        '/tools/convert',
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+    }
+
+    final outputDir = await getApplicationDocumentsDirectory();
+    const extMap = {
+      'word': 'docx',
+      'excel': 'xlsx',
+      'ppt': 'pptx',
+      'image': 'jpg',
+      'pdf': 'pdf',
+      'txt': 'txt',
+      'html': 'html',
+      'markdown': 'md',
+    };
+    final outExt = extMap[toFormat.toLowerCase()] ?? toFormat.toLowerCase();
+    final stem = file.uri.pathSegments.last.contains('.')
+        ? file.uri.pathSegments.last.substring(0, file.uri.pathSegments.last.lastIndexOf('.'))
+        : 'Document';
+    final outFilename = '${stem}_converted.$outExt';
+    final outputFile = File('${outputDir.path}/$outFilename');
+
+    if (res.data is List<int>) {
+      await outputFile.writeAsBytes(res.data);
+      return outputFile;
+    } else if (res.data is Map && res.data['download_url'] != null) {
+      String downloadUrl = res.data['download_url'].toString();
+      if (!downloadUrl.startsWith('http')) {
+        final cleanBase = dio.options.baseUrl.replaceAll(RegExp(r'/+$'), '');
+        downloadUrl = '$cleanBase$downloadUrl';
+      }
+      final downloadRes = await dio.get<List<int>>(
+        downloadUrl,
+        options: Options(responseType: ResponseType.bytes),
+        onReceiveProgress: (received, total) {
+          if (onProgress != null && total > 0) {
+            onProgress((40 + (received / total * 60)).round(), 100);
+          }
+        },
+      );
+      if (downloadRes.data != null && downloadRes.data!.isNotEmpty) {
+        await outputFile.writeAsBytes(downloadRes.data!);
+        return outputFile;
+      }
+    }
+
+    throw Exception('Failed to obtain converted $toFormat file from PaperKit backend.');
+  }
+
   // Generic File Upload
   Future<Response> uploadAndProcess({
     required String endpoint,
@@ -166,6 +276,10 @@ class ApiService {
 
   // 1. AI OCR (Groq Vision / Gemini Vision)
   Future<Map<String, dynamic>> ocrDocument({File? file, String? fileId}) async {
+    if (fileId != null && fileId.isNotEmpty) {
+      final res = await dio.post('/ai/ocr', data: {'file_id': fileId});
+      return res.data is Map<String, dynamic> ? res.data : {'text': res.data.toString(), 'ocr': res.data.toString()};
+    }
     if (file != null) {
       final bytes = await file.readAsBytes();
       final ext = file.path.split('.').last.toLowerCase();
@@ -175,16 +289,10 @@ class ApiService {
         'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last, contentType: MediaType.parse(mimeType)),
       });
 
-      try {
-        final res = await dio.post('/ai/ocr', data: {'file_id': fileId});
-        return res.data;
-      } catch (_) {
-        final res = await dio.post('/ai/ocr', data: formData, options: Options(contentType: 'multipart/form-data'));
-        return res.data is Map<String, dynamic> ? res.data : {'text': res.data.toString(), 'ocr': res.data.toString()};
-      }
+      final res = await dio.post('/ai/ocr', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data is Map<String, dynamic> ? res.data : {'text': res.data.toString(), 'ocr': res.data.toString()};
     }
-    final res = await dio.post('/ai/ocr', data: {'file_id': fileId});
-    return res.data;
+    throw Exception('No document or file provided for OCR');
   }
 
   // 2. AI Document Summarizer
@@ -196,13 +304,23 @@ class ApiService {
     String language = 'English',
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final bytes = await file.readAsBytes();
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+        'mode': mode,
+        'language': language,
+      });
+      final res = await dio.post('/ai/summarize', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data is Map<String, dynamic> ? res.data : {'summary': res.data.toString()};
+    }
     final res = await dio.post('/ai/summarize', data: {
       'text': resolvedText,
       'file_id': fileId,
       'mode': mode,
       'language': language,
     });
-    return res.data;
+    return res.data is Map<String, dynamic> ? res.data : {'summary': res.data.toString()};
   }
 
   // 3. AI Document Chat (Ask Document with RAG)
@@ -213,12 +331,21 @@ class ApiService {
     String? fileId,
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final bytes = await file.readAsBytes();
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(bytes, filename: file.uri.pathSegments.last),
+        'question': question,
+      });
+      final res = await dio.post('/ai/ask', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data is Map<String, dynamic> ? res.data : {'answer': res.data.toString()};
+    }
     final res = await dio.post('/ai/ask', data: {
       'question': question,
       'text': resolvedText,
       'file_id': fileId,
     });
-    return res.data;
+    return res.data is Map<String, dynamic> ? res.data : {'answer': res.data.toString()};
   }
 
   // 4. Semantic Compare (Two Documents)
@@ -232,6 +359,20 @@ class ApiService {
   }) async {
     final resolvedA = await _resolveText(text: textA, file: fileA);
     final resolvedB = await _resolveText(text: textB, file: fileB);
+
+    if ((resolvedA.isEmpty && fileA != null) || (resolvedB.isEmpty && fileB != null)) {
+      final formMap = <String, dynamic>{};
+      if (fileA != null) {
+        formMap['file_a'] = MultipartFile.fromBytes(await fileA.readAsBytes(), filename: fileA.uri.pathSegments.last);
+      }
+      if (fileB != null) {
+        formMap['file_b'] = MultipartFile.fromBytes(await fileB.readAsBytes(), filename: fileB.uri.pathSegments.last);
+      }
+      if (resolvedA.isNotEmpty) formMap['text_a'] = resolvedA;
+      if (resolvedB.isNotEmpty) formMap['text_b'] = resolvedB;
+      final res = await dio.post('/ai/compare', data: FormData.fromMap(formMap), options: Options(contentType: 'multipart/form-data'));
+      return res.data;
+    }
 
     final res = await dio.post('/ai/compare', data: {
       'text_a': resolvedA,
@@ -262,6 +403,14 @@ class ApiService {
     String? fileId,
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.uri.pathSegments.last),
+        'query': query,
+      });
+      final res = await dio.post('/ai/search', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data;
+    }
     final res = await dio.post('/ai/search', data: {
       'query': query,
       'text': resolvedText,
@@ -277,6 +426,13 @@ class ApiService {
     String? fileId,
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.uri.pathSegments.last),
+      });
+      final res = await dio.post('/ai/classify', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data;
+    }
     final res = await dio.post('/ai/classify', data: {
       'text': resolvedText,
       'file_id': fileId,
@@ -292,6 +448,14 @@ class ApiService {
     String schemaType = 'auto',
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.uri.pathSegments.last),
+        'schema_type': schemaType,
+      });
+      final res = await dio.post('/ai/extract-info', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data;
+    }
     final res = await dio.post('/ai/extract-info', data: {
       'text': resolvedText,
       'file_id': fileId,
@@ -323,6 +487,13 @@ class ApiService {
     String? fileId,
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.uri.pathSegments.last),
+      });
+      final res = await dio.post('/ai/detect-privacy', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data;
+    }
     final res = await dio.post('/ai/detect-privacy', data: {
       'text': resolvedText,
       'file_id': fileId,
@@ -337,6 +508,13 @@ class ApiService {
     String? fileId,
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.uri.pathSegments.last),
+      });
+      final res = await dio.post('/ai/quality-check', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data;
+    }
     final res = await dio.post('/ai/quality-check', data: {
       'text': resolvedText,
       'file_id': fileId,
@@ -352,12 +530,20 @@ class ApiService {
     String? fileId,
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.uri.pathSegments.last),
+        'target_language': targetLanguage,
+      });
+      final res = await dio.post('/ai/translate', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data is Map<String, dynamic> ? res.data : {'translation': res.data.toString()};
+    }
     final res = await dio.post('/ai/translate', data: {
       'target_language': targetLanguage,
       'text': resolvedText,
       'file_id': fileId,
     });
-    return res.data;
+    return res.data is Map<String, dynamic> ? res.data : {'translation': res.data.toString()};
   }
 
   // 13. AI Table Extractor
@@ -367,6 +553,13 @@ class ApiService {
     String? fileId,
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.uri.pathSegments.last),
+      });
+      final res = await dio.post('/ai/extract-tables', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data;
+    }
     final res = await dio.post('/ai/extract-tables', data: {
       'text': resolvedText,
       'file_id': fileId,
@@ -381,6 +574,13 @@ class ApiService {
     String? fileId,
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.uri.pathSegments.last),
+      });
+      final res = await dio.post('/ai/pdf-to-markdown', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data;
+    }
     final res = await dio.post('/ai/pdf-to-markdown', data: {
       'text': resolvedText,
       'file_id': fileId,
@@ -409,6 +609,13 @@ class ApiService {
     String? fileId,
   }) async {
     final resolvedText = await _resolveText(text: text, file: file);
+    if (resolvedText.isEmpty && file != null) {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(await file.readAsBytes(), filename: file.uri.pathSegments.last),
+      });
+      final res = await dio.post('/ai/searchable-pdf', data: formData, options: Options(contentType: 'multipart/form-data'));
+      return res.data;
+    }
     final res = await dio.post('/ai/searchable-pdf', data: {
       'text': resolvedText,
       'file_id': fileId,

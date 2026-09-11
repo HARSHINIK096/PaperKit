@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/history_item.dart';
@@ -91,13 +90,6 @@ class _OCRScreenState extends State<OCRScreen> {
         );
       }
     }
-  }
-
-  void _copyToClipboard() {
-    Clipboard.setData(ClipboardData(text: _extractedText));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Text copied to clipboard!')),
-    );
   }
 
   @override

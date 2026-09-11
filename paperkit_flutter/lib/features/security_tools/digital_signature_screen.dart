@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../../core/models/document_file.dart';
@@ -57,7 +55,6 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
   final double _signatureAspectRatio = 2.4; // Width / Height
 
   bool _isProcessing = false;
-  File? _signedResult;
 
   Future<void> _pickPdfFile() async {
     HapticFeedback.lightImpact();
@@ -80,7 +77,6 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
           _totalPages = count > 0 ? count : 1;
           _currentPageIndex = 0;
           _docPageSize = Size(pSize.width, pSize.height);
-          _signedResult = null;
         });
       } catch (e) {
         if (mounted) {
@@ -258,7 +254,6 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
             );
 
         setState(() {
-          _signedResult = outputFile;
           _isProcessing = false;
         });
 

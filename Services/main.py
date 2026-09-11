@@ -112,6 +112,26 @@ async def log_requests(request: Request, call_next):
         raise exc
 
 
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Safely serialize validation errors without crashing on binary bytes."""
+    cleaned_errors = []
+    for err in exc.errors():
+        err_dict = dict(err)
+        inp = err_dict.get("input")
+        if isinstance(inp, bytes):
+            err_dict["input"] = f"<binary data: {len(inp)} bytes>"
+        elif isinstance(inp, (list, tuple)):
+            err_dict["input"] = [f"<binary data: {len(x)} bytes>" if isinstance(x, bytes) else x for x in inp]
+        elif isinstance(inp, dict):
+            err_dict["input"] = {k: f"<binary data: {len(v)} bytes>" if isinstance(v, bytes) else v for k, v in inp.items()}
+        cleaned_errors.append(err_dict)
+    return JSONResponse(status_code=422, content={"detail": cleaned_errors})
+
+
 # Custom StaticFiles wrapper with explicit OpenXML/PDF MIME types & Content-Disposition
 class CustomStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope):

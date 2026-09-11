@@ -1,6 +1,5 @@
-"""Tools routers — merge, split, compress, convert, scanner"""
 import base64
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from database import get_db
 from middleware.auth import get_current_user
 from services.storage import upload_file, get_file_bytes
@@ -16,7 +15,9 @@ from services.scanner import detect_document_corners, warp_perspective_and_enhan
 from config import get_settings
 from bson import ObjectId
 from datetime import timezone, datetime
+from typing import Optional
 import io
+import json
 import pymupdf as fitz
 
 settings = get_settings()
@@ -110,83 +111,147 @@ async def _log_history(
     await db.history.insert_one(history_doc)
 
 
+async def _extract_tool_payload(request: Request, user_id: str, db) -> tuple[dict, Optional[tuple[bytes, dict]]]:
+    """
+    Extracts tool arguments and source file bytes regardless of whether request is JSON or multipart/form-data.
+    Returns (params_dict, (file_bytes, file_metadata) or None).
+    """
+    content_type = request.headers.get("content-type", "")
+    params = {}
+    file_tuple = None
+
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        uploaded_files = []
+        for key, val in form.items():
+            if isinstance(val, UploadFile):
+                content = await val.read()
+                storage_url, file_id = await _save_result(content, val.filename or "uploaded_document", val.content_type or "application/octet-stream", user_id, db)
+                meta = {"_id": file_id, "original_filename": val.filename, "content_type": val.content_type, "storage_url": storage_url}
+                if key == "file" or not file_tuple:
+                    file_tuple = (content, meta)
+                uploaded_files.append((content, meta))
+            else:
+                params[key] = val
+        if uploaded_files:
+            params["_uploaded_files"] = uploaded_files
+    else:
+        try:
+            params = await request.json()
+        except Exception:
+            params = {}
+
+    file_id = params.get("file_id")
+    if not file_tuple and file_id:
+        file_tuple = await _get_file_bytes(file_id, user_id, db)
+
+    return params, file_tuple
+
+
 # ── Merge ──────────────────────────────────────────────────────────────────────
 
 @router.post("/merge")
-async def merge(body: dict, current_user: dict = Depends(get_current_user)):
-    file_ids = body.get("file_ids", [])
-    options = body.get("options", {})
-    page_size = options.get("page_size", "original")
-    margin = options.get("margin", "none")
-    
-    if len(file_ids) < 2:
-        raise HTTPException(status_code=400, detail="At least 2 files required")
-
+async def merge(request: Request, current_user: dict = Depends(get_current_user)):
     db = get_db()
     user_id = str(current_user["_id"])
+    body, _ = await _extract_tool_payload(request, user_id, db)
+
+    file_ids = body.get("file_ids", [])
+    if isinstance(file_ids, str):
+        try:
+            file_ids = json.loads(file_ids)
+        except Exception:
+            file_ids = [f.strip() for f in file_ids.split(",") if f.strip()]
+
+    options = body.get("options", {})
+    if isinstance(options, str):
+        try:
+            options = json.loads(options)
+        except Exception:
+            options = {}
+
+    page_size = options.get("page_size", body.get("page_size", "original"))
+    margin = options.get("margin", body.get("margin", "none"))
+
     pdf_bytes_list = []
     input_filenames = []
-    
-    for fid in file_ids:
-        data, meta = await _get_file_bytes(fid, user_id, db)
-        pdf_bytes_list.append(data)
-        input_filenames.append(meta.get("original_filename", "file.pdf"))
+
+    uploaded_files = body.get("_uploaded_files", [])
+    if uploaded_files and len(uploaded_files) >= 2:
+        for data, meta in uploaded_files:
+            pdf_bytes_list.append(data)
+            input_filenames.append(meta.get("original_filename", "file.pdf"))
+    elif file_ids:
+        for fid in file_ids:
+            data, meta = await _get_file_bytes(fid, user_id, db)
+            pdf_bytes_list.append(data)
+            input_filenames.append(meta.get("original_filename", "file.pdf"))
+
+    if len(pdf_bytes_list) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 files required")
 
     result = merge_pdfs(pdf_bytes_list, page_size=page_size, margin_type=margin)
     output_filename = "merged.pdf"
     if input_filenames:
         base_stem = input_filenames[0].rsplit(".", 1)[0]
         output_filename = f"{base_stem}_merged.pdf"
-        
+
     url, _ = await _save_result(result, output_filename, "application/pdf", user_id, db)
-    await _log_history(user_id, "merge-pdf", f"Merged {len(file_ids)} files into {output_filename}", input_filenames, url, {"page_size": page_size, "margin": margin}, db)
-    
+    await _log_history(user_id, "merge-pdf", f"Merged {len(pdf_bytes_list)} files into {output_filename}", input_filenames, url, {"page_size": page_size, "margin": margin}, db)
+
     return {"download_url": url, "size": len(result)}
 
 
 @router.post("/organize")
-async def organize(body: dict, current_user: dict = Depends(get_current_user)):
-    file_id = body.get("file_id")
-    pages = body.get("pages", [])  # list of {"index": int, "rotation": int}
+async def organize(request: Request, current_user: dict = Depends(get_current_user)):
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
+
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id is required")
+
+    pages = body.get("pages", [])
+    if isinstance(pages, str):
+        try:
+            pages = json.loads(pages)
+        except Exception:
+            pages = []
     tool_id = body.get("tool_id", "organize-pages")
-    
-    if not file_id:
-        raise HTTPException(status_code=400, detail="file_id is required")
+
     if not pages:
         raise HTTPException(status_code=400, detail="pages sequence is required")
 
-    db = get_db()
-    user_id = str(current_user["_id"])
-    src_bytes, meta = await _get_file_bytes(file_id, user_id, db)
-
+    src_bytes, meta = file_tuple
     result = organize_pdf_pages(src_bytes, pages)
-    
+
     old_filename = meta.get("original_filename", "file.pdf")
     stem = old_filename.rsplit(".", 1)[0]
     output_filename = f"{stem}_organized.pdf"
-    
+
     url, _ = await _save_result(result, output_filename, "application/pdf", user_id, db)
     await _log_history(user_id, tool_id, f"Organized pages of {old_filename}", [old_filename], url, {"pages_count": len(pages)}, db)
-    
+
     return {"download_url": url, "size": len(result)}
 
 
 # ── Split ──────────────────────────────────────────────────────────────────────
 
 @router.post("/split")
-async def split(body: dict, current_user: dict = Depends(get_current_user)):
-    file_id = body.get("file_id")
-    mode = body.get("mode", "range")
-    tool_id = body.get("tool_id", "split-pdf") # can be extract-pages, split-pdf
-    if not file_id:
-        raise HTTPException(status_code=400, detail="file_id required")
-
+async def split(request: Request, current_user: dict = Depends(get_current_user)):
     db = get_db()
     user_id = str(current_user["_id"])
-    pdf_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
 
-    kwargs = {k: v for k, v in body.items() if k not in ("file_id", "mode", "tool_id")}
-    parts = split_pdf(pdf_bytes, mode, **kwargs)
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id required")
+
+    mode = body.get("mode", "range")
+    tool_id = body.get("tool_id", "split-pdf")
+    src_bytes, meta = file_tuple
+
+    kwargs = {k: v for k, v in body.items() if k not in ("file_id", "mode", "tool_id", "_uploaded_files")}
+    parts = split_pdf(src_bytes, mode, **kwargs)
 
     original_name = meta.get("original_filename", "file.pdf")
     stem = original_name.rsplit(".", 1)[0]
@@ -200,54 +265,55 @@ async def split(body: dict, current_user: dict = Depends(get_current_user)):
     for i, part in enumerate(parts):
         url, _ = await _save_result(part, f"{stem}_split_part_{i+1}.pdf", "application/pdf", user_id, db)
         urls.append(url)
-    
-    # Log history for first part
+
     if urls:
         await _log_history(user_id, tool_id, f"Split {original_name} into {len(parts)} parts", [original_name], urls[0], {"mode": mode, "parts": len(parts)}, db)
-        
+
     return {"download_urls": urls, "parts": len(parts)}
 
 
 # ── Compress ───────────────────────────────────────────────────────────────────
 
 @router.post("/compress")
-async def compress(body: dict, current_user: dict = Depends(get_current_user)):
-    file_id = body.get("file_id")
-    quality = body.get("quality", "balanced")
-    if not file_id:
-        raise HTTPException(status_code=400, detail="file_id required")
-
+async def compress(request: Request, current_user: dict = Depends(get_current_user)):
     db = get_db()
     user_id = str(current_user["_id"])
-    pdf_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
 
-    result = compress_pdf(pdf_bytes, quality)
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id required")
+
+    quality = body.get("quality", "balanced")
+    src_bytes, meta = file_tuple
+
+    result = compress_pdf(src_bytes, quality)
     original_name = meta.get("original_filename", "file.pdf")
     stem = original_name.rsplit(".", 1)[0]
     url, _ = await _save_result(result, f"{stem}_compressed.pdf", "application/pdf", user_id, db)
     await _log_history(
-        user_id, 
-        "compress-pdf", 
-        f"Compressed {original_name} ({quality})", 
-        [original_name], 
-        url, 
-        {"quality": quality, "original_size": len(pdf_bytes), "compressed_size": len(result)}, 
+        user_id,
+        "compress-pdf",
+        f"Compressed {original_name} ({quality})",
+        [original_name],
+        url,
+        {"quality": quality, "original_size": len(src_bytes), "compressed_size": len(result)},
         db
     )
-    return {"download_url": url, "original_size": len(pdf_bytes), "compressed_size": len(result)}
+    return {"download_url": url, "original_size": len(src_bytes), "compressed_size": len(result)}
 
 
 @router.post("/compress/estimate")
-async def estimate_compression_route(body: dict, current_user: dict = Depends(get_current_user)):
-    file_id = body.get("file_id")
-    quality = body.get("quality", "balanced")
-    if not file_id:
-        raise HTTPException(status_code=400, detail="file_id required")
-
+async def estimate_compression_route(request: Request, current_user: dict = Depends(get_current_user)):
     db = get_db()
     user_id = str(current_user["_id"])
-    pdf_bytes, _ = await _get_file_bytes(file_id, user_id, db)
-    return estimate_compression(pdf_bytes, quality)
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
+
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id required")
+
+    quality = body.get("quality", "balanced")
+    src_bytes, _ = file_tuple
+    return estimate_compression(src_bytes, quality)
 
 
 # ── Convert ────────────────────────────────────────────────────────────────────
@@ -271,16 +337,18 @@ MIME_MAP = {
 
 
 @router.post("/convert")
-async def convert(body: dict, current_user: dict = Depends(get_current_user)):
-    file_id = body.get("file_id")
-    from_fmt = body.get("from_format", "pdf")
-    to_fmt = body.get("to_format", "word")
-    if not file_id:
-        raise HTTPException(status_code=400, detail="file_id required")
-
+async def convert(request: Request, current_user: dict = Depends(get_current_user)):
     db = get_db()
     user_id = str(current_user["_id"])
-    src_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
+
+    from_fmt = (body.get("from_format") or body.get("from") or "pdf").lower()
+    to_fmt = (body.get("to_format") or body.get("to") or "word").lower()
+
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id required")
+
+    src_bytes, meta = file_tuple
 
     to_ext = EXT_MAP.get(to_fmt, to_fmt)
     from_ext = EXT_MAP.get(from_fmt, from_fmt)
@@ -288,7 +356,7 @@ async def convert(body: dict, current_user: dict = Depends(get_current_user)):
     try:
         # Route conversions
         if from_fmt == "pdf":
-            if to_fmt == "image":
+            if to_fmt in ("image", "jpg", "jpeg", "png"):
                 images = pdf_to_images(src_bytes)
                 if not images:
                     raise HTTPException(status_code=422, detail="Could not convert to images")
@@ -298,19 +366,16 @@ async def convert(body: dict, current_user: dict = Depends(get_current_user)):
             elif to_fmt == "html":
                 result_bytes = pdf_to_html(src_bytes)
             elif to_fmt == "markdown":
-                # AI-powered or fallback Markdown
                 if settings.groq_api_key or settings.gemini_api_key:
                     from services import ai_service
                     from services.processing import extract_text
                     pdf_text = extract_text(src_bytes)
                     if not pdf_text.strip():
-                        # Scanned PDF fallback to Multimodal OCR
                         md_text = await ai_service.ocr_pdf(src_bytes, max_pages=10)
                     else:
                         md_text = await ai_service.pdf_to_markdown(pdf_text)
                     result_bytes = md_text.encode("utf-8")
                 else:
-                    # Simple text extraction formatted as text
                     result_bytes = pdf_to_txt(src_bytes)
             elif to_fmt == "word":
                 result_bytes = pdf_to_word_fallback(src_bytes)
@@ -322,7 +387,7 @@ async def convert(body: dict, current_user: dict = Depends(get_current_user)):
                 raise HTTPException(status_code=400, detail=f"Unsupported target format {to_fmt}")
 
         elif to_fmt == "pdf":
-            if from_fmt == "image":
+            if from_fmt in ("image", "jpg", "jpeg", "png", "webp", "bmp"):
                 result_bytes = images_to_pdf([src_bytes])
             elif from_fmt == "word":
                 result_bytes = word_to_pdf_fallback(src_bytes)
@@ -331,9 +396,8 @@ async def convert(body: dict, current_user: dict = Depends(get_current_user)):
             elif from_fmt == "ppt":
                 result_bytes = ppt_to_pdf_fallback(src_bytes)
             elif from_fmt == "txt":
-                # Convert TXT to PDF fallback
                 from reportlab.lib.pagesizes import letter
-                from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+                from reportlab.platypus import SimpleDocTemplate, Paragraph
                 from reportlab.lib.styles import getSampleStyleSheet
                 pdf_stream = io.BytesIO()
                 pdf_doc = SimpleDocTemplate(pdf_stream, pagesize=letter)
@@ -345,7 +409,6 @@ async def convert(body: dict, current_user: dict = Depends(get_current_user)):
                 pdf_doc.build(story)
                 result_bytes = pdf_stream.getvalue()
             elif from_fmt == "html":
-                # Convert HTML to PDF fallback
                 from reportlab.lib.pagesizes import letter
                 from reportlab.platypus import SimpleDocTemplate, Paragraph
                 from reportlab.lib.styles import getSampleStyleSheet
@@ -372,15 +435,15 @@ async def convert(body: dict, current_user: dict = Depends(get_current_user)):
     stem = meta.get("original_filename", "file").rsplit(".", 1)[0]
     res_filename = f"{stem}.{to_ext}"
     url, res_file_id = await _save_result(result_bytes, res_filename, mime, user_id, db)
-    
+
     tool_id = f"{from_fmt}-to-{to_fmt}"
     await _log_history(
-        user_id, 
-        tool_id, 
-        f"Converted {meta.get('original_filename')} to {to_fmt.upper()}", 
-        [meta.get("original_filename")], 
-        url, 
-        {"from_format": from_fmt, "to_format": to_fmt}, 
+        user_id,
+        tool_id,
+        f"Converted {meta.get('original_filename')} to {to_fmt.upper()}",
+        [meta.get("original_filename")],
+        url,
+        {"from_format": from_fmt, "to_format": to_fmt},
         db
     )
 
@@ -404,47 +467,53 @@ async def convert(body: dict, current_user: dict = Depends(get_current_user)):
 
 
 @router.post("/html-to-word")
-async def convert_html_to_word(body: dict, current_user: dict = Depends(get_current_user)):
+async def convert_html_to_word(request: Request, current_user: dict = Depends(get_current_user)):
     """Convert Web Editor HTML or text content directly into Word DOCX format for step-by-step editing pipeline."""
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, _ = await _extract_tool_payload(request, user_id, db)
+
     html_content = body.get("html_content") or body.get("text_content") or ""
     filename = body.get("filename", "edited_document.docx")
     if not html_content.strip():
         raise HTTPException(status_code=400, detail="html_content or text_content required")
 
-    db = get_db()
-    user_id = str(current_user["_id"])
-    
     docx_bytes = html_to_word_bytes(html_content)
     mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     url, doc_id = await _save_result(docx_bytes, filename, mime, user_id, db)
     return {"file_id": doc_id, "download_url": url, "filename": filename, "size": len(docx_bytes)}
 
 
-
 # ── Rotate ─────────────────────────────────────────────────────────────────────
 
 @router.post("/rotate")
-async def rotate(body: dict, current_user: dict = Depends(get_current_user)):
-    file_id = body.get("file_id")
-    degrees = int(body.get("degrees", 90))
-    pages = body.get("pages")  # None = all pages
-    if not file_id:
-        raise HTTPException(status_code=400, detail="file_id required")
-
+async def rotate(request: Request, current_user: dict = Depends(get_current_user)):
     db = get_db()
     user_id = str(current_user["_id"])
-    pdf_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
 
-    result = rotate_pdf(pdf_bytes, degrees, pages)
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id required")
+
+    degrees = int(body.get("degrees", 90))
+    pages = body.get("pages")
+    if isinstance(pages, str):
+        try:
+            pages = json.loads(pages)
+        except Exception:
+            pages = None
+
+    src_bytes, meta = file_tuple
+    result = rotate_pdf(src_bytes, degrees, pages)
     stem = meta.get("original_filename", "file.pdf").rsplit(".", 1)[0]
     url, _ = await _save_result(result, f"{stem}_rotated.pdf", "application/pdf", user_id, db)
     await _log_history(
-        user_id, 
-        "rotate-pdf", 
-        f"Rotated pages of {meta.get('original_filename')} by {degrees}°", 
-        [meta.get('original_filename')], 
-        url, 
-        {"degrees": degrees, "pages": pages}, 
+        user_id,
+        "rotate-pdf",
+        f"Rotated pages of {meta.get('original_filename')} by {degrees}°",
+        [meta.get('original_filename')],
+        url,
+        {"degrees": degrees, "pages": pages},
         db
     )
     return {"download_url": url}
@@ -453,27 +522,28 @@ async def rotate(body: dict, current_user: dict = Depends(get_current_user)):
 # ── Watermark ──────────────────────────────────────────────────────────────────
 
 @router.post("/watermark")
-async def watermark(body: dict, current_user: dict = Depends(get_current_user)):
-    file_id = body.get("file_id")
-    text = body.get("text", "CONFIDENTIAL")
-    opacity = float(body.get("opacity", 0.3))
-    if not file_id:
-        raise HTTPException(status_code=400, detail="file_id required")
-
+async def watermark(request: Request, current_user: dict = Depends(get_current_user)):
     db = get_db()
     user_id = str(current_user["_id"])
-    pdf_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
 
-    result = add_watermark(pdf_bytes, text, opacity)
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id required")
+
+    text = body.get("text", "CONFIDENTIAL")
+    opacity = float(body.get("opacity", 0.3))
+    src_bytes, meta = file_tuple
+
+    result = add_watermark(src_bytes, text, opacity)
     stem = meta.get("original_filename", "file.pdf").rsplit(".", 1)[0]
     url, _ = await _save_result(result, f"{stem}_watermarked.pdf", "application/pdf", user_id, db)
     await _log_history(
-        user_id, 
-        "watermark", 
-        f"Added watermark '{text}' to {meta.get('original_filename')}", 
-        [meta.get('original_filename')], 
-        url, 
-        {"text": text, "opacity": opacity}, 
+        user_id,
+        "watermark",
+        f"Added watermark '{text}' to {meta.get('original_filename')}",
+        [meta.get('original_filename')],
+        url,
+        {"text": text, "opacity": opacity},
         db
     )
     return {"download_url": url}
@@ -488,21 +558,25 @@ async def watermark(body: dict, current_user: dict = Depends(get_current_user)):
 # ── PDF Security, Signatures, Metadata, and Redaction ─────────────────────────
 
 @router.post("/protect")
-async def protect_pdf_route(body: dict, current_user: dict = Depends(get_current_user)):
+async def protect_pdf_route(request: Request, current_user: dict = Depends(get_current_user)):
     """Encrypt and password-protect PDF with permission settings."""
-    file_id = body.get("file_id")
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
+
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id is required")
+
     password = body.get("password")
     owner_password = body.get("owner_password")
     allow_print = body.get("allow_print", True)
     allow_copy = body.get("allow_copy", True)
     allow_edit = body.get("allow_edit", True)
 
-    if not file_id or not password:
-        raise HTTPException(status_code=400, detail="file_id and password are required")
+    if not password:
+        raise HTTPException(status_code=400, detail="password is required")
 
-    db = get_db()
-    user_id = str(current_user["_id"])
-    pdf_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    pdf_bytes, meta = file_tuple
 
     result = protect_pdf(
         pdf_bytes,
@@ -521,17 +595,26 @@ async def protect_pdf_route(body: dict, current_user: dict = Depends(get_current
 
 
 @router.post("/sign")
-async def sign_pdf_route(body: dict, current_user: dict = Depends(get_current_user)):
+async def sign_pdf_route(request: Request, current_user: dict = Depends(get_current_user)):
     """Place visual digital signatures on PDF pages."""
-    file_id = body.get("file_id")
-    signatures = body.get("signatures", [])
-
-    if not file_id or not signatures:
-        raise HTTPException(status_code=400, detail="file_id and signatures list are required")
-
     db = get_db()
     user_id = str(current_user["_id"])
-    pdf_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
+
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id is required")
+
+    signatures = body.get("signatures", [])
+    if isinstance(signatures, str):
+        try:
+            signatures = json.loads(signatures)
+        except Exception:
+            signatures = []
+
+    if not signatures:
+        raise HTTPException(status_code=400, detail="signatures list is required")
+
+    pdf_bytes, meta = file_tuple
 
     result = sign_pdf(pdf_bytes, signatures)
     old_filename = meta.get("original_filename", "file.pdf")
@@ -564,18 +647,24 @@ async def get_metadata_route(file_id: str, current_user: dict = Depends(get_curr
 
 
 @router.post("/metadata")
-async def update_metadata_route(body: dict, current_user: dict = Depends(get_current_user)):
+async def update_metadata_route(request: Request, current_user: dict = Depends(get_current_user)):
     """Update or wipe PDF metadata for privacy."""
-    file_id = body.get("file_id")
-    updates = body.get("updates", {})
-    wipe_all = body.get("wipe_all", False)
-
-    if not file_id:
-        raise HTTPException(status_code=400, detail="file_id is required")
-
     db = get_db()
     user_id = str(current_user["_id"])
-    pdf_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
+
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id is required")
+
+    updates = body.get("updates", {})
+    if isinstance(updates, str):
+        try:
+            updates = json.loads(updates)
+        except Exception:
+            updates = {}
+    wipe_all = body.get("wipe_all", False)
+
+    pdf_bytes, meta = file_tuple
 
     result, updated_meta = manage_metadata(pdf_bytes, updates=updates, wipe_all=wipe_all)
     old_filename = meta.get("original_filename", "file.pdf")
@@ -588,17 +677,26 @@ async def update_metadata_route(body: dict, current_user: dict = Depends(get_cur
 
 
 @router.post("/redact")
-async def redact_pdf_route(body: dict, current_user: dict = Depends(get_current_user)):
+async def redact_pdf_route(request: Request, current_user: dict = Depends(get_current_user)):
     """Apply irreversible blackouts / redactions to PDF text."""
-    file_id = body.get("file_id")
-    terms = body.get("terms", [])
-
-    if not file_id or not terms:
-        raise HTTPException(status_code=400, detail="file_id and terms list are required")
-
     db = get_db()
     user_id = str(current_user["_id"])
-    pdf_bytes, meta = await _get_file_bytes(file_id, user_id, db)
+    body, file_tuple = await _extract_tool_payload(request, user_id, db)
+
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="file or file_id is required")
+
+    terms = body.get("terms", [])
+    if isinstance(terms, str):
+        try:
+            terms = json.loads(terms)
+        except Exception:
+            terms = [t.strip() for t in terms.split(",") if t.strip()]
+
+    if not terms:
+        raise HTTPException(status_code=400, detail="terms list is required")
+
+    pdf_bytes, meta = file_tuple
 
     result = redact_pdf_text(pdf_bytes, terms)
     old_filename = meta.get("original_filename", "file.pdf")

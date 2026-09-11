@@ -1166,15 +1166,9 @@ class _PdfPageCanvasPainter extends CustomPainter {
       );
 
       // Scaled font size accurately matching document page width
-      final scaledFontSize = (span.fontSize * fontScale).clamp(3.0, 72.0);
+      final scaledFontSize = (span.fontSize * fontScale).clamp(4.0, 72.0);
 
-      // If modified, cover only the exact word/letter bounding box with white
-      if (span.isModified) {
-        final coverPaint = Paint()..color = Colors.white;
-        canvas.drawRect(Rect.fromLTWH(rect.left - 0.5, rect.top - 0.5, rect.width + 1.0, rect.height + 1.0), coverPaint);
-      }
-
-      // Draw word with exact typography matching original document
+      // Draw word/line with exact typography matching original document
       final tp = TextPainter(
         text: TextSpan(
           text: span.currentText,
@@ -1187,10 +1181,19 @@ class _PdfPageCanvasPainter extends CustomPainter {
           ),
         ),
         textDirection: TextDirection.ltr,
-      )..layout();
+      )..layout(maxWidth: (size.width - rect.left).clamp(10.0, size.width));
+
+      // If modified, cover only the exact line bounding box with crisp white
+      if (span.isModified) {
+        final coverPaint = Paint()..color = Colors.white;
+        final coverW = tp.width > rect.width ? tp.width + 6 : rect.width + 4;
+        final coverH = tp.height > rect.height ? tp.height + 4 : rect.height + 2;
+        canvas.drawRect(Rect.fromLTWH(rect.left - 2.0, rect.top - 1.0, coverW, coverH), coverPaint);
+      }
+
       tp.paint(canvas, rect.topLeft);
 
-      // If this span is the actively selected word, draw glowing selection frame
+      // If this span is the actively selected line, draw glowing selection frame
       if (selectedSpan != null && selectedSpan!.id == span.id) {
         final selPaint = Paint()
           ..color = AppColors.primary

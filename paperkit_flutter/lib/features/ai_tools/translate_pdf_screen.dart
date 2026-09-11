@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -79,8 +78,6 @@ class _TranslatePDFScreenState extends State<TranslatePDFScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return AppShell(
       title: 'AI Translation',
       showBottomNav: false,

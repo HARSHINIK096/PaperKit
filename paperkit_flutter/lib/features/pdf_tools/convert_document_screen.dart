@@ -1,12 +1,13 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:pdf/pdf.dart' as pw_pdf;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
@@ -33,7 +34,7 @@ class _ConvertDocumentScreenState extends State<ConvertDocumentScreen> {
   bool _isProcessing = false;
   File? _convertedResult;
 
-  final List<String> _formats = ['pdf', 'word', 'excel', 'ppt', 'image'];
+  final List<String> _formats = ['pdf', 'word', 'excel', 'ppt', 'image', 'txt', 'html'];
 
   @override
   void initState() {
@@ -43,12 +44,15 @@ class _ConvertDocumentScreenState extends State<ConvertDocumentScreen> {
   }
 
   Future<void> _pickFile() async {
+    HapticFeedback.lightImpact();
     List<String> allowed = [];
     if (_fromFormat == 'pdf') allowed = ['pdf'];
     if (_fromFormat == 'word') allowed = ['doc', 'docx'];
     if (_fromFormat == 'excel') allowed = ['xls', 'xlsx'];
     if (_fromFormat == 'ppt') allowed = ['ppt', 'pptx'];
     if (_fromFormat == 'image') allowed = ['jpg', 'jpeg', 'png', 'webp', 'bmp'];
+    if (_fromFormat == 'txt') allowed = ['txt'];
+    if (_fromFormat == 'html') allowed = ['html', 'htm'];
 
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -73,7 +77,7 @@ class _ConvertDocumentScreenState extends State<ConvertDocumentScreen> {
       File outputFile;
 
       if (_fromFormat == 'image' && _toFormat == 'pdf') {
-        // Local conversion
+        // Local conversion for image -> PDF
         final pdf = pw.Document();
         final imgBytes = await _selectedFile!.readAsBytes();
         final image = pw.MemoryImage(imgBytes);
@@ -90,29 +94,12 @@ class _ConvertDocumentScreenState extends State<ConvertDocumentScreen> {
         outputFile = File('${_selectedFile!.parent.path}/$outName.pdf');
         await outputFile.writeAsBytes(await pdf.save());
       } else {
-        // Backend conversion service
-        final res = await ApiService().uploadAndProcess(
-          endpoint: '/tools/convert',
-          files: [_selectedFile!],
-          data: {'from_format': _fromFormat, 'to_format': _toFormat},
+        // High-Fidelity backend conversion
+        outputFile = await ApiService().convertDocument(
+          file: _selectedFile!,
+          fromFormat: _fromFormat,
+          toFormat: _toFormat,
         );
-        outputFile = File('${_selectedFile!.parent.path}/$outName.$_toFormat');
-        if (res.data is List<int>) {
-          await outputFile.writeAsBytes(res.data);
-        } else if (res.data is Map && res.data['download_url'] != null) {
-          final downloadUrl = res.data['download_url'].toString();
-          final downloadRes = await ApiService().dio.get<List<int>>(
-            downloadUrl,
-            options: Options(responseType: ResponseType.bytes),
-          );
-          if (downloadRes.data != null) {
-            await outputFile.writeAsBytes(downloadRes.data!);
-          } else {
-            throw Exception('PaperKit server did not return file payload for $_toFormat.');
-          }
-        } else {
-          throw Exception('Conversion to $_toFormat failed on PaperKit server.');
-        }
       }
 
       final doc = DocumentFile(
@@ -130,7 +117,7 @@ class _ConvertDocumentScreenState extends State<ConvertDocumentScreen> {
               HistoryItem(
                 id: 'hist_$timestamp',
                 toolId: 'convert-document',
-                toolName: 'Convert Document ($_fromFormat to $_toFormat)',
+                toolName: 'Convert Document (${_fromFormat.toUpperCase()} to ${_toFormat.toUpperCase()})',
                 fileName: doc.name,
                 outputPath: outputFile.path,
                 fileSize: await outputFile.length(),
@@ -144,7 +131,7 @@ class _ConvertDocumentScreenState extends State<ConvertDocumentScreen> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Converted to $_toFormat successfully!')),
+          SnackBar(content: Text('Converted to ${_toFormat.toUpperCase()} successfully!')),
         );
       }
     } catch (e) {
@@ -276,11 +263,26 @@ class _ConvertDocumentScreenState extends State<ConvertDocumentScreen> {
 
           if (_convertedResult != null) ...[
             const SizedBox(height: 20),
-            ActionButton(
-              label: 'Open Converted File',
-              icon: LucideIcons.externalLink,
-              isSecondary: true,
-              onPressed: () => OpenFilex.open(_convertedResult!.path),
+            Row(
+              children: [
+                Expanded(
+                  child: ActionButton(
+                    label: 'Open File',
+                    icon: LucideIcons.externalLink,
+                    isSecondary: true,
+                    onPressed: () => OpenFilex.open(_convertedResult!.path),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ActionButton(
+                    label: 'Share',
+                    icon: LucideIcons.share2,
+                    isSecondary: true,
+                    onPressed: () => Share.shareXFiles([XFile(_convertedResult!.path)]),
+                  ),
+                ),
+              ],
             ),
           ],
         ],
