@@ -95,9 +95,9 @@ def extract_spotify_metadata(url: str) -> Tuple[str, str]:
         
     return title or "Spotify Track", artists
 
-def resolve_youtube_url_for_query(search_query: str) -> Optional[str]:
+def resolve_audio_stream_url_for_query(search_query: str) -> Optional[str]:
     """
-    Resolves a direct YouTube video URL for a given search query using clean search extraction.
+    Resolves a direct audio stream URL for a given search query across YouTube, YouTube Music, and SoundCloud.
     """
     import yt_dlp
     
@@ -105,6 +105,7 @@ def resolve_youtube_url_for_query(search_query: str) -> Optional[str]:
         f"ytsearch5:{search_query}",
         f"ytsearch5:{search_query} audio",
         f"ytsearch5:{search_query} official",
+        f"scsearch3:{search_query}",  # SoundCloud fallback (never blocks cloud/Render IPs)
     ]
     
     search_opts = {
@@ -130,12 +131,18 @@ def resolve_youtube_url_for_query(search_query: str) -> Optional[str]:
                 info = ydl.extract_info(q, download=False)
                 if info and "entries" in info and info["entries"]:
                     for entry in info["entries"]:
-                        if entry and entry.get("id"):
-                            vid_id = entry["id"]
-                            print(f"Resolved YouTube video for '{search_query}': https://www.youtube.com/watch?v={vid_id} ({entry.get('title', '')})")
-                            return f"https://www.youtube.com/watch?v={vid_id}"
+                        if entry:
+                            url = entry.get("webpage_url") or entry.get("url")
+                            vid_id = entry.get("id")
+                            if url and ("youtube.com" in url or "soundcloud.com" in url or "youtu.be" in url):
+                                print(f"Resolved audio source for '{search_query}': {url} ({entry.get('title', '')})")
+                                return url
+                            elif vid_id and not vid_id.startswith("http"):
+                                target = f"https://www.youtube.com/watch?v={vid_id}"
+                                print(f"Resolved YouTube video for '{search_query}': {target} ({entry.get('title', '')})")
+                                return target
         except Exception as e:
-            print(f"Search query '{q}' note: {e}")
+            print(f"Search provider '{q}' note: {e}")
             continue
 
     return None
@@ -150,7 +157,7 @@ def download_via_ytdlp(search_query: str, output_dir: str, job_id: Optional[str]
     out_tmpl = os.path.join(output_dir, f"{prefix}%(title)s.%(ext)s")
     ffmpeg_bin = find_ffmpeg_path()
     
-    target_video_url = resolve_youtube_url_for_query(search_query)
+    target_video_url = resolve_audio_stream_url_for_query(search_query)
     download_targets = [target_video_url] if target_video_url else [f"ytsearch1:{search_query}"]
     
     cookie_file = os.getenv("YOUTUBE_COOKIES_FILE") or os.getenv("COOKIES_FILE")
