@@ -63,6 +63,7 @@ import '../../features/ai_tools/writing_assistant_screen.dart';
 import '../../features/ai_tools/quality_checker_screen.dart';
 import '../../features/ai_tools/extract_tables_screen.dart';
 import '../../features/ai_tools/image_enhancer_screen.dart';
+import '../../features/ai_tools/invoice_parser_screen.dart';
 
 // Academic Tools
 import '../../features/academic/research_analyzer_screen.dart';
@@ -80,6 +81,18 @@ import '../../features/academic/presentation_generator_screen.dart';
 // Forms
 import '../../features/forms/form_filler_screen.dart';
 import '../../features/forms/form_creator_screen.dart';
+
+// New Multi-Domain Expansion Screens
+import '../../features/cognitive_retention/cognitive_retention_screen.dart';
+import '../../features/voice_podcast/voice_podcast_screen.dart';
+import '../../features/accessibility/accessibility_reader_screen.dart';
+import '../../features/legal_audit/legal_audit_screen.dart';
+import '../../features/diagram_studio/mind_map_diagram_screen.dart';
+import '../../features/workspace/dual_pane_workspace_screen.dart';
+import '../../features/p2p_share/p2p_mesh_share_screen.dart';
+import '../../features/analytics/tabular_extractor_screen.dart';
+import '../../features/translation/translation_hub_screen.dart';
+import '../../features/publishing/publishing_studio_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -180,6 +193,9 @@ class AppRouter {
       GoRoute(path: '/security/redact', builder: (context, state) => const SmartRedactionScreen()),
       GoRoute(path: '/tools/redact', builder: (context, state) => const SmartRedactionScreen()),
       GoRoute(path: '/tools/smart-redaction', builder: (context, state) => const SmartRedactionScreen()),
+      GoRoute(path: '/tools/redact-file', builder: (context, state) => const SmartRedactionScreen()),
+      GoRoute(path: '/tools/redact-pdf', builder: (context, state) => const SmartRedactionScreen()),
+      GoRoute(path: '/pdf/redact', builder: (context, state) => const SmartRedactionScreen()),
       GoRoute(path: '/security/sign', builder: (context, state) => const DigitalSignatureScreen()),
       GoRoute(path: '/tools/sign', builder: (context, state) => const DigitalSignatureScreen()),
       GoRoute(path: '/tools/digital-sign', builder: (context, state) => const DigitalSignatureScreen()),
@@ -256,6 +272,12 @@ class AppRouter {
       GoRoute(path: '/ai/quality-checker', builder: (context, state) => const QualityCheckerScreen()),
       GoRoute(path: '/ai/extract-tables', builder: (context, state) => const ExtractTablesScreen()),
       GoRoute(path: '/ai/image-enhancer', builder: (context, state) => const ImageEnhancerScreen()),
+      GoRoute(path: '/ai/invoice', builder: (context, state) => const InvoiceParserScreen()),
+      GoRoute(path: '/ai/parse-invoice', builder: (context, state) => const InvoiceParserScreen()),
+      GoRoute(path: '/tools/invoice', builder: (context, state) => const InvoiceParserScreen()),
+      GoRoute(path: '/tools/parse-invoice', builder: (context, state) => const InvoiceParserScreen()),
+      GoRoute(path: '/ai/resume', builder: (context, state) => const ExtractInfoScreen()),
+      GoRoute(path: '/tools/parse-resume', builder: (context, state) => const ExtractInfoScreen()),
 
       // Academic Tools
       GoRoute(path: '/academic/research-analyzer', builder: (context, state) => const ResearchAnalyzerScreen()),
@@ -273,7 +295,20 @@ class AppRouter {
       // Forms
       GoRoute(path: '/forms/filler', builder: (context, state) => const FormFillerScreen()),
       GoRoute(path: '/forms/creator', builder: (context, state) => const FormCreatorScreen()),
+
+      // Multi-Domain Expansion Screens
+      GoRoute(path: '/cognitive/retention', builder: (context, state) => const CognitiveRetentionScreen()),
+      GoRoute(path: '/voice/podcast', builder: (context, state) => const VoicePodcastScreen()),
+      GoRoute(path: '/accessibility/reader', builder: (context, state) => const AccessibilityReaderScreen()),
+      GoRoute(path: '/legal/audit', builder: (context, state) => const LegalAuditScreen()),
+      GoRoute(path: '/diagram/mindmap', builder: (context, state) => const MindMapDiagramScreen()),
+      GoRoute(path: '/workspace/dualpane', builder: (context, state) => const DualPaneWorkspaceScreen()),
+      GoRoute(path: '/p2p/meshshare', builder: (context, state) => const P2PMeshShareScreen()),
+      GoRoute(path: '/analytics/tables', builder: (context, state) => const TabularExtractorScreen()),
+      GoRoute(path: '/translation/hub', builder: (context, state) => const TranslationHubScreen()),
+      GoRoute(path: '/publishing/studio', builder: (context, state) => const PublishingStudioScreen()),
     ],
     errorBuilder: (context, state) => const AllToolsScreen(),
   );
 }
+

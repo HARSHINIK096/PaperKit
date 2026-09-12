@@ -51,13 +51,18 @@ class _SmartRedactionScreenState extends State<SmartRedactionScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      // Simulate blacking out text keywords & applying permanent redaction
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputFile = await PdfEngine.addWatermark(
+      final keywords = _keywordsController.text
+          .split(',')
+          .map((k) => k.trim())
+          .where((k) => k.isNotEmpty)
+          .toList();
+
+      final outputFile = await PdfEngine.smartRedactPdf(
         inputFile: _selectedFile!,
-        watermarkText: '[REDACTED DATA]',
-        opacity: 0.8,
-        fontSize: 32,
+        keywords: keywords,
+        redactEmails: _redactEmails,
+        redactPhones: _redactPhones,
       );
 
       final doc = DocumentFile(

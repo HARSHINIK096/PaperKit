@@ -185,6 +185,144 @@ class StorageService {
     };
   }
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // DOMAINS 5-15 PERSISTENCE HELPERS
+  // ───────────────────────────────────────────────────────────────────────────
+
+  static const String _studyDecksKey = 'paperkit_study_decks_v1';
+  static const String _auditLedgerKey = 'paperkit_audit_ledger_v1';
+  static const String _formProfilesKey = 'paperkit_form_profiles_v1';
+  static const String _pageNotesKey = 'paperkit_page_notes_v1';
+  static const String _syllabusCoursesKey = 'paperkit_syllabus_courses_v1';
+  static const String _glossaryTermsKey = 'paperkit_glossary_terms_v1';
+  static const String _voiceAnnotationsKey = 'paperkit_voice_annotations_v1';
+
+  // Persistent Study Decks (Domain 5)
+  Future<List<Map<String, dynamic>>> getStudyDecks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_studyDecksKey);
+    if (data == null || data.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(data);
+      return decoded.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveStudyDecks(List<Map<String, dynamic>> decks) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_studyDecksKey, jsonEncode(decks));
+  }
+
+  // Persistent Audit Ledger (Domain 8)
+  Future<List<Map<String, dynamic>>> getAuditLedger() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_auditLedgerKey);
+    if (data == null || data.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(data);
+      return decoded.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveAuditLedger(List<Map<String, dynamic>> ledger) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_auditLedgerKey, jsonEncode(ledger));
+  }
+
+  // Persistent Form Profiles (Domain 9)
+  Future<List<Map<String, dynamic>>> getFormProfiles() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_formProfilesKey);
+    if (data == null || data.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(data);
+      return decoded.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveFormProfiles(List<Map<String, dynamic>> profiles) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_formProfilesKey, jsonEncode(profiles));
+  }
+
+  // Persistent Page Anchor Notes (Domain 11)
+  Future<List<Map<String, dynamic>>> getPageNotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_pageNotesKey);
+    if (data == null || data.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(data);
+      return decoded.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> savePageNotes(List<Map<String, dynamic>> notes) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pageNotesKey, jsonEncode(notes));
+  }
+
+  // Persistent Syllabus Courses (Domain 11)
+  Future<List<Map<String, dynamic>>> getSyllabusCourses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_syllabusCoursesKey);
+    if (data == null || data.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(data);
+      return decoded.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveSyllabusCourses(List<Map<String, dynamic>> courses) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_syllabusCoursesKey, jsonEncode(courses));
+  }
+
+  // Persistent Translation Glossary (Domain 14)
+  Future<List<Map<String, dynamic>>> getGlossaryTerms() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_glossaryTermsKey);
+    if (data == null || data.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(data);
+      return decoded.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveGlossaryTerms(List<Map<String, dynamic>> terms) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_glossaryTermsKey, jsonEncode(terms));
+  }
+
+  // Persistent Voice Annotations (Domain 6)
+  Future<List<Map<String, dynamic>>> getVoiceAnnotations() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString(_voiceAnnotationsKey);
+    if (data == null || data.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(data);
+      return decoded.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveVoiceAnnotations(List<Map<String, dynamic>> annotations) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_voiceAnnotationsKey, jsonEncode(annotations));
+  }
+
   // Clear temporary cache directory
   Future<void> clearTempDirectory() async {
     try {
@@ -200,3 +338,4 @@ class StorageService {
     } catch (_) {}
   }
 }
+

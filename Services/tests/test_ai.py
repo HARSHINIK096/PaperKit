@@ -147,3 +147,40 @@ async def test_quality_check(client, auth_headers):
         )
         assert resp.status_code == 200
         assert resp.json()["overall_score"] == 90
+
+
+@pytest.mark.asyncio
+async def test_generate_podcast_script(client, auth_headers):
+    """POST /ai/podcast-script generates multi-speaker dialogue."""
+    mock_script = {
+        "title": "Test Podcast",
+        "summary": "Summary",
+        "dialogue": [{"speaker": "Alex (Host)", "text": "Hello", "timestamp": "00:00"}],
+    }
+    with patch.object(ai_service, "generate_podcast_script", new=AsyncMock(return_value=mock_script)):
+        resp = await client.post(
+            "/ai/podcast-script",
+            json={"text": "Sample document text for podcast generation."},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["title"] == "Test Podcast"
+        assert len(resp.json()["dialogue"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_analyze_contract(client, auth_headers):
+    """POST /ai/analyze-contract extracts contract clauses."""
+    mock_clauses = {
+        "clauses": [{"category": "Parties", "title": "Parties", "snippet": "Party A and Party B", "pageNumber": 1}]
+    }
+    with patch.object(ai_service, "analyze_contract_clauses", new=AsyncMock(return_value=mock_clauses)):
+        resp = await client.post(
+            "/ai/analyze-contract",
+            json={"text": "This agreement is made between Party A and Party B."},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        assert len(resp.json()["clauses"]) == 1
+        assert resp.json()["clauses"][0]["category"] == "Parties"
+

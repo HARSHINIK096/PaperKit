@@ -978,7 +978,139 @@ class ToolRegistry {
     presentationGenerator.id: presentationGenerator,
     formFiller.id: formFiller,
     formCreator.id: formCreator,
+    cognitiveRetention.id: cognitiveRetention,
+    voicePodcast.id: voicePodcast,
+    accessibilityReader.id: accessibilityReader,
+    legalAudit.id: legalAudit,
+    mindMapDiagram.id: mindMapDiagram,
+    dualPaneWorkspace.id: dualPaneWorkspace,
+    p2pMeshShare.id: p2pMeshShare,
+    tabularExtractor.id: tabularExtractor,
+    translationHub.id: translationHub,
+    publishingStudio.id: publishingStudio,
   };
+
+  // ── New 11 Multi-Domain Tools ───────────────────────────────────────────────
+
+  static const ToolItem cognitiveRetention = ToolItem(
+    id: 'cognitive-retention',
+    label: 'Cognitive Retention Studio',
+    description: 'Active recall blur-to-reveal reading & Leitner study',
+    route: '/cognitive/retention',
+    icon: LucideIcons.brain,
+    color: AppColors.toolOrange,
+    softColor: AppColors.toolOrangeSoft,
+    category: ToolCategory.cognitive,
+    tags: ['active recall', 'flashcard', 'study', 'retention', 'blur', 'wpm'],
+  );
+
+  static const ToolItem voicePodcast = ToolItem(
+    id: 'voice-podcast',
+    label: 'Voice & Podcast Studio',
+    description: 'Conversational dialogue podcast script & TTS audio player',
+    route: '/voice/podcast',
+    icon: LucideIcons.mic,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.voice,
+    tags: ['podcast', 'voice', 'audio', 'tts', 'dialogue', 'speech'],
+  );
+
+  static const ToolItem accessibilityReader = ToolItem(
+    id: 'accessibility-reader',
+    label: 'Accessibility Reader Studio',
+    description: 'Bionic Reading, OpenDyslexic font & high-contrast themes',
+    route: '/accessibility/reader',
+    icon: LucideIcons.eye,
+    color: AppColors.toolTeal,
+    softColor: AppColors.toolTealSoft,
+    category: ToolCategory.accessibility,
+    tags: ['bionic', 'dyslexia', 'accessibility', 'contrast', 'reading'],
+  );
+
+  static const ToolItem legalAudit = ToolItem(
+    id: 'legal-audit',
+    label: 'Legal & Forensic Audit Suite',
+    description: 'SHA-256 chain-of-custody log, clause matrix & Bates codes',
+    route: '/legal/audit',
+    icon: LucideIcons.scale,
+    color: AppColors.toolRed,
+    softColor: AppColors.toolRedSoft,
+    category: ToolCategory.legal,
+    tags: ['legal', 'forensic', 'sha256', 'hash', 'bates', 'clause', 'contract'],
+  );
+
+  static const ToolItem mindMapDiagram = ToolItem(
+    id: 'diagram-mindmap',
+    label: 'Visual Mind Map Studio',
+    description: 'Outline-to-mindmap node graph & visual canvas',
+    route: '/diagram/mindmap',
+    icon: LucideIcons.gitFork,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.diagram,
+    tags: ['mindmap', 'diagram', 'visual', 'nodes', 'canvas', 'graph'],
+  );
+
+  static const ToolItem dualPaneWorkspace = ToolItem(
+    id: 'workspace-dualpane',
+    label: 'Dual-Pane Workspace Hub',
+    description: 'Split-screen side-by-side document viewer & markdown notes',
+    route: '/workspace/dualpane',
+    icon: LucideIcons.layoutGrid,
+    color: AppColors.toolIndigo,
+    softColor: AppColors.toolIndigoSoft,
+    category: ToolCategory.workspace,
+    tags: ['dualpane', 'workspace', 'split', 'notes', 'markdown', 'study'],
+  );
+
+  static const ToolItem p2pMeshShare = ToolItem(
+    id: 'p2p-meshshare',
+    label: 'Offline P2P Air-Share',
+    description: 'Zero-internet QR share & .paperkit zip project bundler',
+    route: '/p2p/meshshare',
+    icon: LucideIcons.qrCode,
+    color: AppColors.toolGreen,
+    softColor: AppColors.toolGreenSoft,
+    category: ToolCategory.p2p,
+    tags: ['p2p', 'airshare', 'mesh', 'qr', 'bundle', 'offline', 'zip'],
+  );
+
+  static const ToolItem tabularExtractor = ToolItem(
+    id: 'analytics-tables',
+    label: 'Tabular Data Extractor',
+    description: 'Detect table boundaries & export PDF tables to CSV/Excel',
+    route: '/analytics/tables',
+    icon: LucideIcons.table,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.analytics,
+    tags: ['table', 'csv', 'excel', 'extract', 'data', 'tabular'],
+  );
+
+  static const ToolItem translationHub = ToolItem(
+    id: 'translation-hub',
+    label: 'Translation & Localization Hub',
+    description: 'Side-by-side paragraph translation in Spanish, French, German',
+    route: '/translation/hub',
+    icon: LucideIcons.languages,
+    color: AppColors.toolPink,
+    softColor: AppColors.toolPinkSoft,
+    category: ToolCategory.translation,
+    tags: ['translate', 'languages', 'spanish', 'french', 'german', 'localization'],
+  );
+
+  static const ToolItem publishingStudio = ToolItem(
+    id: 'publishing-studio',
+    label: 'Automated Publishing Studio',
+    description: 'CMYK pre-flight audit checklist & ePub book generator',
+    route: '/publishing/studio',
+    icon: LucideIcons.bookOpenCheck,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.publishing,
+    tags: ['publishing', 'epub', 'cmyk', 'preflight', 'book', 'cover'],
+  );
 
   // ──────────────────────────────────────────────────────────────────────────
   // LOOKUP API
@@ -994,7 +1126,6 @@ class ToolRegistry {
 
   /// Returns the canonical ToolItem whose route matches [route].
   static ToolItem? getByRoute(String route) {
-    // Strip query params for comparison
     final routeBase = route.split('?').first;
     for (final tool in _registry.values) {
       if (tool.route == route || tool.route.split('?').first == routeBase) {
@@ -1033,10 +1164,10 @@ class ToolRegistry {
         mergePdf,
         splitPdf,
         compressPdf,
-        aiSummary,
-        aiDocChat,
-        protectPdf,
-        smartRedaction,
+        cognitiveRetention,
+        legalAudit,
+        p2pMeshShare,
+        publishingStudio,
       ];
 
   /// Quick-access tools (same as featured by default).
@@ -1059,6 +1190,9 @@ class ToolRegistry {
         flashcards,
         mindMap,
         presentationGenerator,
+        cognitiveRetention,
+        dualPaneWorkspace,
+        mindMapDiagram,
       ];
 
   /// Scanner tools.
@@ -1071,7 +1205,6 @@ class ToolRegistry {
   static List<ToolItem> get formTools => [formFiller, formCreator];
 
   /// Returns the top tools for a given category key (for contextual nav bar).
-  /// All entries are canonical registry references — no inline ToolItems.
   static List<ToolItem> getTopToolsForCategory(String categoryKey) {
     final key = categoryKey.toLowerCase().trim();
 
@@ -1079,49 +1212,32 @@ class ToolRegistry {
       case 'ai':
       case 'intelligence':
         return [aiDocChat, aiSummary, aiOcr, extractTables];
-
+      case 'cognitive':
+        return [cognitiveRetention];
+      case 'voice':
+        return [voicePodcast];
+      case 'accessibility':
+        return [accessibilityReader];
+      case 'legal':
+        return [legalAudit];
+      case 'diagram':
+        return [mindMapDiagram];
+      case 'workspace':
+        return [dualPaneWorkspace];
+      case 'p2p':
+        return [p2pMeshShare];
+      case 'analytics':
+        return [tabularExtractor];
+      case 'translation':
+        return [translationHub];
+      case 'publishing':
+        return [publishingStudio];
       case 'pdf':
         return [pdfEditor, mergePdf, splitPdf, compressPdf];
-
-      case 'academic':
-      case 'research':
-        return [researchAnalyzer, literatureReview, researchGap, citationFormatter];
-
-      case 'scanner':
-      case 'scan':
-        return [scanToPdf, aiOcr];
-
-      case 'forms':
-      case 'form':
-        return [formFiller, formCreator];
-
-      case 'security':
-      case 'privacy':
-        return [protectPdf, smartRedaction, digitalSign, metadataManager];
-
-      case 'media':
-      case 'image':
-      case 'images':
-        return [imageConverter, imageCompressor, imageManipulator, imageResizer];
-
-      case 'video':
-        return [videoConverter, videoCompressor];
-
-      case 'audio':
-        return [audioConverter];
-
-      case 'archive':
-        return [archiveStudio];
-
-      case 'convert':
-      case 'conversion':
-        return [wordToPdf, pdfToWord, excelToPdf, imageToPdf];
-
-      case 'utilities':
-        return [qrGenerator, barcodeGenerator, imageResizer];
-
       default:
-        return [mergePdf, compressPdf, organizePages, extractPages];
+        return [cognitiveRetention, legalAudit, p2pMeshShare, publishingStudio];
     }
   }
 }
+
+

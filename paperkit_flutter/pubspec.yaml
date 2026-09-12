@@ -62,6 +62,10 @@ dependencies:
   crypto: ^3.0.6
   flutter_markdown: ^0.7.7+1
 
+  # Audio & Speech
+  flutter_tts: ^4.2.0
+  qr: ^3.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

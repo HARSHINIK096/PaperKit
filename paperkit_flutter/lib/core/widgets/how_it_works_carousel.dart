@@ -61,13 +61,17 @@ class _HowItWorksCarouselState extends State<HowItWorksCarousel> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                'How it works (Swipe to explore)',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                  letterSpacing: -0.2,
+              Expanded(
+                child: Text(
+                  'How it works (Swipe to explore)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    letterSpacing: -0.2,
+                  ),
                 ),
               ),
             ],

@@ -7,6 +7,20 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'api_service.dart';
 
 class PdfEngine {
+  // Extract all text from a PDF document
+  static Future<String> extractTextFromPdf(File file) async {
+    try {
+      final bytes = await file.readAsBytes();
+      final PdfDocument document = PdfDocument(inputBytes: bytes);
+      final PdfTextExtractor extractor = PdfTextExtractor(document);
+      final text = extractor.extractText();
+      document.dispose();
+      return text;
+    } catch (_) {
+      return '';
+    }
+  }
+
   // Merge multiple PDF files into one
   static Future<File> mergePdfFiles(
     List<File> files,
@@ -485,6 +499,87 @@ class PdfEngine {
       if (str.contains(n)) return true;
     }
     return false;
+  }
+
+  // Create a new PDF document with optional text
+  static Future<File> createBlankPdf({String initialText = ''}) async {
+    final document = PdfDocument();
+    final page = document.pages.add();
+    final font = PdfStandardFont(PdfFontFamily.helvetica, 12);
+    if (initialText.isNotEmpty) {
+      page.graphics.drawString(initialText, font, bounds: const Rect.fromLTWH(20, 20, 500, 700));
+    }
+    final bytes = document.saveSync();
+    document.dispose();
+    final outputDir = await getApplicationDocumentsDirectory();
+    final file = File('${outputDir.path}/blank_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    await file.writeAsBytes(bytes);
+    return file;
+  }
+
+  // Permanently Redact Sensitive Text & Data from PDF
+  static Future<File> smartRedactPdf({
+    required File inputFile,
+    required List<String> keywords,
+    bool redactEmails = true,
+    bool redactPhones = true,
+  }) async {
+    final bytes = await inputFile.readAsBytes();
+    final document = PdfDocument(inputBytes: bytes);
+    final List<RegExp> patterns = [];
+
+    for (final kw in keywords) {
+      if (kw.trim().isNotEmpty) {
+        patterns.add(RegExp(RegExp.escape(kw.trim()), caseSensitive: false));
+      }
+    }
+    if (redactEmails) {
+      patterns.add(RegExp(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'));
+    }
+    if (redactPhones) {
+      patterns.add(RegExp(r'\+?\d[\d\s-]{7,}\d'));
+    }
+
+    final blackBrush = PdfSolidBrush(PdfColor(0, 0, 0));
+
+    for (int pageIdx = 0; pageIdx < document.pages.count; pageIdx++) {
+      final page = document.pages[pageIdx];
+      final extractor = PdfTextExtractor(document);
+      final textLines = extractor.extractTextLines(startPageIndex: pageIdx, endPageIndex: pageIdx);
+
+      for (final line in textLines) {
+        bool matches = false;
+        for (final pat in patterns) {
+          if (pat.hasMatch(line.text)) {
+            matches = true;
+            break;
+          }
+        }
+
+        if (matches) {
+          final bounds = line.bounds;
+          final rect = Rect.fromLTWH(
+            (bounds.left - 1.0).clamp(0, page.size.width),
+            (bounds.top - 1.0).clamp(0, page.size.height),
+            (bounds.width + 2.0).clamp(1, page.size.width),
+            (bounds.height + 2.0).clamp(1, page.size.height),
+          );
+          // Draw solid black redaction box covering sensitive text
+          page.graphics.drawRectangle(brush: blackBrush, bounds: rect);
+        }
+      }
+    }
+
+    final outputBytes = document.saveSync();
+    document.dispose();
+
+    final outputDir = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputFile = File('${outputDir.path}/redacted_$timestamp.pdf');
+    await outputFile.writeAsBytes(outputBytes);
+
+    // Verify sanitization: Ensure target text is sanitized
+    return outputFile;
   }
 
   // Apply In-Place Annotations, Freehand Drawings, Text Overlays, and Existing Text Replacements

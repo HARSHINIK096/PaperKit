@@ -1215,4 +1215,76 @@ Document:
     return data
 
 
+async def generate_podcast_script(text: str) -> dict:
+    """Generate a 2-speaker conversational podcast script from document text."""
+    if not text or not text.strip():
+        raise ValueError("Document text is required to generate a podcast script.")
+
+    prompt = f"""You are an engaging educational podcast producer.
+
+Convert the document below into an engaging, multi-speaker conversational podcast script between Alex (Host) and Dr. Sam (Expert).
+- Base ALL dialogue on actual document facts.
+- Include 8-15 dialogue lines.
+- Each line must have 'speaker', 'text', and 'timestamp'.
+
+Return ONLY a valid JSON object:
+{{
+  "title": "Podcast Summary",
+  "summary": "Conversational breakdown",
+  "dialogue": [
+    {{
+      "speaker": "Alex (Host)",
+      "text": "Welcome to today's episode!",
+      "timestamp": "00:00"
+    }},
+    {{
+      "speaker": "Dr. Sam (Expert)",
+      "text": "Great to be here to discuss this topic.",
+      "timestamp": "00:15"
+    }}
+  ]
+}}
+
+Document:
+{text[:18000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "dialogue" not in data or not isinstance(data["dialogue"], list):
+        raise ValueError(f"AI did not return valid podcast dialogue script. Response: {raw[:300]}")
+    return data
+
+
+async def analyze_contract_clauses(text: str) -> dict:
+    """Analyze legal contract clauses (Parties, Obligations, Termination, Liabilities, Payment, Dates)."""
+    if not text or not text.strip():
+        raise ValueError("Contract document text is required for clause analysis.")
+
+    prompt = f"""You are a senior forensic legal auditor.
+
+Analyze the contract below and extract all major clauses:
+- Identify Parties, Obligations, Termination, Liabilities, Payment, Expiry Dates, SLA, Penalties.
+- For each clause, return category, title, snippet, and page_number if detectable.
+
+Return ONLY a valid JSON object:
+{{
+  "clauses": [
+    {{
+      "category": "Parties",
+      "title": "Agreement Parties",
+      "snippet": "...",
+      "pageNumber": 1
+    }}
+  ]
+}}
+
+Contract Text:
+{text[:18000]}"""
+    raw = await generate_text(prompt)
+    data = _clean_json_response(raw)
+    if "clauses" not in data or not isinstance(data["clauses"], list):
+        raise ValueError(f"AI did not return valid contract clauses. Response: {raw[:300]}")
+    return data
+
+
+
 

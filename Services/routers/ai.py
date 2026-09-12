@@ -970,3 +970,44 @@ async def generate_presentation_route(request: Request, current_user: dict = Dep
         raise HTTPException(status_code=500, detail=f"Presentation generation failed: {str(e)}")
 
     return result
+
+
+@router.post("/podcast-script")
+async def generate_podcast_script_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Generate a multi-speaker podcast dialogue script from a document."""
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    try:
+        result = await ai_service.generate_podcast_script(text)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Podcast script generation failed: {str(e)}")
+
+    return result
+
+
+@router.post("/analyze-contract")
+async def analyze_contract_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Analyze legal contract clauses (Parties, Obligations, Termination, Liabilities, Payment, Dates)."""
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    text = await _resolve_ai_text(body, file_tuple, user_id, db)
+    if not text:
+        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+
+    try:
+        result = await ai_service.analyze_contract_clauses(text)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Contract clause analysis failed: {str(e)}")
+
+    return result
+

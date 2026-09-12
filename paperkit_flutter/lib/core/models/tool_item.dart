@@ -3,16 +3,26 @@ import '../theme/app_colors.dart';
 
 enum ToolCategory {
   pdf,
-  ai,
-  scanner,
   security,
+  academic,
+  scanner,
+  cognitive,
+  voice,
+  accessibility,
+  legal,
+  forms,
+  diagram,
+  workspace,
+  p2p,
+  analytics,
+  translation,
+  publishing,
+  ai,
   convert,
   image,
   video,
   audio,
   archive,
-  academic,
-  forms,
   utilities,
   media,
 }
@@ -59,4 +69,3 @@ class ToolItem {
     return AppColors.primarySoft;
   }
 }
-
