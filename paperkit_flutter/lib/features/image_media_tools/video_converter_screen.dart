@@ -14,6 +14,8 @@ import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
 import '../../core/widgets/file_success_dialog.dart';
 
+import '../../core/widgets/how_it_works_carousel.dart';
+
 class VideoConverterScreen extends StatefulWidget {
   final String? initialTo;
 
@@ -29,7 +31,8 @@ class _VideoConverterScreenState extends State<VideoConverterScreen> {
   bool _isProcessing = false;
   File? _convertedResult;
 
-  final List<String> _formats = ['mp4', 'webm', 'mov', 'gif'];
+  final List<String> _videoFormats = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'wmv', '3gp', 'gif', 'ogv', 'ts'];
+  final List<String> _audioFormats = ['mp3', 'wav', 'aac', 'm4a', 'flac', 'ogg'];
 
   @override
   void initState() {
@@ -40,7 +43,7 @@ class _VideoConverterScreenState extends State<VideoConverterScreen> {
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['mp4', 'mov', 'webm', 'avi', 'mkv'],
+      allowedExtensions: ['mp4', 'mov', 'webm', 'avi', 'mkv', 'flv', 'wmv', 'm4v', '3gp', 'ogv', 'ts', 'mts', 'm2ts'],
     );
 
     if (result != null && result.files.single.path != null) {
@@ -121,6 +124,11 @@ class _VideoConverterScreenState extends State<VideoConverterScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const HowItWorksCarousel(
+            toolId: 'video-converter',
+            color: AppColors.toolBlue,
+            padding: EdgeInsets.only(bottom: 16),
+          ),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -182,12 +190,38 @@ class _VideoConverterScreenState extends State<VideoConverterScreen> {
 
             Wrap(
               spacing: 10,
-              children: _formats.map((fmt) {
+              runSpacing: 8,
+              children: _videoFormats.map((fmt) {
                 final isSelected = _targetFormat == fmt;
                 return ChoiceChip(
                   label: Text(fmt.toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : null)),
                   selected: isSelected,
                   selectedColor: AppColors.primary,
+                  onSelected: (_) => setState(() => _targetFormat = fmt),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 18),
+
+            Text(
+              'Extract Audio from Video',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: _audioFormats.map((fmt) {
+                final isSelected = _targetFormat == fmt;
+                return ChoiceChip(
+                  label: Text('${fmt.toUpperCase()} (Audio)', style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : null)),
+                  selected: isSelected,
+                  selectedColor: AppColors.toolGreen,
                   onSelected: (_) => setState(() => _targetFormat = fmt),
                 );
               }).toList(),

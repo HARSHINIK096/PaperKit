@@ -226,7 +226,9 @@ class _MergePDFScreenState extends State<MergePDFScreen> {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                child: ListTile(
+                child: Material(
+                  color: Colors.transparent,
+                  child: ListTile(
                   leading: Container(
                     width: 32,
                     height: 32,
@@ -252,7 +254,8 @@ class _MergePDFScreenState extends State<MergePDFScreen> {
                   ),
                   trailing: const Icon(LucideIcons.gripVertical, size: 18, color: Color(0xFF94A3B8)),
                 ),
-              );
+              ),
+            );
             },
           ),
           const SizedBox(height: 16),

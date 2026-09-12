@@ -10,8 +10,10 @@ import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/services/pdf_engine.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/platform_file_ext.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/how_it_works_carousel.dart';
 
 class SmartRedactionScreen extends StatefulWidget {
   const SmartRedactionScreen({super.key});
@@ -32,11 +34,13 @@ class _SmartRedactionScreenState extends State<SmartRedactionScreen> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      withData: true,
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result != null && result.files.isNotEmpty && result.files.single.hasValidFile) {
+      final pf = result.files.single;
       setState(() {
-        _selectedFile = File(result.files.single.path!);
+        _selectedFile = pf.asFile ?? File(pf.name);
         _redactedResult = null;
       });
     }
@@ -108,6 +112,10 @@ class _SmartRedactionScreenState extends State<SmartRedactionScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const HowItWorksCarousel(
+            toolId: 'smart-redaction',
+            padding: EdgeInsets.only(bottom: 14),
+          ),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

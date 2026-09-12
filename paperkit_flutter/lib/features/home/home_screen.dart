@@ -267,23 +267,13 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 26),
 
 
-          // ── 9. Video Format Converter Section ────────────────────
+          // ── 9. Video Conversion & Compression Section ───────────
           _buildCategorySection(
             context,
             isDark: isDark,
-            title: 'Video Format Converter',
+            title: 'Video Conversion & Compression',
             categoryId: 'video',
-            tools: AppTools.videoConverterTools,
-          ),
-          const SizedBox(height: 26),
-
-          // ── 10. Video Compressor Section ─────────────────────────
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Video Compressor',
-            categoryId: 'video',
-            tools: AppTools.videoCompressorTools,
+            tools: ToolRegistry.getByCategory(ToolCategory.video),
           ),
           const SizedBox(height: 26),
 

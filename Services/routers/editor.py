@@ -66,6 +66,159 @@ async def get_editor_limits(request: Request, response: Response):
         "resets_at": "midnight UTC"
     }
 
+
+@router.post("/render-page")
+async def render_pdf_page_image(
+    file: Optional[UploadFile] = File(None),
+    file_id: Optional[str] = Form(None),
+    page_number: int = Form(1),
+    dpi: int = Form(150),
+):
+    """
+    Renders a specific PDF page to a high-resolution PNG image byte stream for pixel-perfect editor background rendering.
+    """
+    pdf_bytes: bytes = b""
+    if file and file.filename:
+        pdf_bytes = await file.read()
+    elif file_id:
+        db = get_db()
+        if db is not None:
+            from bson import ObjectId
+            from services.storage import LOCAL_STORAGE_DIR
+            query_id = ObjectId(file_id) if ObjectId.is_valid(file_id) else file_id
+            file_doc = await db.files.find_one({"_id": query_id})
+            if file_doc:
+                rel_url = file_doc.get("storage_url", "")
+                disk_path = os.path.join(LOCAL_STORAGE_DIR, os.path.basename(rel_url))
+                if os.path.exists(disk_path):
+                    with open(disk_path, "rb") as f:
+                        pdf_bytes = f.read()
+
+    if not pdf_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid PDF file provided."
+        )
+
+    try:
+        doc = fitz.open("pdf", pdf_bytes)
+        pg_idx = max(0, min(page_number - 1, doc.page_count - 1))
+        page = doc[pg_idx]
+        pix = page.get_pixmap(dpi=dpi)
+        img_bytes = pix.tobytes("png")
+        doc.close()
+        return FastAPIResponse(content=img_bytes, media_type="image/png")
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to render PDF page image: {e}"
+        )
+
+
+@router.post("/extract-spans")
+async def extract_pdf_page_spans(
+    file: Optional[UploadFile] = File(None),
+    file_id: Optional[str] = Form(None),
+    page_number: int = Form(1),
+):
+    """
+    Extracts structured text spans with exact font family, size, style, color, baseline origin, and bounding boxes via PyMuPDF.
+    """
+    pdf_bytes: bytes = b""
+    if file and file.filename:
+        pdf_bytes = await file.read()
+    elif file_id:
+        db = get_db()
+        if db is not None:
+            from bson import ObjectId
+            from services.storage import LOCAL_STORAGE_DIR
+            query_id = ObjectId(file_id) if ObjectId.is_valid(file_id) else file_id
+            file_doc = await db.files.find_one({"_id": query_id})
+            if file_doc:
+                rel_url = file_doc.get("storage_url", "")
+                disk_path = os.path.join(LOCAL_STORAGE_DIR, os.path.basename(rel_url))
+                if os.path.exists(disk_path):
+                    with open(disk_path, "rb") as f:
+                        pdf_bytes = f.read()
+
+    if not pdf_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid PDF file provided."
+        )
+
+    try:
+        doc = fitz.open("pdf", pdf_bytes)
+        pg_idx = max(0, min(page_number - 1, doc.page_count - 1))
+        page = doc[pg_idx]
+        page_rect = page.rect
+        page_width, page_height = page_rect.width, page_rect.height
+
+        text_dict = page.get_text("dict")
+        spans_res = []
+        span_id_cnt = 0
+
+        for block in text_dict.get("blocks", []):
+            if block.get("type", 0) != 0:
+                continue
+            for line in block.get("lines", []):
+                for s in line.get("spans", []):
+                    txt = str(s.get("text", "")).strip()
+                    if not txt:
+                        continue
+                    bbox = list(s.get("bbox", [0, 0, 0, 0]))
+                    font_name = s.get("font", "Helvetica")
+                    font_size = float(s.get("size", 12.0))
+                    flags = int(s.get("flags", 0))
+
+                    fn_lower = font_name.lower()
+                    is_bold = bool(flags & 16) or any(b in fn_lower for b in ["bold", "black", "heavy", "medium", "tibo", "hebo", "cobo"])
+                    is_italic = bool(flags & 2) or any(it in fn_lower for it in ["italic", "oblique", "slanted", "tiit", "heit", "coit"])
+
+                    c_int = int(s.get("color", 0))
+                    if c_int != 0:
+                        r = ((c_int >> 16) & 255)
+                        g = ((c_int >> 8) & 255)
+                        b = (c_int & 255)
+                    else:
+                        r, g, b = 0, 0, 0
+
+                    origin = list(s.get("origin", [bbox[0], bbox[1] + font_size * 0.8]))
+
+                    spans_res.append({
+                        "id": f"span_{pg_idx}_{span_id_cnt}",
+                        "text": s.get("text", ""),
+                        "bbox": bbox,
+                        "normalized_rect": [
+                            bbox[0] / page_width,
+                            bbox[1] / page_height,
+                            (bbox[2] - bbox[0]) / page_width,
+                            (bbox[3] - bbox[1]) / page_height,
+                        ],
+                        "font_name": font_name,
+                        "font_size": font_size,
+                        "is_bold": is_bold,
+                        "is_italic": is_italic,
+                        "color": [r, g, b],
+                        "origin": origin,
+                    })
+                    span_id_cnt += 1
+
+        total_pgs = doc.page_count
+        doc.close()
+        return {
+            "page_number": pg_idx + 1,
+            "total_pages": total_pgs,
+            "page_width": page_width,
+            "page_height": page_height,
+            "spans": spans_res,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to extract PDF page spans: {e}"
+        )
+
 @router.post("/edit")
 async def apply_pdf_in_place_edits(
     request: Request,

@@ -11,6 +11,7 @@ import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/services/pdf_engine.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/platform_file_ext.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
 
@@ -34,23 +35,27 @@ class _MetadataScreenState extends State<MetadataScreen> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      withData: true,
     );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      final bytes = await file.readAsBytes();
-      final doc = PdfDocument(inputBytes: bytes);
-      final info = doc.documentInformation;
+    if (result != null && result.files.isNotEmpty && result.files.single.hasValidFile) {
+      final pf = result.files.single;
+      final file = pf.asFile ?? File(pf.name);
+      final bytes = pf.bytes ?? (file.path.isNotEmpty ? await file.readAsBytes() : null);
+      if (bytes != null) {
+        final doc = PdfDocument(inputBytes: bytes);
+        final info = doc.documentInformation;
 
-      setState(() {
-        _selectedFile = file;
-        _titleController.text = info.title;
-        _authorController.text = info.author;
-        _subjectController.text = info.subject;
-        _keywordsController.text = info.keywords;
-        _savedResult = null;
-      });
-      doc.dispose();
+        setState(() {
+          _selectedFile = file;
+          _titleController.text = info.title;
+          _authorController.text = info.author;
+          _subjectController.text = info.subject;
+          _keywordsController.text = info.keywords;
+          _savedResult = null;
+        });
+        doc.dispose();
+      }
     }
   }
 

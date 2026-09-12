@@ -345,10 +345,7 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                             context,
                             title: 'Video Format Converter & Compressor',
                             viewAllRoute: '/category/video',
-                            tools: [
-                              ...AppTools.videoConverterTools,
-                              ...AppTools.videoCompressorTools,
-                            ],
+                            tools: ToolRegistry.getByCategory(ToolCategory.video),
                             isDark: isDark,
                           ),
                           const SizedBox(height: 16),

@@ -37,7 +37,9 @@ class _PresentationGeneratorScreenState extends State<PresentationGeneratorScree
         final buf = StringBuffer('# Presentation Outline\n\n');
         for (final slide in slides) {
           buf.writeln('## Slide ${slide.slideNumber}: ${slide.title}');
-          for (final bullet in slide.bulletPoints) buf.writeln('- $bullet');
+          for (final bullet in slide.bulletPoints) {
+            buf.writeln('- $bullet');
+          }
           if (slide.notes != null) buf.writeln('\n*Notes: ${slide.notes}*');
           buf.writeln();
         }

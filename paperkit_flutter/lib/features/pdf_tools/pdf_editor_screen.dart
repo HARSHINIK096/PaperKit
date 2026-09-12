@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,9 +12,12 @@ import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
+import '../../core/services/api_service.dart';
 import '../../core/services/pdf_engine.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/platform_file_ext.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/how_it_works_carousel.dart';
 
 enum EditorActiveTool { select, draw, text, highlight }
 
@@ -26,6 +30,8 @@ class PDFEditorScreen extends StatefulWidget {
 
 class _PDFEditorScreenState extends State<PDFEditorScreen> {
   File? _selectedFile;
+  Uint8List? _selectedBytes;
+  String? _selectedFileName;
   int _totalPages = 1;
   int _currentPageIndex = 0; // 0-indexed
 
@@ -40,6 +46,9 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
   // Extracted text spans per page
   final Map<int, List<PdfExistingTextSpan>> _pageTextSpans = {};
   bool _isLoadingSpans = false;
+
+  // Rendered PDF page background images per page index
+  final Map<int, ui.Image> _pageUiImages = {};
 
   // Selected existing text span being edited
   PdfExistingTextSpan? _activeSelectedSpan;
@@ -69,12 +78,15 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      withData: true,
     );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    if (result != null && result.files.isNotEmpty && result.files.single.hasValidFile) {
+      final pf = result.files.single;
+      final file = pf.asFile;
       try {
-        final bytes = await file.readAsBytes();
+        final bytes = pf.bytes ?? (file != null ? await file.readAsBytes() : null);
+        if (bytes == null) return;
         final doc = PdfDocument(inputBytes: bytes);
         final count = doc.pages.count;
         _pageSizes.clear();
@@ -86,16 +98,19 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
 
         setState(() {
           _selectedFile = file;
+          _selectedBytes = bytes;
+          _selectedFileName = pf.name;
           _totalPages = count > 0 ? count : 1;
           _currentPageIndex = 0;
           _pageTextSpans.clear();
+          _pageUiImages.clear();
           _activeSelectedSpan = null;
           _drawPathsByPage.clear();
           _textEditsByPage.clear();
           _highlightsByPage.clear();
         });
 
-        await _loadPageSpans(_currentPageIndex);
+        await _loadPageData(_currentPageIndex);
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -106,14 +121,49 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
     }
   }
 
+  Future<void> _loadPageData(int pageIndex) async {
+    await Future.wait([
+      _loadPageSpans(pageIndex),
+      _loadPageRender(pageIndex),
+    ]);
+  }
+
+  Future<void> _loadPageRender(int pageIndex) async {
+    if (_selectedFile == null && _selectedBytes == null) return;
+    if (_pageUiImages.containsKey(pageIndex)) return;
+
+    try {
+      final imgBytes = await ApiService().renderPdfPage(
+        file: _selectedFile,
+        bytes: _selectedBytes,
+        filename: _selectedFileName,
+        pageNumber: pageIndex + 1,
+        dpi: 150,
+      );
+      if (imgBytes != null && imgBytes.isNotEmpty) {
+        final codec = await ui.instantiateImageCodec(imgBytes);
+        final frame = await codec.getNextFrame();
+        if (mounted) {
+          setState(() {
+            _pageUiImages[pageIndex] = frame.image;
+          });
+        }
+      }
+    } catch (e) {
+      print('Load page render error: $e');
+    }
+  }
+
   Future<void> _loadPageSpans(int pageIndex) async {
-    if (_selectedFile == null) return;
+    if (_selectedFile == null && _selectedBytes == null) return;
     if (_pageTextSpans.containsKey(pageIndex)) return;
 
     setState(() => _isLoadingSpans = true);
     try {
       final spans = await PdfEngine.extractPageTextSpans(
-        inputFile: _selectedFile!,
+        inputFile: _selectedFile,
+        bytes: _selectedBytes,
+        filename: _selectedFileName,
         pageIndex: pageIndex,
       );
       if (mounted) {
@@ -135,7 +185,7 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
         _currentPageIndex = newPageIndex;
         _activeSelectedSpan = null;
       });
-      _loadPageSpans(newPageIndex);
+      _loadPageData(newPageIndex);
     }
   }
 
@@ -673,13 +723,18 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
   }
 
   Widget _buildFilePickerPlaceholder(bool isDark) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: InkWell(
-          onTap: _pickPdfFile,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          const HowItWorksCarousel(
+            toolId: 'pdf-editor',
+            padding: EdgeInsets.only(bottom: 16),
+          ),
+          InkWell(
+            onTap: _pickPdfFile,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: isDark ? AppColors.surfaceDark : Colors.white,
@@ -738,9 +793,10 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 
   Widget _buildPageNavigator(bool isDark) {
     return Container(
@@ -1047,6 +1103,7 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                         borderRadius: BorderRadius.circular(8),
                         child: CustomPaint(
                           painter: _PdfPageCanvasPainter(
+                            bgImage: _pageUiImages[_currentPageIndex],
                             pageNumber: _currentPageIndex + 1,
                             docPageSize: docPageSize,
                             existingSpans: spans,
@@ -1106,6 +1163,7 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
 }
 
 class _PdfPageCanvasPainter extends CustomPainter {
+  final ui.Image? bgImage;
   final int pageNumber;
   final Size docPageSize;
   final List<PdfExistingTextSpan> existingSpans;
@@ -1121,6 +1179,7 @@ class _PdfPageCanvasPainter extends CustomPainter {
   final bool isSelectTool;
 
   _PdfPageCanvasPainter({
+    this.bgImage,
     required this.pageNumber,
     required this.docPageSize,
     required this.existingSpans,
@@ -1138,15 +1197,24 @@ class _PdfPageCanvasPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Draw Document Background
-    final pageBgPaint = Paint()..color = Colors.white;
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), pageBgPaint);
+    // 1. Draw Document Background Page Image (Preserves 100% of logos, images, tables, grid lines, and layouts)
+    if (bgImage != null) {
+      canvas.drawImageRect(
+        bgImage!,
+        Rect.fromLTWH(0, 0, bgImage!.width.toDouble(), bgImage!.height.toDouble()),
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        Paint()..filterQuality = FilterQuality.high,
+      );
+    } else {
+      final pageBgPaint = Paint()..color = Colors.white;
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), pageBgPaint);
+    }
 
     // Calculate viewport font scale relative to true document page width
     final docWidth = docPageSize.width > 0 ? docPageSize.width : 595.28;
     final fontScale = (size.width / docWidth).clamp(0.1, 4.0);
 
-    // 2. Render Existing Extracted Text Spans (Words)
+    // 2. Render Existing Extracted Text Spans
     for (final span in existingSpans) {
       final rect = Rect.fromLTWH(
         span.normalizedRect.left * size.width,
@@ -1155,10 +1223,8 @@ class _PdfPageCanvasPainter extends CustomPainter {
         span.normalizedRect.height * size.height,
       );
 
-      // Scaled font size accurately matching document page width
       final scaledFontSize = (span.fontSize * fontScale).clamp(4.0, 72.0);
 
-      // Draw word/line with exact typography matching original document
       final tp = TextPainter(
         text: TextSpan(
           text: span.currentText,
@@ -1173,15 +1239,17 @@ class _PdfPageCanvasPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: (size.width - rect.left).clamp(10.0, size.width));
 
-      // If modified, cover only the exact line bounding box with crisp white
+      // If modified, cover original spot with white fill and paint updated text
       if (span.isModified) {
         final coverPaint = Paint()..color = Colors.white;
         final coverW = tp.width > rect.width ? tp.width + 6 : rect.width + 4;
         final coverH = tp.height > rect.height ? tp.height + 4 : rect.height + 2;
         canvas.drawRect(Rect.fromLTWH(rect.left - 2.0, rect.top - 1.0, coverW, coverH), coverPaint);
+        tp.paint(canvas, rect.topLeft);
+      } else if (bgImage == null) {
+        // Only paint text over fallback white canvas if background image is not loaded
+        tp.paint(canvas, rect.topLeft);
       }
-
-      tp.paint(canvas, rect.topLeft);
 
       // If this span is the actively selected line, draw glowing selection frame
       if (selectedSpan != null && selectedSpan!.id == span.id) {

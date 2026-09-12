@@ -6,6 +6,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/how_it_works_carousel.dart';
 
 class AskPDFScreen extends StatefulWidget {
   const AskPDFScreen({super.key});
@@ -100,47 +101,48 @@ class _AskPDFScreenState extends State<AskPDFScreen> {
         children: [
           if (_selectedFile == null)
             Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: AppColors.toolBlue.withOpacity(0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(LucideIcons.messageSquare, color: AppColors.toolBlue, size: 36),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    const HowItWorksCarousel(
+                      toolId: 'ai-doc-chat',
+                      padding: EdgeInsets.only(bottom: 16),
+                    ),
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.toolBlue.withOpacity(0.12),
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Chat with Any Document',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                        ),
+                      child: const Icon(LucideIcons.messageSquare, color: AppColors.toolBlue, size: 36),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Chat with Any Document',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Ask questions, extract facts, summarize sections, and synthesize findings with AI.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
-                        ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Ask questions, extract facts, summarize sections, and synthesize findings with AI.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
                       ),
-                      const SizedBox(height: 24),
-                      ElevatedButton.icon(
-                        onPressed: _pickFile,
-                        icon: const Icon(LucideIcons.filePlus, size: 18),
-                        label: const Text('Select Document to Chat'),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: _pickFile,
+                      icon: const Icon(LucideIcons.filePlus, size: 18),
+                      label: const Text('Select Document to Chat'),
+                    ),
+                  ],
                 ),
               ),
             )

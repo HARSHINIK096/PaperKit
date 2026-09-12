@@ -33,7 +33,9 @@ class ResearchGapScreen extends StatelessWidget {
           final qs = (g['potential_research_questions'] as List? ?? []);
           if (qs.isNotEmpty) {
             buf.writeln('\n**Research Questions:**');
-            for (final q in qs) buf.writeln('- $q');
+            for (final q in qs) {
+              buf.writeln('- $q');
+            }
           }
         }
         return buf.toString();

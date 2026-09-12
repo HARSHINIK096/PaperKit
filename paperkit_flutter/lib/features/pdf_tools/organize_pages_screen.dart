@@ -162,7 +162,9 @@ class _OrganizePagesScreenState extends State<OrganizePagesScreen> {
                           color: isDark ? AppColors.borderDark : AppColors.borderLight,
                         ),
                       ),
-                      child: ListTile(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: ListTile(
                         leading: Container(
                           width: 40,
                           height: 40,
@@ -206,7 +208,8 @@ class _OrganizePagesScreenState extends State<OrganizePagesScreen> {
                           ],
                         ),
                       ),
-                    );
+                    ),
+                  );
                   },
                 ),
               ),

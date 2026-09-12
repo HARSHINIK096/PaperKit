@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'api_service.dart';
 
 class PdfEngine {
   // Merge multiple PDF files into one
@@ -294,11 +295,73 @@ class PdfEngine {
 
   // Extract Text Lines/Spans with exact Bounding Boxes and full font attributes for in-place selection and editing
   static Future<List<PdfExistingTextSpan>> extractPageTextSpans({
-    required File inputFile,
+    File? inputFile,
+    Uint8List? bytes,
+    String? filename,
     required int pageIndex,
   }) async {
-    final bytes = await inputFile.readAsBytes();
-    final PdfDocument document = PdfDocument(inputBytes: bytes);
+    // 1. Try PyMuPDF backend extraction for 100% font accuracy & span details
+    try {
+      final backendRes = await ApiService().extractPdfSpans(
+        file: inputFile,
+        bytes: bytes,
+        filename: filename,
+        pageNumber: pageIndex + 1,
+      );
+      if (backendRes != null && backendRes['spans'] is List) {
+        final List<PdfExistingTextSpan> spans = [];
+        final pWidth = (backendRes['page_width'] as num?)?.toDouble() ?? 595.28;
+        final pHeight = (backendRes['page_height'] as num?)?.toDouble() ?? 841.89;
+        final rawSpans = backendRes['spans'] as List;
+
+        for (final item in rawSpans) {
+          if (item is Map) {
+            final bbox = item['bbox'] as List;
+            final norm = item['normalized_rect'] as List;
+            final fontName = item['font_name']?.toString() ?? 'Helvetica';
+            final colorArr = item['color'] as List? ?? [0, 0, 0];
+            final r = (colorArr.isNotEmpty ? (colorArr[0] as num).toInt() : 0);
+            final g = (colorArr.length > 1 ? (colorArr[1] as num).toInt() : 0);
+            final b = (colorArr.length > 2 ? (colorArr[2] as num).toInt() : 0);
+
+            spans.add(
+              PdfExistingTextSpan(
+                id: item['id']?.toString() ?? 'span_${spans.length}',
+                originalText: item['text']?.toString() ?? '',
+                currentText: item['text']?.toString() ?? '',
+                pdfBounds: Rect.fromLTRB(
+                  (bbox[0] as num).toDouble(),
+                  (bbox[1] as num).toDouble(),
+                  (bbox[2] as num).toDouble(),
+                  (bbox[3] as num).toDouble(),
+                ),
+                normalizedRect: Rect.fromLTWH(
+                  (norm[0] as num).toDouble(),
+                  (norm[1] as num).toDouble(),
+                  (norm[2] as num).toDouble(),
+                  (norm[3] as num).toDouble(),
+                ),
+                originalPageSize: Size(pWidth, pHeight),
+                fontSize: (item['font_size'] as num?)?.toDouble() ?? 12.0,
+                fontName: fontName,
+                fontFamily: resolveFontFamily(fontName),
+                color: Color.fromRGBO(r, g, b, 1.0),
+                isBold: item['is_bold'] == true,
+                isItalic: item['is_italic'] == true,
+              ),
+            );
+          }
+        }
+        if (spans.isNotEmpty) {
+          return spans;
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fallback to local Syncfusion extraction
+    final pdfBytes = bytes ?? await inputFile?.readAsBytes();
+    if (pdfBytes == null) return [];
+    final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
     final List<PdfExistingTextSpan> spans = [];
 
     try {
@@ -432,7 +495,65 @@ class PdfEngine {
     required Map<int, List<PdfHighlightBox>> highlightsByPage,
     Map<int, List<PdfExistingTextSpan>>? modifiedSpansByPage,
   }) async {
-    final bytes = await inputFile.readAsBytes();
+    File targetInputFile = inputFile;
+
+    // 1. Try PyMuPDF backend in-place redaction + replacement for 100% font/layout fidelity
+    bool hasModifiedTextSpans = false;
+    final List<Map<String, dynamic>> editsPayload = [];
+
+    if (modifiedSpansByPage != null) {
+      modifiedSpansByPage.forEach((pageIdx, spans) {
+        final List<Map<String, dynamic>> pageEdits = [];
+        for (final span in spans) {
+          if (!span.isModified) continue;
+          hasModifiedTextSpans = true;
+          pageEdits.add({
+            'type': 'text',
+            'bbox': [
+              span.pdfBounds.left,
+              span.pdfBounds.top,
+              span.pdfBounds.right,
+              span.pdfBounds.bottom,
+            ],
+            'new_text': span.currentText,
+            'font_name': span.fontName,
+            'font_size': span.fontSize,
+            'is_bold': span.isBold,
+            'is_italic': span.isItalic,
+            'color': [
+              span.color.red,
+              span.color.green,
+              span.color.blue,
+            ],
+          });
+        }
+        if (pageEdits.isNotEmpty) {
+          editsPayload.add({
+            'page_number': pageIdx + 1,
+            'edits': pageEdits,
+          });
+        }
+      });
+    }
+
+    if (hasModifiedTextSpans && editsPayload.isNotEmpty) {
+      try {
+        final editedFile = await ApiService().applyPdfInPlaceEdits(
+          file: targetInputFile,
+          editsPayload: editsPayload,
+        );
+        bool hasOtherAnnotations = drawPathsByPage.values.any((l) => l.isNotEmpty) ||
+            textEditsByPage.values.any((l) => l.isNotEmpty) ||
+            highlightsByPage.values.any((l) => l.isNotEmpty);
+
+        if (!hasOtherAnnotations) {
+          return editedFile;
+        }
+        targetInputFile = editedFile;
+      } catch (_) {}
+    }
+
+    final bytes = await targetInputFile.readAsBytes();
     final PdfDocument document = PdfDocument(inputBytes: bytes);
 
     for (int pageIdx = 0; pageIdx < document.pages.count; pageIdx++) {

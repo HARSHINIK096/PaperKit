@@ -25,10 +25,22 @@ class ArchiveEngine {
     if (fmt == 'tar') {
       encodedBytes = TarEncoder().encode(archive);
       extension = '.tar';
-    } else if (fmt == 'tar.gz' || fmt == 'gz' || fmt == 'tgz') {
+    } else if (fmt == 'tar.gz' || fmt == 'tgz') {
       final tarBytes = TarEncoder().encode(archive);
       encodedBytes = GZipEncoder().encode(tarBytes);
       extension = '.tar.gz';
+    } else if (fmt == 'tar.bz2' || fmt == 'tbz') {
+      final tarBytes = TarEncoder().encode(archive);
+      encodedBytes = BZip2Encoder().encode(tarBytes);
+      extension = '.tar.bz2';
+    } else if (fmt == 'gz') {
+      final tarBytes = TarEncoder().encode(archive);
+      encodedBytes = GZipEncoder().encode(tarBytes);
+      extension = '.gz';
+    } else if (fmt == 'bz2') {
+      final tarBytes = TarEncoder().encode(archive);
+      encodedBytes = BZip2Encoder().encode(tarBytes);
+      extension = '.bz2';
     } else {
       encodedBytes = ZipEncoder(password: password).encode(archive);
       extension = '.zip';

@@ -9,6 +9,7 @@ import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/how_it_works_carousel.dart';
 import '../../core/widgets/markdown_viewer.dart';
 
 class SummarizePDFScreen extends StatefulWidget {
@@ -94,6 +95,10 @@ class _SummarizePDFScreenState extends State<SummarizePDFScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const HowItWorksCarousel(
+            toolId: 'ai-summary',
+            padding: EdgeInsets.only(bottom: 14),
+          ),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

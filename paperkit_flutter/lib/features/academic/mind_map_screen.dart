@@ -71,7 +71,9 @@ class _MindMapResultState extends State<_MindMapResult> {
 
   void _setAllExpanded(MindMapNode node, bool expand) {
     node.isExpanded = expand;
-    for (final child in node.children) _setAllExpanded(child, expand);
+    for (final child in node.children) {
+      _setAllExpanded(child, expand);
+    }
   }
 
   @override
@@ -82,7 +84,7 @@ class _MindMapResultState extends State<_MindMapResult> {
       Row(children: [
         const Icon(LucideIcons.network, size: 15, color: AppColors.toolPurple),
         const SizedBox(width: 8),
-        Text('${_root.label}',
+        Text(_root.label,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.toolPurple)),
         const Spacer(),
         TextButton(onPressed: () => _setAll(true), child: const Text('Expand All', style: TextStyle(fontSize: 12))),

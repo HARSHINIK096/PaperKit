@@ -14,6 +14,8 @@ import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
 import '../../core/widgets/file_success_dialog.dart';
 
+import '../../core/widgets/how_it_works_carousel.dart';
+
 class VideoCompressorScreen extends StatefulWidget {
   final String? initialPreset;
 
@@ -129,6 +131,10 @@ class _VideoCompressorScreenState extends State<VideoCompressorScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const HowItWorksCarousel(
+            toolId: 'video-compressor',
+            padding: EdgeInsets.only(bottom: 14),
+          ),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -203,19 +209,43 @@ class _VideoCompressorScreenState extends State<VideoCompressorScreen> {
 
             RadioListTile<String>(
               title: const Text('Low Compression (High Bitrate & Quality)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              subtitle: const Text('Minimal quality loss'),
               value: 'low',
               groupValue: _preset,
               onChanged: (val) => setState(() => _preset = val!),
             ),
             RadioListTile<String>(
               title: const Text('Medium Compression (Balanced Quality & Size)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              subtitle: const Text('Recommended for general sharing'),
               value: 'medium',
               groupValue: _preset,
               onChanged: (val) => setState(() => _preset = val!),
             ),
             RadioListTile<String>(
-              title: const Text('High Compression (Smallest File Size)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              title: const Text('High Compression (Small File Size)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              subtitle: const Text('Optimized for faster uploads'),
               value: 'high',
+              groupValue: _preset,
+              onChanged: (val) => setState(() => _preset = val!),
+            ),
+            RadioListTile<String>(
+              title: const Text('Extreme Compression (Ultra Small)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              subtitle: const Text('Ideal for email attachments'),
+              value: 'extreme',
+              groupValue: _preset,
+              onChanged: (val) => setState(() => _preset = val!),
+            ),
+            RadioListTile<String>(
+              title: const Text('720p HD Downscale', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              subtitle: const Text('Rescale video to 1280x720'),
+              value: '720p',
+              groupValue: _preset,
+              onChanged: (val) => setState(() => _preset = val!),
+            ),
+            RadioListTile<String>(
+              title: const Text('480p SD Mobile Downscale', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              subtitle: const Text('Rescale video to 854x480'),
+              value: '480p',
               groupValue: _preset,
               onChanged: (val) => setState(() => _preset = val!),
             ),

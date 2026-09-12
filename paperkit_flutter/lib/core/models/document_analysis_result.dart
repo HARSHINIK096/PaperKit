@@ -306,10 +306,10 @@ class ResearchAnalysisResult {
   });
 
   factory ResearchAnalysisResult.fromJson(Map<String, dynamic> json) {
-    List<String> _toStringList(dynamic val) =>
+    List<String> toStringList(dynamic val) =>
         val is List ? val.map((e) => e.toString()).toList() : <String>[];
 
-    List<Citation> _toCitations(dynamic val) =>
+    List<Citation> toCitations(dynamic val) =>
         val is List
             ? val
                 .whereType<Map<String, dynamic>>()
@@ -317,7 +317,7 @@ class ResearchAnalysisResult {
                 .toList()
             : <Citation>[];
 
-    List<DocumentSection> _toSections(dynamic val) =>
+    List<DocumentSection> toSections(dynamic val) =>
         val is List
             ? val
                 .whereType<Map<String, dynamic>>()
@@ -327,25 +327,25 @@ class ResearchAnalysisResult {
 
     return ResearchAnalysisResult(
       title: json['title'] as String?,
-      authors: _toStringList(json['authors']),
+      authors: toStringList(json['authors']),
       year: json['year']?.toString(),
       abstractText: json['abstract'] as String?,
-      keywords: _toStringList(json['keywords']),
+      keywords: toStringList(json['keywords']),
       researchProblem: json['research_problem'] as String?,
-      objectives: _toStringList(json['objectives']),
-      researchQuestions: _toStringList(json['research_questions']),
+      objectives: toStringList(json['objectives']),
+      researchQuestions: toStringList(json['research_questions']),
       hypothesis: json['hypothesis'] as String?,
       methodology: json['methodology'] as String?,
       dataset: json['dataset'] as String?,
       experiments: json['experiments'] as String?,
       results: json['results'] as String?,
-      metrics: _toStringList(json['metrics']),
-      limitations: _toStringList(json['limitations']),
+      metrics: toStringList(json['metrics']),
+      limitations: toStringList(json['limitations']),
       conclusion: json['conclusion'] as String?,
-      futureWork: _toStringList(json['future_work']),
-      references: _toCitations(json['references']),
-      importantFindings: _toStringList(json['important_findings']),
-      sections: _toSections(json['sections']),
+      futureWork: toStringList(json['future_work']),
+      references: toCitations(json['references']),
+      importantFindings: toStringList(json['important_findings']),
+      sections: toSections(json['sections']),
       overallConfidence: _parseConfidence(json['overall_confidence']),
     );
   }
@@ -373,16 +373,16 @@ class ResearchGap {
   });
 
   factory ResearchGap.fromJson(Map<String, dynamic> json) {
-    List<String> _toStringList(dynamic val) =>
+    List<String> toStringList(dynamic val) =>
         val is List ? val.map((e) => e.toString()).toList() : <String>[];
 
     return ResearchGap(
       gap: (json['gap'] as String? ?? '').trim(),
       evidence: (json['evidence'] as String? ?? '').trim(),
-      sourcePapers: _toStringList(json['source_papers']),
+      sourcePapers: toStringList(json['source_papers']),
       sourceSection: json['source_section'] as String?,
       potentialResearchQuestions:
-          _toStringList(json['potential_research_questions']),
+          toStringList(json['potential_research_questions']),
       gapType: (json['gap_type'] as String? ?? 'general').trim(),
     );
   }
@@ -414,10 +414,10 @@ class StudyNote {
   });
 
   factory StudyNote.fromJson(Map<String, dynamic> json) {
-    List<String> _toStringList(dynamic val) =>
+    List<String> toStringList(dynamic val) =>
         val is List ? val.map((e) => e.toString()).toList() : <String>[];
 
-    Map<String, String> _toStringMap(dynamic val) {
+    Map<String, String> toStringMap(dynamic val) {
       if (val is Map) {
         return val.map((k, v) => MapEntry(k.toString(), v.toString()));
       }
@@ -426,12 +426,12 @@ class StudyNote {
 
     return StudyNote(
       section: (json['section'] as String? ?? '').trim(),
-      keyPoints: _toStringList(json['key_points']),
-      definitions: _toStringMap(json['definitions']),
-      importantFacts: _toStringList(json['important_facts']),
-      formulas: _toStringList(json['formulas']),
-      examples: _toStringList(json['examples']),
-      examFocusPoints: _toStringList(json['exam_focus_points']),
+      keyPoints: toStringList(json['key_points']),
+      definitions: toStringMap(json['definitions']),
+      importantFacts: toStringList(json['important_facts']),
+      formulas: toStringList(json['formulas']),
+      examples: toStringList(json['examples']),
+      examFocusPoints: toStringList(json['exam_focus_points']),
       sourcePageRef: json['source_page_ref'] as int?,
     );
   }
@@ -484,14 +484,14 @@ class QuizQuestion {
   });
 
   factory QuizQuestion.fromJson(Map<String, dynamic> json) {
-    List<String> _toStringList(dynamic val) =>
+    List<String> toStringList(dynamic val) =>
         val is List ? val.map((e) => e.toString()).toList() : <String>[];
 
     return QuizQuestion(
       question: (json['question'] as String? ?? '').trim(),
       type: _parseQuestionType(json['type']),
       difficulty: _parseDifficulty(json['difficulty']),
-      options: _toStringList(json['options']),
+      options: toStringList(json['options']),
       answer: (json['answer'] as String? ?? '').trim(),
       explanation: (json['explanation'] as String? ?? '').trim(),
       sourceSection: json['source_section'] as String?,
@@ -646,13 +646,13 @@ class PresentationSlide {
   });
 
   factory PresentationSlide.fromJson(Map<String, dynamic> json) {
-    List<String> _toStringList(dynamic val) =>
+    List<String> toStringList(dynamic val) =>
         val is List ? val.map((e) => e.toString()).toList() : <String>[];
 
     return PresentationSlide(
       slideNumber: json['slide_number'] as int? ?? 0,
       title: (json['title'] as String? ?? '').trim(),
-      bulletPoints: _toStringList(json['bullet_points']),
+      bulletPoints: toStringList(json['bullet_points']),
       notes: json['notes'] as String?,
       sourceRef: json['source_ref'] as String?,
       slideType: (json['slide_type'] as String? ?? 'content').trim(),

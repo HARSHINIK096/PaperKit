@@ -313,7 +313,9 @@ class AppDrawer extends StatelessWidget {
           color: isDark ? AppColors.borderDark : const Color(0xFFF1F5F9),
         ),
       ),
-      child: ListTile(
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         dense: true,
         leading: Container(
@@ -355,7 +357,8 @@ class AppDrawer extends StatelessWidget {
           context.push(route);
         },
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildNavTile(

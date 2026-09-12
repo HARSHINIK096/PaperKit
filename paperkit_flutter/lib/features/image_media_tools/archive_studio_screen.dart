@@ -12,6 +12,7 @@ import '../../core/services/archive_engine.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/how_it_works_carousel.dart';
 
 class ArchiveStudioScreen extends StatefulWidget {
   final String? initialMode; // 'create' or 'extract'
@@ -123,7 +124,7 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
   Future<void> _pickArchiveToExtract() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['zip', 'tar', 'gz', 'rar', '7z', 'bz2', 'tgz'],
+      allowedExtensions: ['zip', 'tar', 'gz', 'rar', '7z', 'bz2', 'tgz', 'tbz', 'xz', 'zst'],
     );
 
     if (result != null && result.files.single.path != null) {
@@ -188,6 +189,10 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
       showBottomNav: false,
       child: Column(
         children: [
+          const HowItWorksCarousel(
+            toolId: 'archive-studio',
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+          ),
           TabBar(
             controller: _tabController,
             indicatorColor: AppColors.primary,
@@ -233,9 +238,12 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
             prefixIcon: Icon(LucideIcons.package, size: 18),
           ),
           items: const [
-            DropdownMenuItem(value: 'zip', child: Text('ZIP (.zip)')),
-            DropdownMenuItem(value: 'tar', child: Text('TAR (.tar)')),
-            DropdownMenuItem(value: 'tar.gz', child: Text('TAR.GZ (.tar.gz)')),
+            DropdownMenuItem(value: 'zip', child: Text('ZIP Archive (.zip)')),
+            DropdownMenuItem(value: 'tar', child: Text('TAR Tape Archive (.tar)')),
+            DropdownMenuItem(value: 'tar.gz', child: Text('TAR GZip Archive (.tar.gz)')),
+            DropdownMenuItem(value: 'tar.bz2', child: Text('TAR BZip2 Archive (.tar.bz2)')),
+            DropdownMenuItem(value: 'gz', child: Text('GZip Compressed Archive (.gz)')),
+            DropdownMenuItem(value: 'bz2', child: Text('BZip2 Compressed Archive (.bz2)')),
           ],
           onChanged: (val) {
             if (val != null) setState(() => _selectedFormat = val);

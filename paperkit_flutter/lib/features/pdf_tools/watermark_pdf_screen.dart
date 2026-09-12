@@ -9,6 +9,7 @@ import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/services/pdf_engine.dart';
+import '../../core/utils/platform_file_ext.dart';
 import '../../core/widgets/tool_flow_scaffold.dart';
 
 class WatermarkPDFScreen extends StatefulWidget {
@@ -36,11 +37,13 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      withData: true,
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result != null && result.files.isNotEmpty && result.files.single.hasValidFile) {
+      final pf = result.files.single;
       setState(() {
-        _selectedFile = File(result.files.single.path!);
+        _selectedFile = pf.asFile ?? File(pf.name);
       });
     }
   }

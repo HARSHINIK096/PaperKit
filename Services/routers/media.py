@@ -64,7 +64,9 @@ async def convert_video(
             cmd = [ffmpeg, "-y", "-i", in_path, "-c:v", "libvpx-vp9", "-crf", "30", "-b:v", "0", "-c:a", "libopus", out_path]
         elif target_fmt == "mov":
             cmd = [ffmpeg, "-y", "-i", in_path, "-c:v", "libx264", "-c:a", "aac", out_path]
-        else: # mp4
+        elif target_fmt in ["mp3", "wav", "aac", "m4a", "flac", "ogg"]:
+            cmd = [ffmpeg, "-y", "-i", in_path, "-vn", out_path]
+        else: # mp4, avi, mkv, flv, wmv, 3gp, ogv, ts
             cmd = [ffmpeg, "-y", "-i", in_path, "-c:v", "libx264", "-c:a", "aac", "-movflags", "+faststart", out_path]
 
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
@@ -75,7 +77,7 @@ async def convert_video(
         background_tasks.add_task(cleanup_file, in_path)
         background_tasks.add_task(cleanup_file, out_path)
 
-        media_type = f"video/{target_fmt}" if target_fmt != "gif" else "image/gif"
+        media_type = f"audio/{target_fmt}" if target_fmt in ["mp3", "wav", "aac", "m4a", "flac", "ogg"] else (f"video/{target_fmt}" if target_fmt != "gif" else "image/gif")
         orig_stem = file.filename.rsplit(".", 1)[0]
         return FileResponse(out_path, filename=f"{orig_stem}.{target_fmt}", media_type=media_type)
     except Exception as e:
@@ -100,14 +102,23 @@ async def compress_video(
         f.write(content)
 
     crf = "28"
+    vf_flags = []
     if preset == "low":
         crf = "22"
     elif preset == "high":
-        crf = "36"
+        crf = "34"
+    elif preset == "extreme":
+        crf = "40"
+    elif preset == "720p":
+        crf = "26"
+        vf_flags = ["-vf", "scale=-2:720"]
+    elif preset == "480p":
+        crf = "28"
+        vf_flags = ["-vf", "scale=-2:480"]
 
     ffmpeg = get_ffmpeg_cmd()
     try:
-        cmd = [ffmpeg, "-y", "-i", in_path, "-vcodec", "libx264", "-crf", crf, "-preset", "faster", "-acodec", "aac", "-b:a", "128k", out_path]
+        cmd = [ffmpeg, "-y", "-i", in_path] + vf_flags + ["-vcodec", "libx264", "-crf", crf, "-preset", "faster", "-acodec", "aac", "-b:a", "128k", out_path]
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=180)
         if res.returncode != 0 or not os.path.exists(out_path):
             raise Exception(f"FFmpeg compression error: {res.stderr.decode('utf-8', errors='ignore')[:300]}")
@@ -143,12 +154,16 @@ async def convert_audio(
     try:
         if target_fmt == "wav":
             cmd = [ffmpeg, "-y", "-i", in_path, "-acodec", "pcm_s16le", out_path]
-        elif target_fmt == "ogg":
+        elif target_fmt == "ogg" or target_fmt == "opus":
             cmd = [ffmpeg, "-y", "-i", in_path, "-acodec", "libvorbis", out_path]
-        elif target_fmt == "aac" or target_fmt == "m4a":
+        elif target_fmt == "flac":
+            cmd = [ffmpeg, "-y", "-i", in_path, "-acodec", "flac", out_path]
+        elif target_fmt in ["aac", "m4a"]:
             cmd = [ffmpeg, "-y", "-i", in_path, "-acodec", "aac", out_path]
-        else: # mp3
-            cmd = [ffmpeg, "-y", "-i", in_path, "-acodec", "libmp3lame", "-b:a", "192k", out_path]
+        elif target_fmt == "amr":
+            cmd = [ffmpeg, "-y", "-i", in_path, "-acodec", "libopencore_amrnb", "-ar", "8000", "-ac", "1", out_path]
+        else: # mp3, wma, aiff, etc.
+            cmd = [ffmpeg, "-y", "-i", in_path, out_path]
 
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
         if res.returncode != 0 or not os.path.exists(out_path):

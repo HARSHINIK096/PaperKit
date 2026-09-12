@@ -47,11 +47,24 @@ class _StudyNotesScreenState extends State<StudyNotesScreen> {
         for (final note in notes) {
           buf.writeln('\n## ${note['section'] ?? 'Section'}');
           final kp = note['key_points'] as List? ?? [];
-          if (kp.isNotEmpty) { buf.writeln('\n**Key Points:**'); for (final p in kp) buf.writeln('- $p'); }
+          if (kp.isNotEmpty) {
+            buf.writeln('\n**Key Points:**');
+            for (final p in kp) {
+              buf.writeln('- $p');
+            }
+          }
           final defs = note['definitions'] as Map? ?? {};
-          if (defs.isNotEmpty) { buf.writeln('\n**Definitions:**'); defs.forEach((k, v) => buf.writeln('- **$k**: $v')); }
+          if (defs.isNotEmpty) {
+            buf.writeln('\n**Definitions:**');
+            defs.forEach((k, v) => buf.writeln('- **$k**: $v'));
+          }
           final formulas = note['formulas'] as List? ?? [];
-          if (formulas.isNotEmpty) { buf.writeln('\n**Formulas:**'); for (final f in formulas) buf.writeln('- $f'); }
+          if (formulas.isNotEmpty) {
+            buf.writeln('\n**Formulas:**');
+            for (final f in formulas) {
+              buf.writeln('- $f');
+            }
+          }
         }
         return buf.toString();
       },

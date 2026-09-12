@@ -67,7 +67,9 @@ class FileListItem extends StatelessWidget {
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
         ),
       ),
-      child: ListTile(
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         leading: Container(
           width: 44,
@@ -178,6 +180,7 @@ class FileListItem extends StatelessWidget {
         ),
         onTap: () => OpenFilex.open(file.path),
       ),
-    );
+    ),
+  );
   }
 }

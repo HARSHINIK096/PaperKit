@@ -16,6 +16,7 @@ import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/how_it_works_carousel.dart';
 
 class ConvertDocumentScreen extends StatefulWidget {
   final String? initialFrom;
@@ -154,6 +155,10 @@ class _ConvertDocumentScreenState extends State<ConvertDocumentScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          HowItWorksCarousel(
+            toolId: _fromFormat == 'pdf' ? 'pdf-to-word' : 'word-to-pdf',
+            padding: const EdgeInsets.only(bottom: 14),
+          ),
           // Format Selectors
           Container(
             padding: const EdgeInsets.all(16),

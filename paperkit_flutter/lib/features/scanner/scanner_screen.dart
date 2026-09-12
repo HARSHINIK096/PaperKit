@@ -13,6 +13,7 @@ import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/widgets/file_success_dialog.dart';
+import '../../core/widgets/how_it_works_carousel.dart';
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
@@ -292,7 +293,11 @@ class _ScannerScreenState extends State<ScannerScreen> with TickerProviderStateM
             ),
 
             // ── SCAN MODE PILLS ──────────────────────────────────────
-            if (_currentPreviewImage == null)
+            if (_currentPreviewImage == null) ...[
+              const HowItWorksCarousel(
+                toolId: 'scan-to-pdf',
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              ),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -327,6 +332,7 @@ class _ScannerScreenState extends State<ScannerScreen> with TickerProviderStateM
                   }).toList(),
                 ),
               ),
+            ],
 
             // ── REAL-WORLD CAMERA VIEWFINDER CANVAS ──────────────────
             Expanded(

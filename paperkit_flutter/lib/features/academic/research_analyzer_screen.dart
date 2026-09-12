@@ -37,11 +37,15 @@ class ResearchAnalyzerScreen extends StatelessWidget {
         if (result.conclusion != null) buf.writeln('\n## Conclusion\n${result.conclusion}');
         if (result.limitations.isNotEmpty) {
           buf.writeln('\n## Limitations');
-          for (final l in result.limitations) buf.writeln('- $l');
+          for (final l in result.limitations) {
+            buf.writeln('- $l');
+          }
         }
         if (result.futureWork.isNotEmpty) {
           buf.writeln('\n## Future Work');
-          for (final f in result.futureWork) buf.writeln('- $f');
+          for (final f in result.futureWork) {
+            buf.writeln('- $f');
+          }
         }
         return buf.toString();
       },

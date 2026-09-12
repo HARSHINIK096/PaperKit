@@ -28,9 +28,9 @@ class AppTools {
   static List<ToolItem> get imageCompressorTools =>
       ToolRegistry.getByCategory(ToolCategory.image);
   static List<ToolItem> get videoConverterTools =>
-      ToolRegistry.getByCategory(ToolCategory.video);
+      [ToolRegistry.videoConverter];
   static List<ToolItem> get videoCompressorTools =>
-      ToolRegistry.getByCategory(ToolCategory.video);
+      [ToolRegistry.videoCompressor];
   static List<ToolItem> get archiveTools =>
       ToolRegistry.getByCategory(ToolCategory.archive);
   static List<ToolItem> get audioConverterTools =>

@@ -47,7 +47,9 @@ class _QuizGeneratorScreenState extends State<QuizGeneratorScreen> {
         for (int i = 0; i < questions.length; i++) {
           final q = questions[i];
           buf.writeln('Q${i + 1}. [${q.type.label}] [${q.difficulty.name}] ${q.question}');
-          for (final opt in q.options) buf.writeln('   $opt');
+          for (final opt in q.options) {
+            buf.writeln('   $opt');
+          }
           buf.writeln('Answer: ${q.answer}');
           buf.writeln('Explanation: ${q.explanation}');
           buf.writeln();
@@ -259,8 +261,11 @@ class _QuizResultState extends State<_QuizResult> {
                 final isCorrect = revealed && opt.startsWith(q.answer);
                 final isSelected = selected == opt;
                 Color? bgColor;
-                if (revealed && isCorrect) bgColor = AppColors.successSoft;
-                else if (revealed && isSelected) bgColor = AppColors.errorSoft;
+                if (revealed && isCorrect) {
+                  bgColor = AppColors.successSoft;
+                } else if (revealed && isSelected) {
+                  bgColor = AppColors.errorSoft;
+                }
 
                 return GestureDetector(
                   onTap: revealed ? null : () => setState(() => _selected[i] = opt),

@@ -133,7 +133,7 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
       case 'compression':
         return AppTools.archiveTools;
       case 'video':
-        return [...AppTools.videoConverterTools, ...AppTools.videoCompressorTools];
+        return ToolRegistry.getByCategory(ToolCategory.video);
       case 'media':
       case 'audio':
         return AppTools.audioConverterTools;

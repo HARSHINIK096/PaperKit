@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/platform_file_ext.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
 import '../../core/widgets/empty_state_view.dart';
@@ -74,10 +75,14 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
       type: FileType.custom,
       allowedExtensions: widget.allowedExtensions,
       allowMultiple: widget.allowMultiple,
+      withData: true,
     );
-    if (result != null) {
+    if (result != null && result.files.isNotEmpty) {
       setState(() {
-        _files = result.files.map((f) => File(f.path!)).toList();
+        _files = result.files
+            .where((f) => f.hasValidFile)
+            .map((f) => f.asFile ?? File(f.name))
+            .toList();
         _result = null;
         _errorMessage = null;
       });

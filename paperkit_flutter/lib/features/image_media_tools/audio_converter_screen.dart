@@ -13,6 +13,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
 import '../../core/widgets/file_success_dialog.dart';
+import '../../core/widgets/how_it_works_carousel.dart';
 
 class AudioConverterScreen extends StatefulWidget {
   final String? initialTo;
@@ -29,7 +30,7 @@ class _AudioConverterScreenState extends State<AudioConverterScreen> {
   bool _isProcessing = false;
   File? _convertedResult;
 
-  final List<String> _formats = ['mp3', 'wav', 'ogg', 'm4a', 'aac'];
+  final List<String> _formats = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'wma', 'opus', 'amr', 'aiff'];
 
   @override
   void initState() {
@@ -40,7 +41,7 @@ class _AudioConverterScreenState extends State<AudioConverterScreen> {
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'],
+      allowedExtensions: ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'wma', 'opus', 'amr', 'aiff', 'mp4', 'm4r'],
     );
 
     if (result != null && result.files.single.path != null) {
@@ -121,6 +122,10 @@ class _AudioConverterScreenState extends State<AudioConverterScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const HowItWorksCarousel(
+            toolId: 'audio-converter',
+            padding: EdgeInsets.only(bottom: 14),
+          ),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -182,6 +187,7 @@ class _AudioConverterScreenState extends State<AudioConverterScreen> {
 
             Wrap(
               spacing: 10,
+              runSpacing: 8,
               children: _formats.map((fmt) {
                 final isSelected = _targetFormat == fmt;
                 return ChoiceChip(

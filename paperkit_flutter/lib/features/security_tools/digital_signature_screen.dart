@@ -17,6 +17,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
 import '../../core/widgets/file_success_dialog.dart';
+import '../../core/widgets/how_it_works_carousel.dart';
 
 enum SignatureCreationMode { draw, type, upload }
 
@@ -326,49 +327,62 @@ class _DigitalSignatureScreenState extends State<DigitalSignatureScreen> {
   }
 
   Widget _buildEmptyState(bool isDark) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.toolIndigo.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(LucideIcons.fileSignature, size: 48, color: AppColors.toolIndigo),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          const HowItWorksCarousel(
+            toolId: 'digital-signature',
+            padding: EdgeInsets.only(bottom: 16),
+          ),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              'Select PDF to Sign & Place Stamp',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.toolIndigo.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(LucideIcons.fileSignature, size: 48, color: AppColors.toolIndigo),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Select PDF to Sign & Place Stamp',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Draw your signature, type script, or upload an image. Drag and place it anywhere on any page.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _pickPdfFile,
+                  icon: const Icon(LucideIcons.uploadCloud, size: 18),
+                  label: const Text('Choose PDF Document'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Draw your signature, type script, or upload an image. Drag and place it anywhere on any page.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13.5,
-                color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _pickPdfFile,
-              icon: const Icon(LucideIcons.uploadCloud, size: 18),
-              label: const Text('Choose PDF Document'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
