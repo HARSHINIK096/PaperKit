@@ -46,9 +46,12 @@ async def _guest_cleanup_loop():
             await asyncio.sleep(180)
 
 
+from middleware.editor_rate_limiter import init_db as init_rate_limiter_db
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup — launch background job worker & guest cleanup task
+    # Startup — initialize rate limiter DB, launch background job worker & guest cleanup task
+    init_rate_limiter_db()
     await job_service.start_worker()
     cleanup_task = asyncio.create_task(_guest_cleanup_loop())
     

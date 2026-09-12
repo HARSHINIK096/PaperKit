@@ -56,6 +56,7 @@ def get_remaining_edits(client_key: str) -> tuple[int, int]:
     """Return (remaining_edits, max_limit) for current date."""
     today = get_today_date_str()
     try:
+        init_db()
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -79,6 +80,7 @@ def enforce_editor_rate_limit(request: Request, response: Response = None) -> tu
     client_key = get_client_key(request, response)
     today = get_today_date_str()
     
+    init_db()
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute(
