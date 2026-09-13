@@ -99,7 +99,7 @@ class _PublishingStudioScreenState extends State<PublishingStudioScreen> with Si
     return CoverConfig(
       title: _titleController.text.trim().isEmpty ? 'Untitled E-Book' : _titleController.text.trim(),
       subtitle: _subtitleController.text.trim(),
-      author: _authorController.text.trim().isEmpty ? 'PaperKit Publisher' : _authorController.text.trim(),
+      author: _authorController.text.trim().isEmpty ? 'MaskerV Publisher' : _authorController.text.trim(),
       backgroundColorHex: _coverBgColor.toARGB32(),
       textColorHex: _coverTextColor.toARGB32(),
     );
@@ -306,7 +306,7 @@ class _PublishingStudioScreenState extends State<PublishingStudioScreen> with Si
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'PAPERKIT DIGITAL EDITION',
+                            'MASKERV DIGITAL EDITION',
                             style: TextStyle(
                               color: _coverTextColor.withValues(alpha: 0.9),
                               fontSize: 9,
@@ -347,7 +347,7 @@ class _PublishingStudioScreenState extends State<PublishingStudioScreen> with Si
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                _authorController.text.trim().isEmpty ? 'PaperKit Author' : _authorController.text.trim(),
+                                _authorController.text.trim().isEmpty ? 'MaskerV Author' : _authorController.text.trim(),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(

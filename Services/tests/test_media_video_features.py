@@ -124,7 +124,7 @@ async def test_video_editor_pipeline(async_client, sample_test_video):
             "speed": "1.5",
             "volume": "0.8",
             "filter_preset": "grayscale",
-            "text_overlay": "PaperKit Test",
+            "text_overlay": "MaskerV Test",
             "text_position": "bottom",
             "export_resolution": "480p",
             "export_crf": "26"

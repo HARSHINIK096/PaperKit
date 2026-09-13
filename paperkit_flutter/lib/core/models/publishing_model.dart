@@ -37,7 +37,7 @@ class CoverConfig {
   const CoverConfig({
     this.title = 'Untitled E-Book',
     this.subtitle = '',
-    this.author = 'PaperKit Publisher',
+    this.author = 'MaskerV Publisher',
     this.backgroundColorHex = 0xFF1E88E5,
     this.textColorHex = 0xFFFFFFFF,
     this.backgroundImagePath,
@@ -46,7 +46,7 @@ class CoverConfig {
   factory CoverConfig.fromJson(Map<String, dynamic> json) => CoverConfig(
         title: json['title'] as String? ?? 'Untitled E-Book',
         subtitle: json['subtitle'] as String? ?? '',
-        author: json['author'] as String? ?? 'PaperKit Publisher',
+        author: json['author'] as String? ?? 'MaskerV Publisher',
         backgroundColorHex: json['backgroundColorHex'] as int? ?? 0xFF1E88E5,
         textColorHex: json['textColorHex'] as int? ?? 0xFFFFFFFF,
         backgroundImagePath: json['backgroundImagePath'] as String?,

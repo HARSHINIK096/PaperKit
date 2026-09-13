@@ -9,6 +9,7 @@ import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/compact_upload_container.dart';
 import '../../core/widgets/how_it_works_carousel.dart';
 import '../../core/widgets/markdown_viewer.dart';
 
@@ -99,51 +100,29 @@ class _SummarizePDFScreenState extends State<SummarizePDFScreen> {
             toolId: 'ai-summary',
             padding: EdgeInsets.only(bottom: 14),
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.borderLight,
-              ),
-            ),
-            child: Column(
-              children: [
-                if (_selectedFile == null)
-                  Center(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickFile,
-                      icon: const Icon(LucideIcons.fileText, size: 20),
-                      label: const Text('Choose Document to Summarize'),
-                    ),
-                  )
-                else ...[
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.toolPurple.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(LucideIcons.sparkles, color: AppColors.toolPurple, size: 24),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          _selectedFile!.uri.pathSegments.last,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      TextButton(onPressed: _pickFile, child: const Text('Change')),
-                    ],
-                  ),
-                ],
-              ],
-            ),
+          CompactUploadContainer(
+            files: _selectedFile != null ? [_selectedFile!] : [],
+            title: 'Upload Document to Summarize',
+            subtitle: 'Drop PDF, DOCX or TXT for multi-length AI executive brief',
+            icon: LucideIcons.sparkles,
+            primaryColor: AppColors.toolPurple,
+            allowedExtensions: const ['pdf', 'docx', 'txt'],
+            useShader: true,
+            enabled: !_isProcessing,
+            onFilesSelected: (files) {
+              if (files.isNotEmpty) {
+                setState(() {
+                  _selectedFile = files.first;
+                  _summaryResult = '';
+                });
+              }
+            },
+            onClear: () {
+              setState(() {
+                _selectedFile = null;
+                _summaryResult = '';
+              });
+            },
           ),
           const SizedBox(height: 20),
 

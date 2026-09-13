@@ -48,6 +48,7 @@ class ApiService {
           // 2. Attach registered auth token if available
           final prefs = await SharedPreferences.getInstance();
           final token =
+              prefs.getString('maskerv_auth_token') ??
               prefs.getString('paperkit_auth_token') ??
               prefs.getString('pk_token');
           if (token != null && token.isNotEmpty) {
@@ -227,7 +228,7 @@ class ApiService {
     }
 
     throw Exception(
-      'Failed to obtain converted $toFormat file from PaperKit backend.',
+      'Failed to obtain converted $toFormat file from MaskerV backend.',
     );
   }
 

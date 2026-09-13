@@ -62,7 +62,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
 
       final fileSize = await file.length();
 
-      // Log to global PaperKit History
+      // Log to global MaskerV History
       if (mounted) {
         await context.read<HistoryProvider>().addRecord(
               HistoryItem(
@@ -88,7 +88,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('QR Code saved to Phone Storage: ${file.path.split('/').last} (Downloads/PaperKit)'),
+            content: Text('QR Code saved to Phone Storage: ${file.path.split('/').last} (Downloads/MaskerV)'),
             action: SnackBarAction(
               label: 'Open',
               onPressed: () => OpenFilex.open(file.path),

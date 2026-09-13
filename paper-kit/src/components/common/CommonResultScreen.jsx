@@ -105,7 +105,7 @@ export default function CommonResultScreen({
   primaryAction = null, // { label, onClick, icon }
   secondaryActions: _secondaryActions = null, // Array of { label, onClick, icon }
   onReset = null,
-  sourceWorkflow = 'paperkit-tool',
+  sourceWorkflow = 'maskerv-tool',
   autoDownloadDelay = 3, // Auto download after 3 seconds
 }) {
   const navigate = useNavigate();

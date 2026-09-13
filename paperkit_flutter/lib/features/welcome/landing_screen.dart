@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:provider/provider.dart';
+import '../../core/providers/i18n_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/language_selector_sheet.dart';
 import '../../core/widgets/particle_background.dart';
 
 class LandingScreen extends StatefulWidget {
@@ -40,7 +43,7 @@ class _LandingScreenState extends State<LandingScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // PaperKit Logo Badge
+                      // MaskerV Logo Badge
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
@@ -81,40 +84,50 @@ class _LandingScreenState extends State<LandingScreen> {
                         ),
                       ),
 
-                      // Language Dropdown Pill
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      // Interactive Language Dropdown Pill
+                      InkWell(
+                        onTap: () => LanguageSelectorSheet.show(context),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(LucideIcons.globe, size: 14, color: AppColors.primary),
-                            const SizedBox(width: 5),
-                            Text(
-                              _selectedLanguage.length > 16 ? '${_selectedLanguage.substring(0, 16)}...' : _selectedLanguage,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          child: Row(
+                            children: [
+                              Text(
+                                context.watch<I18nProvider>().currentAppLanguage.flag,
+                                style: const TextStyle(fontSize: 13),
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.keyboard_arrow_down, size: 14, color: Color(0xFF64748B)),
-                            const SizedBox(width: 2),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(4),
+                              const SizedBox(width: 5),
+                              Text(
+                                context.watch<I18nProvider>().currentAppLanguage.nativeName,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                ),
                               ),
-                              child: const Text('US', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              const Icon(Icons.keyboard_arrow_down, size: 14, color: Color(0xFF64748B)),
+                              const SizedBox(width: 2),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  context.watch<I18nProvider>().currentAppLanguage.countryCode,
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -157,7 +170,7 @@ class _LandingScreenState extends State<LandingScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    'Open Source PDF Studio ✦',
+                                    context.t('open_source_tag'),
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
@@ -226,7 +239,7 @@ class _LandingScreenState extends State<LandingScreen> {
 
                             // Headline
                             Text(
-                              'Clear speed.\nPure calm.',
+                              context.t('clear_speed_title'),
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
@@ -239,7 +252,7 @@ class _LandingScreenState extends State<LandingScreen> {
 
                             // Subtitle
                             Text(
-                              'Curated for document clarity, offline privacy and speed.',
+                              context.t('clear_speed_sub'),
                               style: TextStyle(
                                 fontSize: 12.5,
                                 height: 1.35,
@@ -288,7 +301,7 @@ class _LandingScreenState extends State<LandingScreen> {
                                   Expanded(
                                     child: TextField(
                                       decoration: InputDecoration(
-                                        hintText: 'Find your document tool',
+                                        hintText: context.t('find_tool_ph'),
                                         hintStyle: TextStyle(
                                           fontSize: 12.5,
                                           color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
@@ -313,7 +326,7 @@ class _LandingScreenState extends State<LandingScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Discover',
+                                      context.t('discover_title'),
                                       style: TextStyle(
                                         fontSize: 17,
                                         fontWeight: FontWeight.w900,
@@ -322,7 +335,7 @@ class _LandingScreenState extends State<LandingScreen> {
                                     ),
                                     const SizedBox(height: 1),
                                     Text(
-                                      'what powers your workflow',
+                                      context.t('discover_sub'),
                                       style: TextStyle(
                                         fontSize: 11.5,
                                         color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
@@ -348,11 +361,11 @@ class _LandingScreenState extends State<LandingScreen> {
                             // Category Chips (All, PDF, AI Intelligence)
                             Row(
                               children: [
-                                _buildCategoryPill('All', isDark),
+                                _buildCategoryPill(context.t('tab_all'), isDark),
                                 const SizedBox(width: 8),
-                                _buildCategoryPill('PDF', isDark),
+                                _buildCategoryPill(context.t('tab_pdf'), isDark),
                                 const SizedBox(width: 8),
-                                _buildCategoryPill('AI Intelligence', isDark),
+                                _buildCategoryPill(context.t('tab_ai'), isDark),
                               ],
                             ),
                             const SizedBox(height: 14),
@@ -367,32 +380,32 @@ class _LandingScreenState extends State<LandingScreen> {
                               childAspectRatio: 1.5,
                               children: [
                                 _buildFeatureCard(
-                                  title: 'Merge PDF',
-                                  subtitle: 'Combine multiple files',
+                                  title: context.t('tool_merge_name'),
+                                  subtitle: context.t('tool_merge_desc'),
                                   icon: LucideIcons.fileText,
                                   iconColor: const Color(0xFF2563EB),
                                   isDark: isDark,
                                   onTap: () => context.push('/tools/merge'),
                                 ),
                                 _buildFeatureCard(
-                                  title: 'Compress PDF',
-                                  subtitle: 'Reduce file size',
+                                  title: context.t('tool_compress_name'),
+                                  subtitle: context.t('tool_compress_desc'),
                                   icon: LucideIcons.fileText,
                                   iconColor: const Color(0xFF2563EB),
                                   isDark: isDark,
                                   onTap: () => context.push('/tools/compress'),
                                 ),
                                 _buildFeatureCard(
-                                  title: 'Ask PDF AI',
-                                  subtitle: 'Instant QA on docs',
+                                  title: context.t('tool_ai_ask_name'),
+                                  subtitle: context.t('tool_ai_ask_desc'),
                                   icon: LucideIcons.sparkles,
                                   iconColor: const Color(0xFF8B5CF6),
                                   isDark: isDark,
                                   onTap: () => context.push('/ai/ask'),
                                 ),
                                 _buildFeatureCard(
-                                  title: 'Split PDF',
-                                  subtitle: 'Extract or split pages',
+                                  title: context.t('tool_split_name'),
+                                  subtitle: context.t('tool_split_desc'),
                                   icon: LucideIcons.fileText,
                                   iconColor: const Color(0xFF2563EB),
                                   isDark: isDark,
@@ -427,15 +440,15 @@ class _LandingScreenState extends State<LandingScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Launch Studio',
-                            style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, letterSpacing: -0.2),
+                            context.t('launch_studio'),
+                            style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, letterSpacing: -0.2),
                           ),
-                          SizedBox(width: 8),
-                          Icon(LucideIcons.arrowRight, size: 18),
+                          const SizedBox(width: 8),
+                          const Icon(LucideIcons.arrowRight, size: 18),
                         ],
                       ),
                     ),

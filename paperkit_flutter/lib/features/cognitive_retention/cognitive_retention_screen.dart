@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/models/study_session_model.dart';
 import '../../core/services/pdf_engine.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/compact_upload_container.dart';
 import 'cognitive_retention_service.dart';
 
 class CognitiveRetentionScreen extends StatefulWidget {
@@ -106,6 +108,45 @@ class _CognitiveRetentionScreenState extends State<CognitiveRetentionScreen> wit
     }
   }
 
+  Future<void> _processDocument(File file) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final path = file.path;
+      String text = '';
+      if (path.endsWith('.pdf')) {
+        text = await PdfEngine.extractTextFromPdf(file);
+      } else {
+        text = await file.readAsString();
+      }
+
+      final cards = _service.extractRecallItemsFromText(text, documentPath: path);
+      setState(() {
+        _selectedFile = file;
+        _recallCards = cards;
+        _isLoading = false;
+      });
+
+      if (cards.isNotEmpty) {
+        final deck = StudyDeck(
+          id: 'deck_${DateTime.now().millisecondsSinceEpoch}',
+          name: file.uri.pathSegments.last,
+          documentPath: path,
+          cards: cards,
+        );
+        await _service.saveDeck(deck);
+        await _loadDecks();
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load document: ${e.toString()}';
+      });
+    }
+  }
+
   void _startPomodoro() {
     setState(() => _isPomodoroRunning = true);
     _pomodoroTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -186,13 +227,30 @@ class _CognitiveRetentionScreenState extends State<CognitiveRetentionScreen> wit
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          CompactUploadContainer(
+            files: _selectedFile != null ? [_selectedFile!] : [],
+            title: 'Load Study Document',
+            subtitle: 'Select PDF or notes to generate active recall challenges',
+            icon: LucideIcons.brain,
+            primaryColor: AppColors.toolPurple,
+            allowedExtensions: const ['pdf', 'txt', 'md'],
+            useShader: true,
+            enabled: !_isLoading,
+            onFilesSelected: (files) {
+              if (files.isNotEmpty) {
+                _processDocument(files.first);
+              }
+            },
+            onClear: () {
+              setState(() {
+                _selectedFile = null;
+                _recallCards = [];
+              });
+            },
+          ),
+          const SizedBox(height: 14),
           Row(
             children: [
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _pickDocument,
-                icon: const Icon(LucideIcons.fileUp),
-                label: const Text('Load Document'),
-              ),
               const Spacer(),
               FilterChip(
                 label: const Text('Blur Active'),

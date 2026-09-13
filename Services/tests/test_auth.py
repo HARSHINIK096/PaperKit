@@ -28,7 +28,7 @@ async def test_register_success(client):
     """POST /auth/register creates a new user account."""
     resp = await client.post(
         "/auth/register",
-        json={"name": "Alice Tester", "email": "alice@paperkit.dev", "password": "SecurePassword123!"},
+        json={"name": "Alice Tester", "email": "alice@maskerv.dev", "password": "SecurePassword123!"},
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -39,7 +39,7 @@ async def test_register_success(client):
 @pytest.mark.asyncio
 async def test_register_missing_fields(client):
     """POST /auth/register fails if required fields are missing."""
-    resp = await client.post("/auth/register", json={"email": "alice@paperkit.dev"})
+    resp = await client.post("/auth/register", json={"email": "alice@maskerv.dev"})
     assert resp.status_code == 400
 
 
@@ -48,7 +48,7 @@ async def test_register_short_password(client):
     """POST /auth/register rejects passwords under 8 chars."""
     resp = await client.post(
         "/auth/register",
-        json={"name": "Short", "email": "short@paperkit.dev", "password": "123"},
+        json={"name": "Short", "email": "short@maskerv.dev", "password": "123"},
     )
     assert resp.status_code == 400
     assert "8 characters" in resp.json()["detail"]
@@ -96,7 +96,7 @@ async def test_login_unknown_user(client):
     """POST /auth/login returns 401 on non-existent account."""
     resp = await client.post(
         "/auth/login",
-        data={"username": "nonexistent@paperkit.dev", "password": "AnyPassword123!"},
+        data={"username": "nonexistent@maskerv.dev", "password": "AnyPassword123!"},
     )
     assert resp.status_code == 401
 

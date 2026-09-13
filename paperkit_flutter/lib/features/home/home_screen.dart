@@ -157,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'PaperKit Intelligent Suite',
+                  'MaskerV Intelligent Suite',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,

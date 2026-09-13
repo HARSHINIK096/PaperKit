@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: paperkit-backend
+    name: maskerv-backend
     env: python
     region: oregon
     plan: free
@@ -11,7 +11,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: DATABASE_NAME
-        value: paperkit
+        value: maskerv
       - key: MONGODB_URL
         sync: false
       - key: SECRET_KEY
@@ -25,14 +25,14 @@ services:
       - key: GROQ_VISION_MODEL
         value: llama-3.2-11b-vision-preview
       - key: FRONTEND_URL
-        value: https://paperkit-web.onrender.com
+        value: https://maskerv-web.onrender.com
       - key: ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "10080"
 
   - type: staticSite
-    name: paperkit-web
+    name: maskerv-web
     rootDir: paper-kit
     buildCommand: npm install && npm run build
     publishDir: dist
@@ -42,4 +42,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://paperkit-backend.onrender.com
+        value: https://maskerv-backend.onrender.com

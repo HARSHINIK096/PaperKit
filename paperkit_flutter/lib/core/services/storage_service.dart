@@ -7,9 +7,12 @@ import '../models/document_file.dart';
 import '../models/history_item.dart';
 
 class StorageService {
-  static const String _filesKey = 'paperkit_saved_files_v1';
-  static const String _historyKey = 'paperkit_history_records_v1';
-  static const String _anonUserIdKey = 'paperkit_anon_user_id_v1';
+  static const String _filesKey = 'maskerv_saved_files_v1';
+  static const String _legacyFilesKey = 'paperkit_saved_files_v1';
+  static const String _historyKey = 'maskerv_history_records_v1';
+  static const String _legacyHistoryKey = 'paperkit_history_records_v1';
+  static const String _anonUserIdKey = 'maskerv_anon_user_id_v1';
+  static const String _legacyAnonUserIdKey = 'paperkit_anon_user_id_v1';
 
   static final StorageService _instance = StorageService._internal();
   factory StorageService() => _instance;
@@ -33,7 +36,7 @@ class StorageService {
       return _cachedUserId!;
     }
     final prefs = await SharedPreferences.getInstance();
-    String? id = prefs.getString(_anonUserIdKey);
+    String? id = prefs.getString(_anonUserIdKey) ?? prefs.getString(_legacyAnonUserIdKey);
     if (id == null || id.isEmpty) {
       id = _generateUuidV4();
       await prefs.setString(_anonUserIdKey, id);
@@ -54,7 +57,7 @@ class StorageService {
   // Load all tracked documents
   Future<List<DocumentFile>> getFiles() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_filesKey);
+    final data = prefs.getString(_filesKey) ?? prefs.getString(_legacyFilesKey);
     if (data == null || data.isEmpty) return [];
 
     try {
@@ -123,7 +126,7 @@ class StorageService {
   // Get Processing History
   Future<List<HistoryItem>> getHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_historyKey);
+    final data = prefs.getString(_historyKey) ?? prefs.getString(_legacyHistoryKey);
     if (data == null || data.isEmpty) return [];
 
     try {
@@ -189,18 +192,18 @@ class StorageService {
   // DOMAINS 5-15 PERSISTENCE HELPERS
   // ───────────────────────────────────────────────────────────────────────────
 
-  static const String _studyDecksKey = 'paperkit_study_decks_v1';
-  static const String _auditLedgerKey = 'paperkit_audit_ledger_v1';
-  static const String _formProfilesKey = 'paperkit_form_profiles_v1';
-  static const String _pageNotesKey = 'paperkit_page_notes_v1';
-  static const String _syllabusCoursesKey = 'paperkit_syllabus_courses_v1';
-  static const String _glossaryTermsKey = 'paperkit_glossary_terms_v1';
-  static const String _voiceAnnotationsKey = 'paperkit_voice_annotations_v1';
+  static const String _studyDecksKey = 'maskerv_study_decks_v1';
+  static const String _auditLedgerKey = 'maskerv_audit_ledger_v1';
+  static const String _formProfilesKey = 'maskerv_form_profiles_v1';
+  static const String _pageNotesKey = 'maskerv_page_notes_v1';
+  static const String _syllabusCoursesKey = 'maskerv_syllabus_courses_v1';
+  static const String _glossaryTermsKey = 'maskerv_glossary_terms_v1';
+  static const String _voiceAnnotationsKey = 'maskerv_voice_annotations_v1';
 
   // Persistent Study Decks (Domain 5)
   Future<List<Map<String, dynamic>>> getStudyDecks() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_studyDecksKey);
+    final data = prefs.getString(_studyDecksKey) ?? prefs.getString('paperkit_study_decks_v1');
     if (data == null || data.isEmpty) return [];
     try {
       final List<dynamic> decoded = jsonDecode(data);
@@ -218,7 +221,7 @@ class StorageService {
   // Persistent Audit Ledger (Domain 8)
   Future<List<Map<String, dynamic>>> getAuditLedger() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_auditLedgerKey);
+    final data = prefs.getString(_auditLedgerKey) ?? prefs.getString('paperkit_audit_ledger_v1');
     if (data == null || data.isEmpty) return [];
     try {
       final List<dynamic> decoded = jsonDecode(data);
@@ -236,7 +239,7 @@ class StorageService {
   // Persistent Form Profiles (Domain 9)
   Future<List<Map<String, dynamic>>> getFormProfiles() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_formProfilesKey);
+    final data = prefs.getString(_formProfilesKey) ?? prefs.getString('paperkit_form_profiles_v1');
     if (data == null || data.isEmpty) return [];
     try {
       final List<dynamic> decoded = jsonDecode(data);
@@ -254,7 +257,7 @@ class StorageService {
   // Persistent Page Anchor Notes (Domain 11)
   Future<List<Map<String, dynamic>>> getPageNotes() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_pageNotesKey);
+    final data = prefs.getString(_pageNotesKey) ?? prefs.getString('paperkit_page_notes_v1');
     if (data == null || data.isEmpty) return [];
     try {
       final List<dynamic> decoded = jsonDecode(data);
@@ -272,7 +275,7 @@ class StorageService {
   // Persistent Syllabus Courses (Domain 11)
   Future<List<Map<String, dynamic>>> getSyllabusCourses() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_syllabusCoursesKey);
+    final data = prefs.getString(_syllabusCoursesKey) ?? prefs.getString('paperkit_syllabus_courses_v1');
     if (data == null || data.isEmpty) return [];
     try {
       final List<dynamic> decoded = jsonDecode(data);
@@ -290,7 +293,7 @@ class StorageService {
   // Persistent Translation Glossary (Domain 14)
   Future<List<Map<String, dynamic>>> getGlossaryTerms() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_glossaryTermsKey);
+    final data = prefs.getString(_glossaryTermsKey) ?? prefs.getString('paperkit_glossary_terms_v1');
     if (data == null || data.isEmpty) return [];
     try {
       final List<dynamic> decoded = jsonDecode(data);
@@ -308,7 +311,7 @@ class StorageService {
   // Persistent Voice Annotations (Domain 6)
   Future<List<Map<String, dynamic>>> getVoiceAnnotations() async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_voiceAnnotationsKey);
+    final data = prefs.getString(_voiceAnnotationsKey) ?? prefs.getString('paperkit_voice_annotations_v1');
     if (data == null || data.isEmpty) return [];
     try {
       final List<dynamic> decoded = jsonDecode(data);

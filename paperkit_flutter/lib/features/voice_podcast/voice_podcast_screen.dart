@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/models/podcast_model.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/compact_upload_container.dart';
 import 'voice_podcast_service.dart';
 
 class VoicePodcastScreen extends StatefulWidget {
@@ -86,6 +88,32 @@ class _VoicePodcastScreenState extends State<VoicePodcastScreen> with SingleTick
       } else {
         setState(() => _isLoading = false);
       }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to generate podcast script: $e';
+      });
+    }
+  }
+
+  Future<void> _processDocument(File file) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final script = await _service.generatePodcastScript(file);
+      final notes = await _service.loadVoiceAnnotationsForDocument(file.path);
+
+      setState(() {
+        _selectedFile = file;
+        _podcastScript = script;
+        _annotations = notes;
+        _currentLineIndex = 0;
+        _isPlaying = false;
+        _isPaused = false;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -285,10 +313,26 @@ class _VoicePodcastScreenState extends State<VoicePodcastScreen> with SingleTick
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ElevatedButton.icon(
-            onPressed: _isLoading ? null : _pickDocument,
-            icon: const Icon(LucideIcons.fileUp),
-            label: Text(_selectedFile != null ? 'Change: ${_selectedFile!.uri.pathSegments.last}' : 'Load Document for Podcast'),
+          CompactUploadContainer(
+            files: _selectedFile != null ? [_selectedFile!] : [],
+            title: 'Upload Podcast Source Document',
+            subtitle: 'Select PDF or text to generate interactive dialogue',
+            icon: LucideIcons.mic,
+            primaryColor: AppColors.toolOrange,
+            allowedExtensions: const ['pdf', 'txt'],
+            useShader: true,
+            enabled: !_isLoading,
+            onFilesSelected: (files) {
+              if (files.isNotEmpty) {
+                _processDocument(files.first);
+              }
+            },
+            onClear: () {
+              setState(() {
+                _selectedFile = null;
+                _podcastScript = null;
+              });
+            },
           ),
           const SizedBox(height: 16),
           if (_isLoading)

@@ -16,8 +16,8 @@ class ShareService {
     final xFile = XFile(filePath);
     await Share.shareXFiles(
       [xFile],
-      subject: subject ?? 'Shared from PaperKit',
-      text: text ?? 'Here is your document exported from PaperKit.',
+      subject: subject ?? 'Shared from MaskerV',
+      text: text ?? 'Here is your document exported from MaskerV.',
     );
   }
 
@@ -38,8 +38,8 @@ class ShareService {
     }
     await Share.shareXFiles(
       xFiles,
-      subject: subject ?? 'Shared Documents from PaperKit',
-      text: text ?? 'Here are your documents exported from PaperKit.',
+      subject: subject ?? 'Shared Documents from MaskerV',
+      text: text ?? 'Here are your documents exported from MaskerV.',
     );
   }
 
@@ -55,7 +55,7 @@ class ShareService {
   }) async {
     await Share.share(
       content,
-      subject: subject ?? 'Shared from PaperKit',
+      subject: subject ?? 'Shared from MaskerV',
     );
   }
 }

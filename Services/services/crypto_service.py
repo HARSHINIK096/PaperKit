@@ -1,4 +1,4 @@
-"""Cryptographic services for PaperKit — Authenticated AES-256-GCM encryption & secure key derivation."""
+"""Cryptographic services for MaskerV — Authenticated AES-256-GCM encryption & secure key derivation."""
 import os
 import hmac
 import hashlib
@@ -31,7 +31,7 @@ def generate_verifier_hash(derived_key: bytes) -> str:
     The plaintext password is NEVER stored or logged.
     Only this verification hash is stored in the database.
     """
-    token_tag = hmac.new(derived_key, b"paperkit_temp_share_verify", hashlib.sha256).digest()
+    token_tag = hmac.new(derived_key, b"maskerv_temp_share_verify", hashlib.sha256).digest()
     salt = bcrypt.gensalt(rounds=10)
     return bcrypt.hashpw(token_tag, salt).decode("utf-8")
 
@@ -40,8 +40,12 @@ def check_verifier_password(password: str, salt: bytes, verifier_hash: str) -> b
     """Verify if the provided password matches the stored verifier hash."""
     try:
         derived_key = derive_encryption_key(password, salt)
-        token_tag = hmac.new(derived_key, b"paperkit_temp_share_verify", hashlib.sha256).digest()
-        return bcrypt.checkpw(token_tag, verifier_hash.encode("utf-8"))
+        token_tag = hmac.new(derived_key, b"maskerv_temp_share_verify", hashlib.sha256).digest()
+        if bcrypt.checkpw(token_tag, verifier_hash.encode("utf-8")):
+            return True
+        # Fallback for shares created prior to rebranding
+        legacy_tag = hmac.new(derived_key, b"paperkit_temp_share_verify", hashlib.sha256).digest()
+        return bcrypt.checkpw(legacy_tag, verifier_hash.encode("utf-8"))
     except Exception:
         return False
 

@@ -12,7 +12,7 @@ async def main():
         return
         
     client = AsyncIOMotorClient(url)
-    db_name = os.getenv('DATABASE_NAME', 'paperkit')
+    db_name = os.getenv('DATABASE_NAME', 'maskerv')
     db = client[db_name]
     
     collections = await db.list_collection_names()

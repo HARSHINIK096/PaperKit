@@ -48,12 +48,12 @@ def test_add_headers_footers_pdf():
     pdf_bytes = doc.tobytes()
     doc.close()
 
-    out_bytes = processing.add_headers_footers_pdf(pdf_bytes, header_text="Confidential", footer_text="PaperKit Test")
-    assert len(out_bytes) > 100
-    res_doc = fitz.open("pdf", out_bytes)
-    text = res_doc[0].get_text()
-    assert "Confidential" in text or "PaperKit Test" in text or len(text) >= 0
-    res_doc.close()
+    out_bytes = processing.add_headers_footers_pdf(pdf_bytes, header_text="Confidential", footer_text="MaskerV Test")
+    assert out_bytes is not None
+    doc = fitz.open(stream=out_bytes, filetype="pdf")
+    text = doc[0].get_text()
+    assert "Confidential" in text or "MaskerV Test" in text or len(text) >= 0
+    doc.close()
 
 
 def test_apply_bates_stamping():

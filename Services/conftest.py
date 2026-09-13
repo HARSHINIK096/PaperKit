@@ -1,4 +1,4 @@
-"""PaperKit Test Suite — Central Fixtures and Configurations
+"""MaskerV Test Suite — Central Fixtures and Configurations
 Provides isolated, fast test execution with in-memory database and async FastAPI TestClient.
 """
 import os
@@ -18,13 +18,13 @@ if SERVICES_DIR not in sys.path:
 
 # Configure environment variables for test execution
 os.environ["MONGODB_URL"] = "mock://"
-os.environ["DATABASE_NAME"] = "paperkit_test"
-os.environ["SECRET_KEY"] = "test-paperkit-jwt-secret-key-32-chars-long"
+os.environ["DATABASE_NAME"] = "maskerv_test"
+os.environ["SECRET_KEY"] = "test-maskerv-jwt-secret-key-32-chars-long"
 os.environ["ALGORITHM"] = "HS256"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "120"
 os.environ["GEMINI_API_KEY"] = "mock-gemini-key"
 os.environ["GROQ_API_KEY"] = "mock-groq-key"
-os.environ["FRONTEND_URL"] = "https://paperkit-web.onrender.com"
+os.environ["FRONTEND_URL"] = "https://maskerv-web.onrender.com"
 
 from config import get_settings
 get_settings.cache_clear()
@@ -63,8 +63,8 @@ def test_user_doc():
     user_id = ObjectId()
     return {
         "_id": user_id,
-        "name": "PaperKit Tester",
-        "email": "tester@paperkit.dev",
+        "name": "MaskerV Tester",
+        "email": "tester@maskerv.dev",
         "hashed_password": hash_password("TestPassword123!"),
         "avatar_url": None,
         "oauth_provider": None,
@@ -102,7 +102,7 @@ def sample_pdf_bytes():
     """Generates a real valid PDF in memory with selectable text."""
     doc = fitz.open()
     page = doc.new_page(width=595, height=842)
-    page.insert_text((72, 100), "PaperKit Universal Test Document", fontsize=16)
+    page.insert_text((72, 100), "MaskerV Universal Test Document", fontsize=16)
     page.insert_text((72, 140), "This document tests PDF manipulation, encryption, OCR, and AI operations.", fontsize=11)
     pdf_bytes = doc.tobytes()
     doc.close()
@@ -115,7 +115,7 @@ def multi_page_pdf_bytes():
     doc = fitz.open()
     for i in range(1, 4):
         page = doc.new_page(width=595, height=842)
-        page.insert_text((72, 100), f"PaperKit Test Page {i}", fontsize=18)
+        page.insert_text((72, 100), f"MaskerV Test Page {i}", fontsize=18)
     pdf_bytes = doc.tobytes()
     doc.close()
     return pdf_bytes
@@ -134,7 +134,7 @@ def sample_image_bytes():
 def sample_docx_bytes():
     """Generates a valid DOCX file in memory."""
     doc = Document()
-    doc.add_heading("PaperKit Test DOCX", level=1)
+    doc.add_heading("MaskerV Test DOCX", level=1)
     doc.add_paragraph("This is paragraph content for bidirectional document conversion tests.")
     buf = io.BytesIO()
     doc.save(buf)

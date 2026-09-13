@@ -9,7 +9,7 @@ const LOCAL_USER_KEY = 'pk_local_user';
 const DEFAULT_USER = {
   _id: 'local_user',
   name: 'Open Source User',
-  email: 'user@paperkit.local',
+  email: 'user@maskerv.local',
   created_at: new Date().toISOString(),
   preferences: {
     dark_mode: false,

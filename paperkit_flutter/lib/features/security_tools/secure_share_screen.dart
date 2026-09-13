@@ -188,13 +188,13 @@ class _SecureShareScreenState extends State<SecureShareScreen> {
       if (isShare) {
         await Share.shareXFiles(
           [XFile(file.path)],
-          text: 'PaperKit Secure Share (Expires in 10 mins): ${_shareResult!.shareUrl}',
+          text: 'MaskerV Secure Share (Expires in 10 mins): ${_shareResult!.shareUrl}',
         );
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('QR Code saved to Phone Storage: ${file.path.split('/').last} (Downloads/PaperKit)'),
+              content: Text('QR Code saved to Phone Storage: ${file.path.split('/').last} (Downloads/MaskerV)'),
               action: SnackBarAction(label: 'Open', onPressed: () => OpenFilex.open(file.path)),
             ),
           );

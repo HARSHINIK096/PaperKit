@@ -4,14 +4,17 @@ import '../models/qr_parsed_payload.dart';
 import '../models/qr_scan_history_item.dart';
 
 class QrScanHistoryService {
-  static const String _storageKey = 'paperkit_qr_scan_history_v1';
+  static const String _storageKey = 'maskerv_qr_scan_history_v1';
+  static const String _legacyStorageKey = 'paperkit_qr_scan_history_v1';
   static const int _maxItems = 100;
 
   const QrScanHistoryService._();
 
   static Future<List<QrScanHistoryItem>> getHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonList = prefs.getStringList(_storageKey) ?? [];
+    final jsonList = prefs.getStringList(_storageKey) ??
+        prefs.getStringList(_legacyStorageKey) ??
+        [];
     return jsonList
         .map((itemStr) {
           try {

@@ -8,6 +8,7 @@ import '../../core/models/history_item.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/platform_file_ext.dart';
+import '../../core/widgets/compact_upload_container.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
 import '../../core/widgets/empty_state_view.dart';
@@ -164,18 +165,31 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ── File Selection Card ───────────────────────────────────────
-          _FilePickerCard(
+          // ── Compact Upload Container with Shader & Border ─────────────────
+          CompactUploadContainer(
             files: _files,
-            toolColor: widget.toolColor,
-            toolSoftColor: widget.toolSoftColor,
-            toolIcon: widget.toolIcon,
-            allowMultiple: widget.allowMultiple,
-            filePickerLabel: widget.filePickerLabel,
+            title: widget.filePickerLabel,
+            subtitle: 'Tap to browse or drop document files',
+            icon: widget.toolIcon,
+            primaryColor: widget.toolColor,
             allowedExtensions: widget.allowedExtensions,
-            onPick: _pickFiles,
-            isDark: isDark,
+            allowMultiple: widget.allowMultiple,
+            useShader: true,
             enabled: !_isProcessing && _result == null,
+            onFilesSelected: (selected) {
+              setState(() {
+                _files = selected;
+                _result = null;
+                _errorMessage = null;
+              });
+            },
+            onClear: () {
+              setState(() {
+                _files = [];
+                _result = null;
+                _errorMessage = null;
+              });
+            },
           ),
 
           // ── Configuration ─────────────────────────────────────────────
@@ -205,6 +219,71 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
           if (_result != null) ...[
             const SizedBox(height: 24),
             widget.resultBuilder(_result as T, _files),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(LucideIcons.checkCircle2, color: Color(0xFF10B981), size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Document Intelligence Ready',
+                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Auto-saved to history • Download or share formatted results.',
+                              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (widget.exportToText != null) ...[
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _share,
+                        icon: const Icon(LucideIcons.download, size: 16),
+                        label: const Text('Export & Download Results', style: TextStyle(fontWeight: FontWeight.w700)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.toolColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
 
           // ── Empty State (no file selected) ────────────────────────────

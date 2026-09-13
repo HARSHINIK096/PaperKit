@@ -182,7 +182,7 @@ class QrSessionPayload {
       };
 
   String toEncodedUrl() {
-    return 'paperkit://airshare?session=$sessionId&ip=$hostIp&port=$port&token=$secretToken&name=$documentName&exp=${expiresAt.millisecondsSinceEpoch}';
+    return 'maskerv://airshare?session=$sessionId&ip=$hostIp&port=$port&token=$secretToken&name=$documentName&exp=${expiresAt.millisecondsSinceEpoch}';
   }
 }
 
@@ -221,7 +221,7 @@ class CoReviewEvent {
       };
 }
 
-class PaperKitProjectBundleManifest {
+class MaskerVProjectBundleManifest {
   final String version;
   final String projectName;
   final String createdBy;
@@ -232,7 +232,7 @@ class PaperKitProjectBundleManifest {
   final List<String> mindMapFiles;
   final String checksumSha256;
 
-  PaperKitProjectBundleManifest({
+  MaskerVProjectBundleManifest({
     this.version = '1.0.0',
     required this.projectName,
     required this.createdBy,
@@ -244,10 +244,10 @@ class PaperKitProjectBundleManifest {
     required this.checksumSha256,
   }) : createdAt = createdAt ?? DateTime.now();
 
-  factory PaperKitProjectBundleManifest.fromJson(Map<String, dynamic> json) =>
-      PaperKitProjectBundleManifest(
+  factory MaskerVProjectBundleManifest.fromJson(Map<String, dynamic> json) =>
+      MaskerVProjectBundleManifest(
         version: json['version'] as String? ?? '1.0.0',
-        projectName: json['projectName'] as String? ?? 'PaperKit Project',
+        projectName: json['projectName'] as String? ?? 'MaskerV Project',
         createdBy: json['createdBy'] as String? ?? 'Anonymous',
         createdAt: json['createdAt'] != null
             ? DateTime.parse(json['createdAt'] as String)
@@ -271,3 +271,6 @@ class PaperKitProjectBundleManifest {
         'checksumSha256': checksumSha256,
       };
 }
+
+/// Backward compatibility alias
+typedef PaperKitProjectBundleManifest = MaskerVProjectBundleManifest;

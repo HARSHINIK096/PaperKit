@@ -117,7 +117,7 @@ p { margin-bottom: 1em; text-align: justify; }
     // OEBPS/toc.ncx
     final ncxXml = '''<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
-  <head><meta name="dtb:uid" content="urn:uuid:paperkit-$title"/></head>
+  <head><meta name="dtb:uid" content="urn:uuid:maskerv-$title"/></head>
   <docTitle><text>$title</text></docTitle>
   <navMap>
     <navPoint id="navPoint-1" playOrder="1">
@@ -146,7 +146,7 @@ p { margin-bottom: 1em; text-align: justify; }
     final opfXml = '''<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="3.0">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:identifier id="BookId">urn:uuid:paperkit-$title</dc:identifier>
+    <dc:identifier id="BookId">urn:uuid:maskerv-$title</dc:identifier>
     <dc:title>$title</dc:title>
     <dc:creator>$author</dc:creator>
     <dc:language>en</dc:language>

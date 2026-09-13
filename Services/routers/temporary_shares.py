@@ -1,4 +1,4 @@
-"""PaperKit 10-Minute Temporary Encrypted File Sharing Router.
+"""MaskerV 10-Minute Temporary Encrypted File Sharing Router.
 
 Enforces:
 - Exact server-authoritative 10-minute expiration.
@@ -427,7 +427,7 @@ def _render_error_page(title: str, message: str) -> str:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PaperKit Secure Share — {title}</title>
+  <title>MaskerV Secure Share — {title}</title>
   <style>
     body {{
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -471,7 +471,7 @@ def _render_recipient_page(share_id: str, filename: str, file_size_str: str, rem
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PaperKit Secure Share</title>
+  <title>MaskerV Secure Share</title>
   <style>
     * {{ box-sizing: border-box; }}
     body {{
@@ -594,7 +594,7 @@ def _render_recipient_page(share_id: str, filename: str, file_size_str: str, rem
 </head>
 <body>
   <div class="card" id="mainCard">
-    <div class="logo">PaperKit 10-Min Secure Share</div>
+    <div class="logo">MaskerV 10-Min Secure Share</div>
     
     <div class="file-box">
       <div class="file-icon">📄</div>

@@ -1,4 +1,4 @@
-# PaperKit — Web & Mobile Frontend
+# MaskerV — Web & Mobile Frontend
 
 Please refer to the primary project documentation at [../../README.md](../README.md) for full architecture specifications, tool matrices, and system deployment instructions.
 

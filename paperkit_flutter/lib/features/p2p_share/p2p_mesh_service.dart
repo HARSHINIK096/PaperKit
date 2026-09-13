@@ -98,7 +98,8 @@ class P2PMeshService {
 
     // Handle Incoming P2P Requests
     _hostServer!.listen((HttpRequest request) async {
-      final token = request.headers.value('X-PaperKit-Session-Token');
+      final token = request.headers.value('X-MaskerV-Session-Token') ??
+          request.headers.value('X-PaperKit-Session-Token');
 
       if (_currentHostSession == null || _currentHostSession!.isExpired) {
         request.response
@@ -138,6 +139,7 @@ class P2PMeshService {
         final fileHash = sha256.convert(bytes).toString();
 
         request.response.headers.contentType = ContentType.binary;
+        request.response.headers.set('X-MaskerV-SHA256', fileHash);
         request.response.headers.set('X-PaperKit-SHA256', fileHash);
         request.response.headers.set('Content-Length', bytes.length.toString());
         request.response.add(bytes);
@@ -197,7 +199,7 @@ class P2PMeshService {
   // NEARBY RADIUS DISCOVERY & DIRECT BEACON LISTENER
   // ───────────────────────────────────────────────────────────────────────────
 
-  Future<int> startDiscoveryBeaconListener({String deviceName = 'PaperKit Device'}) async {
+  Future<int> startDiscoveryBeaconListener({String deviceName = 'MaskerV Device'}) async {
     await stopDiscoveryBeaconListener();
     try {
       _discoveryServer = await HttpServer.bind(InternetAddress.anyIPv4, 8089);
@@ -223,7 +225,7 @@ class P2PMeshService {
             ..write(jsonEncode({
               'status': 'available',
               'deviceName': deviceName,
-              'app': 'PaperKit',
+              'app': 'MaskerV',
               'version': '1.0.0',
             }))
             ..close();
@@ -277,13 +279,13 @@ class P2PMeshService {
           final resp = await dio.get<Map<String, dynamic>>('http://$targetIp:8089/p2p/ping');
           if (resp.statusCode == 200 && resp.data != null) {
             final data = resp.data!;
-            if (data['app'] == 'PaperKit') {
-              final name = data['deviceName'] as String? ?? 'PaperKit Peer';
+            if (data['app'] == 'MaskerV' || data['app'] == 'PaperKit') {
+              final name = data['deviceName'] as String? ?? 'MaskerV Peer';
               foundDevices.add(
                 PeerDevice(
                   id: 'peer_$targetIp',
                   deviceName: name,
-                  deviceModel: 'PaperKit Device',
+                  deviceModel: 'MaskerV Device',
                   deviceType: 'phone',
                   ipAddress: targetIp,
                   port: 8089,
@@ -313,7 +315,7 @@ class P2PMeshService {
     final fileSize = await file.length();
     final invite = DirectTransferInvite(
       senderDeviceId: 'pk_host_${payload.sessionId}',
-      senderDeviceName: 'PaperKit AirShare',
+      senderDeviceName: 'MaskerV AirShare',
       senderIp: payload.hostIp,
       senderPort: payload.port,
       sessionToken: payload.secretToken,
@@ -347,7 +349,8 @@ class P2PMeshService {
   // Validate QR Payload
   QrSessionPayload? parseAndValidateQrPayload(String rawQrContent) {
     try {
-      if (rawQrContent.startsWith('paperkit://airshare')) {
+      if (rawQrContent.startsWith('maskerv://airshare') ||
+          rawQrContent.startsWith('paperkit://airshare')) {
         final uri = Uri.parse(rawQrContent);
         final payload = QrSessionPayload(
           sessionId: uri.queryParameters['session'] ?? '',
@@ -381,7 +384,10 @@ class P2PMeshService {
     final response = await dio.get(
       url,
       options: Options(
-        headers: {'X-PaperKit-Session-Token': payload.secretToken},
+        headers: {
+          'X-MaskerV-Session-Token': payload.secretToken,
+          'X-PaperKit-Session-Token': payload.secretToken,
+        },
         receiveTimeout: const Duration(seconds: 10),
       ),
     );
@@ -409,7 +415,10 @@ class P2PMeshService {
       url,
       localPath,
       options: Options(
-        headers: {'X-PaperKit-Session-Token': payload.secretToken},
+        headers: {
+          'X-MaskerV-Session-Token': payload.secretToken,
+          'X-PaperKit-Session-Token': payload.secretToken,
+        },
       ),
       onReceiveProgress: (count, total) {
         if (total > 0) {
@@ -430,7 +439,7 @@ class P2PMeshService {
       throw Exception('Integrity check failed: Cryptographic SHA-256 checksum mismatch.');
     }
 
-    // Save into PaperKit Document Tracker
+    // Save into MaskerV Document Tracker
     final doc = DocumentFile(
       id: 'airshare_${DateTime.now().millisecondsSinceEpoch}',
       name: payload.documentName,
@@ -445,7 +454,7 @@ class P2PMeshService {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // STAGE 10: .PAPERKIT PROJECT BUNDLE CREATOR & UNPACKER
+  // STAGE 10: .MASKERV / .PAPERKIT PROJECT BUNDLE CREATOR & UNPACKER
   // ───────────────────────────────────────────────────────────────────────────
 
   Future<File> createProjectBundle({
@@ -483,7 +492,7 @@ class P2PMeshService {
     });
     final checksum = sha256.convert(utf8.encode(jsonContent)).toString();
 
-    final manifest = PaperKitProjectBundleManifest(
+    final manifest = MaskerVProjectBundleManifest(
       projectName: projectName,
       createdBy: createdBy,
       pdfFiles: pdfNames,
@@ -500,12 +509,12 @@ class P2PMeshService {
     final encodedBytes = zipEncoder.encode(archive);
 
     final outputDir = await getApplicationDocumentsDirectory();
-    final outputFile = File('${outputDir.path}/$projectName.paperkit');
+    final outputFile = File('${outputDir.path}/$projectName.maskerv');
     await outputFile.writeAsBytes(encodedBytes);
     return outputFile;
   }
 
-  Future<PaperKitProjectBundleManifest?> unpackProjectBundle(File bundleFile) async {
+  Future<MaskerVProjectBundleManifest?> unpackProjectBundle(File bundleFile) async {
     final bytes = await bundleFile.readAsBytes();
     final archive = ZipDecoder().decodeBytes(bytes);
 
@@ -514,7 +523,7 @@ class P2PMeshService {
 
     final manifestText = utf8.decode(manifestFile.content as List<int>);
     final jsonMap = jsonDecode(manifestText) as Map<String, dynamic>;
-    final manifest = PaperKitProjectBundleManifest.fromJson(jsonMap);
+    final manifest = MaskerVProjectBundleManifest.fromJson(jsonMap);
 
     final outputDir = await getApplicationDocumentsDirectory();
     final extractFolder = Directory('${outputDir.path}/extracted_${manifest.projectName}');

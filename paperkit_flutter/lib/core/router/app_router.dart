@@ -36,6 +36,7 @@ import '../../features/security_tools/protect_pdf_screen.dart';
 import '../../features/security_tools/smart_redaction_screen.dart';
 import '../../features/security_tools/digital_signature_screen.dart';
 import '../../features/security_tools/metadata_screen.dart';
+import '../../features/security_tools/biometric_app_lock_screen.dart';
 
 // Image & Media Tools
 import '../../features/image_media_tools/image_converter_screen.dart';
@@ -70,6 +71,7 @@ import '../../features/ai_tools/quality_checker_screen.dart';
 import '../../features/ai_tools/extract_tables_screen.dart';
 import '../../features/ai_tools/image_enhancer_screen.dart';
 import '../../features/ai_tools/invoice_parser_screen.dart';
+import '../../features/ai_tools/resume_scanner_screen.dart';
 
 // Academic Tools
 import '../../features/academic/research_analyzer_screen.dart';
@@ -223,6 +225,7 @@ class AppRouter {
       GoRoute(path: '/tools/metadata', builder: (context, state) => const MetadataScreen()),
       GoRoute(path: '/tools/metadata-cleaner', builder: (context, state) => const MetadataScreen()),
       GoRoute(path: '/tools/metadata-manager', builder: (context, state) => const MetadataScreen()),
+      GoRoute(path: '/security/biometric-lock', builder: (context, state) => const BiometricAppLockScreen()),
 
       // Image & Media Tools
       GoRoute(
@@ -314,8 +317,8 @@ class AppRouter {
       GoRoute(path: '/ai/parse-invoice', builder: (context, state) => const InvoiceParserScreen()),
       GoRoute(path: '/tools/invoice', builder: (context, state) => const InvoiceParserScreen()),
       GoRoute(path: '/tools/parse-invoice', builder: (context, state) => const InvoiceParserScreen()),
-      GoRoute(path: '/ai/resume', builder: (context, state) => const ExtractInfoScreen()),
-      GoRoute(path: '/tools/parse-resume', builder: (context, state) => const ExtractInfoScreen()),
+      GoRoute(path: '/ai/resume', builder: (context, state) => const ResumeScannerScreen()),
+      GoRoute(path: '/tools/parse-resume', builder: (context, state) => const ResumeScannerScreen()),
 
       // Academic Tools
       GoRoute(path: '/academic/research-analyzer', builder: (context, state) => const ResearchAnalyzerScreen()),

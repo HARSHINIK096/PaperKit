@@ -75,6 +75,8 @@ app = FastAPI(
 origins = [
     settings.frontend_url,
     settings.backend_url,
+    "https://maskerv-web.onrender.com",
+    "https://maskerv-backend.onrender.com",
     "https://paperkit-web.onrender.com",
     "https://paperkit-backend.onrender.com",
 ]

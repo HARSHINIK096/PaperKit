@@ -7,7 +7,7 @@ import 'package:qr/qr.dart';
 
 void main() {
   test('Pure Dart QR generation and zxing_lib decoding roundtrip test', () {
-    const originalText = 'https://paperkit.app/docs';
+    const originalText = 'https://maskerv.app/docs';
 
     // 1. Generate QR matrix with qr package
     final qrCode = QrCode.fromData(
@@ -45,6 +45,6 @@ void main() {
     expect(decodedPayload, isNotNull);
     expect(decodedPayload!.type, QrPayloadType.url);
     expect(decodedPayload.rawData, originalText);
-    expect(decodedPayload.domain, 'paperkit.app');
+    expect(decodedPayload.domain, 'maskerv.app');
   });
 }

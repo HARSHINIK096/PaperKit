@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Paperkit Flutter</string>
+	<string>MaskerV</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -67,8 +67,8 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>PaperKit requires camera access to scan QR codes and capture documents.</string>
+	<string>MaskerV requires camera access to scan QR codes and capture documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>PaperKit requires photo library access to import QR images and documents.</string>
+	<string>MaskerV requires photo library access to import QR images and documents.</string>
 </dict>
 </plist>

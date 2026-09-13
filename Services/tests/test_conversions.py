@@ -11,7 +11,7 @@ def sample_xlsx_bytes():
     """Generates an in-memory XLSX workbook."""
     wb = Workbook()
     ws = wb.active
-    ws.title = "PaperKit Sheet"
+    ws.title = "MaskerV Sheet"
     ws.append(["ID", "Name", "Score"])
     ws.append([1, "Item A", 95.5])
     ws.append([2, "Item B", 88.0])
@@ -28,7 +28,7 @@ def sample_pptx_bytes():
     slide = prs.slides.add_slide(slide_layout)
     title = slide.shapes.title
     subtitle = slide.placeholders[1]
-    title.text = "PaperKit Slide"
+    title.text = "MaskerV Slide"
     subtitle.text = "Conversion testing slide"
     buf = io.BytesIO()
     prs.save(buf)
@@ -133,7 +133,7 @@ async def test_convert_html_to_word_endpoint(client, auth_headers):
     """POST /tools/html-to-word converts HTML string directly to Word DOCX."""
     resp = await client.post(
         "/tools/html-to-word",
-        json={"html_content": "<p>PaperKit Generated Paragraph</p>", "filename": "output.docx"},
+        json={"html_content": "<p>MaskerV Generated Paragraph</p>", "filename": "output.docx"},
         headers=auth_headers,
     )
     assert resp.status_code == 200

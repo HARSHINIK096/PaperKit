@@ -1274,7 +1274,7 @@ export function I18nProvider({ children }) {
   const { user, updatePreferences } = useAuth();
   const [lang, setLangState] = useState(() => {
     try {
-      const saved = localStorage.getItem('paperkit_lang');
+      const saved = localStorage.getItem('maskerv_lang') || localStorage.getItem('paperkit_lang');
       if (saved && DICTIONARY[saved]) return saved;
       if (user?.preferences?.language && DICTIONARY[user.preferences.language]) return user.preferences.language;
     } catch {
@@ -1287,6 +1287,7 @@ export function I18nProvider({ children }) {
   useEffect(() => {
     document.documentElement.lang = lang;
     try {
+      localStorage.setItem('maskerv_lang', lang);
       localStorage.setItem('paperkit_lang', lang);
     } catch {
       // ignore
@@ -1307,6 +1308,7 @@ export function I18nProvider({ children }) {
     if (DICTIONARY[newLang]) {
       setLangState(newLang);
       try {
+        localStorage.setItem('maskerv_lang', newLang);
         localStorage.setItem('paperkit_lang', newLang);
       } catch {
         // ignore

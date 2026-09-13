@@ -142,7 +142,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
     // Record to local Scan History
     await QrScanHistoryService.recordScan(payload);
 
-    // Log to global PaperKit History
+    // Log to global MaskerV History
     if (mounted) {
       await context.read<HistoryProvider>().addRecord(
             HistoryItem(
@@ -317,7 +317,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
             ),
             const SizedBox(height: 8),
             const Text(
-              'PaperKit needs camera access to scan QR codes with your device sensor.',
+              'MaskerV needs camera access to scan QR codes with your device sensor.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),

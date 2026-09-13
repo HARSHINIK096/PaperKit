@@ -1,5 +1,5 @@
 """
-PaperKit PDF Editor Router
+MaskerV PDF Editor Router
 Handles in-place PDF text and image object edits, redacting original bounding boxes
 and overlaying new elements via PyMuPDF (fitz), protected by a 3 edit/day rate limiter.
 """

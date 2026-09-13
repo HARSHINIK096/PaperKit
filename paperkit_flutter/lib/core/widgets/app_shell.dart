@@ -114,7 +114,7 @@ class AppShell extends StatelessWidget {
       appBar: showAppBar
           ? AppBar(
               title: Text(
-                title ?? 'PaperKit',
+                title ?? 'MaskerV',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18.5, letterSpacing: -0.3),
               ),
               leading: Builder(

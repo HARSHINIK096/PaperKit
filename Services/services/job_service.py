@@ -37,7 +37,7 @@ class JobStatus:
 # ── Global state ──────────────────────────────────────────────────────────────
 
 _queue: asyncio.Queue = asyncio.Queue()
-_executor: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="paperkit-worker")
+_executor: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="maskerv-worker")
 _worker_task: Optional[asyncio.Task] = None
 
 # Registry: operation_name → callable(job_doc, progress_cb) → list[dict] (output assets)

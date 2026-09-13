@@ -69,8 +69,8 @@ void main() {
   final shareCreationJson = {
     'success': true,
     'share_id': 'pk_share_abc123',
-    'share_url': 'https://paperkit-web.onrender.com/share/pk_share_abc123',
-    'access_url': 'https://paperkit-web.onrender.com/share/pk_share_abc123',
+    'share_url': 'https://maskerv-web.onrender.com/share/pk_share_abc123',
+    'access_url': 'https://maskerv-web.onrender.com/share/pk_share_abc123',
     'original_filename': 'contract.pdf',
     'file_size': 2097152,
     'content_type': 'application/pdf',
@@ -121,7 +121,7 @@ void main() {
   // 6. QR Payload Parser Verification for Secure Share Link
   final parsed = QrPayloadParser.parse(shareCreation.shareUrl);
   assert(parsed.type == QrPayloadType.url);
-  assert(parsed.url == 'https://paperkit-web.onrender.com/share/pk_share_abc123');
+  assert(parsed.url == 'https://maskerv-web.onrender.com/share/pk_share_abc123');
   assert(!parsed.isSuspiciousUrl);
   print('[PASS] QR Payload Parser recognition of HTTPS Secure Share URL');
 

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'core/providers/backend_provider.dart';
 import 'core/providers/files_provider.dart';
 import 'core/providers/history_provider.dart';
+import 'core/providers/i18n_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -29,23 +30,31 @@ void main() {
         ChangeNotifierProvider(create: (_) => BackendProvider()),
         ChangeNotifierProvider(create: (_) => FilesProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => I18nProvider()),
       ],
-      child: const PaperKitApp(),
+      child: const MaskerVApp(),
     ),
   );
 }
 
-class PaperKitApp extends StatelessWidget {
-  const PaperKitApp({super.key});
+class MaskerVApp extends StatelessWidget {
+  const MaskerVApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final i18n = context.watch<I18nProvider>();
+
     return MaterialApp.router(
       title: 'MASKERV',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,
+      locale: i18n.currentLocale,
+      supportedLocales: i18n.supportedLanguages.map((l) => Locale(l.code)),
       routerConfig: AppRouter.router,
     );
   }
 }
+
+/// Backward compatibility alias
+typedef PaperKitApp = MaskerVApp;

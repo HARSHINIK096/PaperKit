@@ -1,4 +1,4 @@
-/* TopBar — the main home header with PaperKit branding */
+/* TopBar — the main home header with MaskerV branding */
 
 
 import { useNavigate } from 'react-router-dom';

@@ -12,6 +12,8 @@ import '../../core/services/biometric_auth_service.dart';
 import '../../core/widgets/particle_background.dart';
 import 'p2p_mesh_service.dart';
 import 'widgets/nearby_device_radar.dart';
+import 'widgets/airshare_file_selector_sheet.dart';
+import '../../core/widgets/compact_upload_container.dart';
 import '../qr_tools/qr_scanner_screen.dart';
 import '../qr_tools/services/qr_image_decoder.dart';
 
@@ -85,7 +87,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
   }
 
   Future<void> _startDiscoveryListener() async {
-    await _service.startDiscoveryBeaconListener(deviceName: "PaperKit User");
+    await _service.startDiscoveryBeaconListener(deviceName: "MaskerV User");
   }
 
   void _listenToIncomingInvites() {
@@ -223,17 +225,27 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
   // PERSON A — HOST ACTIONS
   // ───────────────────────────────────────────────────────────────────────────
 
-  Future<void> _pickHostDocument() async {
+  Future<void> _pickHostDocument({int initialTab = 0}) async {
     try {
-      final result = await FilePicker.platform.pickFiles();
+      final file = await AirShareFileSelectorSheet.show(
+        context,
+        initialTab: initialTab,
+      );
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
+      if (file != null) {
         setState(() {
           _hostSelectedFile = file;
         });
         if (_sendModeIndex == 1) {
           await _startHostSession();
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Selected "${file.uri.pathSegments.last}" for AirShare'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
         }
       }
     } catch (e) {
@@ -449,118 +461,66 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Document Selection Card
-          if (_hostSelectedFile == null)
-            InkWell(
-              onTap: _isHosting ? null : _pickHostDocument,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.4),
-                    width: 1.5,
+          // WhatsApp-Style Document Picker with Compact Container
+          CompactUploadContainer(
+            files: _hostSelectedFile != null ? [_hostSelectedFile!] : [],
+            onFilesSelected: (files) {
+              if (files.isNotEmpty) {
+                setState(() => _hostSelectedFile = files.first);
+                if (_sendModeIndex == 1) _startHostSession();
+              }
+            },
+            onTap: _isHosting ? null : () => _pickHostDocument(initialTab: 0),
+            onClear: _isHosting
+                ? null
+                : () => setState(() {
+                      _hostSelectedFile = null;
+                      _activeHostPayload = null;
+                    }),
+            title: 'AirShare Document Beam',
+            subtitle: 'Tap to select from In-App Files or Phone Storage',
+            icon: LucideIcons.send,
+            primaryColor: const Color(0xFF2563EB),
+            allowedExtensions: const ['pdf', 'docx', 'doc', 'xlsx', 'png', 'jpg', 'zip'],
+            enabled: !_isHosting,
+          ),
+
+          const SizedBox(height: 10),
+
+          // Quick Source Jump Pills
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _isHosting ? null : () => _pickHostDocument(initialTab: 0),
+                  icon: const Icon(LucideIcons.sparkles, size: 14, color: Color(0xFF2563EB)),
+                  label: const Text('In-App Files', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    side: BorderSide(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.35),
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(LucideIcons.fileUp, color: Color(0xFF2563EB), size: 28),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _isHosting ? null : () => _pickHostDocument(initialTab: 1),
+                  icon: const Icon(LucideIcons.smartphone, size: 14, color: Color(0xFF10B981)),
+                  label: const Text('Phone Storage', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    side: BorderSide(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.35),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Select Document to Share',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Choose any PDF, image, or document from your device',
-                      style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 14),
-                    ElevatedButton.icon(
-                      onPressed: _isHosting ? null : _pickHostDocument,
-                      icon: const Icon(LucideIcons.folderOpen, size: 16),
-                      label: const Text('Browse Files'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      ),
-                    ),
-                  ],
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
               ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
-                    child: const Icon(LucideIcons.fileCheck, color: Color(0xFF10B981)),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _hostSelectedFile!.uri.pathSegments.last,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                        const SizedBox(height: 4),
-                        FutureBuilder<int>(
-                          future: _hostSelectedFile!.length(),
-                          builder: (ctx, snap) {
-                            final bytes = snap.data ?? 0;
-                            final sizeStr = bytes > 1024 * 1024
-                                ? '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB'
-                                : '${(bytes / 1024).toStringAsFixed(1)} KB';
-                            return Text(
-                              '$sizeStr • Ready for AirShare',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: _isHosting ? null : _pickHostDocument,
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: const Text('Change'),
-                  ),
-                ],
-              ),
-            ),
+            ],
+          ),
 
           const SizedBox(height: 20),
 
@@ -711,7 +671,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                             ElevatedButton.icon(
                               onPressed: () {
                                 Share.share(
-                                  'PaperKit AirShare P2P Transfer Session for "${_activeHostPayload!.documentName}":\n${_activeHostPayload!.toEncodedUrl()}',
+                                  'MaskerV AirShare P2P Transfer Session for "${_activeHostPayload!.documentName}":\n${_activeHostPayload!.toEncodedUrl()}',
                                 );
                               },
                               icon: const Icon(LucideIcons.share2, size: 16),
@@ -731,7 +691,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const SizedBox(height: 4),
-                      const Text('Person B: Open PaperKit Air-Share ➔ Scan QR to pair and receive file.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const Text('Person B: Open MaskerV Air-Share ➔ Scan QR to pair and receive file.', style: TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 ),
@@ -883,7 +843,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'This device is broadcasting on your local Wi-Fi / Hotspot. Any nearby PaperKit user can detect this device on their radar and beam documents to you directly.',
+                    'This device is broadcasting on your local Wi-Fi / Hotspot. Any nearby MaskerV user can detect this device on their radar and beam documents to you directly.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600]),
                   ),
@@ -934,7 +894,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
 
           // Receiver Mode 1: QR Code Scanner & Manual Paste
           else ...[
-            const Text('Scan / Enter PaperKit QR Payload', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text('Scan / Enter MaskerV QR Payload', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 14),
 
             // Camera QR Scanner & Gallery Trigger Buttons
@@ -983,7 +943,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
               controller: _qrPayloadController,
               maxLines: 2,
               decoration: InputDecoration(
-                hintText: 'Paste or scan paperkit://airshare?session=...',
+                hintText: 'Paste or scan maskerv://airshare?session=...',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 suffixIcon: IconButton(
                   icon: const Icon(LucideIcons.qrCode),
@@ -1074,7 +1034,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
               child: ListTile(
                 leading: const Icon(LucideIcons.fileCheck, color: Colors.green),
                 title: Text('Imported: ${_receivedFile!.uri.pathSegments.last}'),
-                subtitle: const Text('Verified SHA-256 digest & saved to PaperKit Workspace.'),
+                subtitle: const Text('Verified SHA-256 digest & saved to MaskerV Workspace.'),
                 trailing: ElevatedButton(
                   onPressed: () => OpenFilex.open(_receivedFile!.path),
                   child: const Text('Open'),

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/models/form_field_model.dart';
 import '../../core/services/share_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/compact_upload_container.dart';
 import 'form_engine_service.dart';
 
 class FormFillerScreen extends StatefulWidget {
@@ -36,6 +38,16 @@ class _FormFillerScreenState extends State<FormFillerScreen> {
     });
   }
 
+  Future<void> _processDocument(File file) async {
+    setState(() => _isLoading = true);
+    final detected = await _service.detectFormFields(file);
+    setState(() {
+      _selectedFile = file;
+      _fields = detected;
+      _isLoading = false;
+    });
+  }
+
   Future<void> _pickDocument() async {
     setState(() => _isLoading = true);
     final result = await FilePicker.platform.pickFiles(
@@ -45,13 +57,7 @@ class _FormFillerScreenState extends State<FormFillerScreen> {
 
     if (result != null && result.files.single.path != null) {
       final file = File(result.files.single.path!);
-      final detected = await _service.detectFormFields(file);
-
-      setState(() {
-        _selectedFile = file;
-        _fields = detected;
-        _isLoading = false;
-      });
+      await _processDocument(file);
     } else {
       setState(() => _isLoading = false);
     }
@@ -72,6 +78,23 @@ class _FormFillerScreenState extends State<FormFillerScreen> {
     final flattenedFile = await _service.flattenPdfForm(_selectedFile!, _fields);
     setState(() => _isLoading = false);
 
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Form auto-downloaded & saved: ${flattenedFile.uri.pathSegments.last}'),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    }
+
     ShareService.shareFile(filePath: flattenedFile.path);
   }
 
@@ -84,6 +107,7 @@ class _FormFillerScreenState extends State<FormFillerScreen> {
           IconButton(
             icon: const Icon(LucideIcons.save),
             onPressed: _selectedFile == null ? null : _flattenAndExport,
+            tooltip: 'Export & Auto-Download Form',
           ),
         ],
       ),
@@ -92,18 +116,38 @@ class _FormFillerScreenState extends State<FormFillerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            CompactUploadContainer(
+              files: _selectedFile != null ? [_selectedFile!] : [],
+              title: 'Upload Fillable PDF Form',
+              subtitle: 'Auto-detects text fields, checkboxes and signature areas',
+              icon: LucideIcons.fileSignature,
+              primaryColor: AppColors.toolPurple,
+              allowedExtensions: const ['pdf'],
+              useShader: true,
+              enabled: !_isLoading,
+              onFilesSelected: (files) {
+                if (files.isNotEmpty) {
+                  _processDocument(files.first);
+                }
+              },
+              onClear: () {
+                setState(() {
+                  _selectedFile = null;
+                  _fields = [];
+                });
+              },
+            ),
+            const SizedBox(height: 14),
             Row(
               children: [
-                ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _pickDocument,
-                  icon: const Icon(LucideIcons.fileUp),
-                  label: const Text('Load Form PDF'),
-                ),
-                const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: _fields.isEmpty ? null : _applyAutoFill,
                   icon: const Icon(LucideIcons.sparkles),
                   label: const Text('Auto-Fill'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.toolPurple,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ],
             ),

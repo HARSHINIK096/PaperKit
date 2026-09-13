@@ -70,8 +70,8 @@ void main() {
   });
 
   group('Domain 12: P2P Project Bundle Serialization', () {
-    test('PaperKit Project Bundle manifest serialization', () {
-      final manifest = PaperKitProjectBundleManifest(
+    test('MaskerV Project Bundle manifest serialization', () {
+      final manifest = MaskerVProjectBundleManifest(
         projectName: 'Test Project',
         createdBy: 'Test User',
         pdfFiles: ['doc1.pdf'],
@@ -82,7 +82,7 @@ void main() {
       );
 
       final json = manifest.toJson();
-      final decoded = PaperKitProjectBundleManifest.fromJson(json);
+      final decoded = MaskerVProjectBundleManifest.fromJson(json);
 
       expect(decoded.projectName, equals('Test Project'));
       expect(decoded.pdfFiles.length, equals(1));

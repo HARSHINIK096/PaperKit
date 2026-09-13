@@ -40,7 +40,7 @@ void main() {
     });
 
     test('synthesizeSpeechAi returns speech audio url/status', () async {
-      final audioUrl = await apiService.synthesizeSpeechAi(text: 'Hello PaperKit AI speech synthesis.');
+      final audioUrl = await apiService.synthesizeSpeechAi(text: 'Hello MaskerV AI speech synthesis.');
       expect(audioUrl, isA<String>());
     });
   });

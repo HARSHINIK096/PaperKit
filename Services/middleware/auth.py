@@ -16,7 +16,7 @@ GUEST_USER_ID = ObjectId("000000000000000000000001")
 GUEST_USER = {
     "_id": GUEST_USER_ID,
     "name": "Guest User",
-    "email": "guest@paperkit.local",
+    "email": "guest@maskerv.local",
     "is_guest": True,
     "preferences": {"dark_mode": False, "default_view": "list", "language": "en"},
 }
@@ -106,7 +106,7 @@ async def get_current_user(
                             "_id": anon_id,
                             "anonymous_id": anon_id,
                             "name": f"User {short_suffix}",
-                            "email": f"guest_{anon_id[:8]}@paperkit.local",
+                            "email": f"guest_{anon_id[:8]}@maskerv.local",
                             "is_guest": True,
                             "is_anonymous": True,
                             "created_at": datetime.now(timezone.utc),

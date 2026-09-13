@@ -18,6 +18,7 @@ export default function LandingScreen({ onFinish = null }) {
   
   function handleEnterStudio(targetPath = '/') {
     try {
+      localStorage.setItem('maskerv_welcome_done', 'true');
       localStorage.setItem('paperkit_welcome_done', 'true');
     } catch {
       // Ignore storage error

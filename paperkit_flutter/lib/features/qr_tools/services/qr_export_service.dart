@@ -24,7 +24,7 @@ class QrExportService {
 
   static Future<Directory> _getPublicStorageDirectory() async {
     if (Platform.isAndroid) {
-      final downloadDir = Directory('/storage/emulated/0/Download/PaperKit');
+      final downloadDir = Directory('/storage/emulated/0/Download/MaskerV');
       try {
         if (!downloadDir.existsSync()) {
           downloadDir.createSync(recursive: true);
@@ -48,7 +48,7 @@ class QrExportService {
     try {
       final downloads = await getDownloadsDirectory();
       if (downloads != null) {
-        final pkDir = Directory('${downloads.path}/PaperKit');
+        final pkDir = Directory('${downloads.path}/MaskerV');
         if (!pkDir.existsSync()) pkDir.createSync(recursive: true);
         return pkDir;
       }
@@ -230,7 +230,7 @@ class QrExportService {
     final fontTitle = PdfStandardFont(PdfFontFamily.helvetica, 18, style: PdfFontStyle.bold);
     final fontSubtitle = PdfStandardFont(PdfFontFamily.helvetica, 10);
 
-    final displayTitle = title.isNotEmpty ? title : 'PaperKit QR Code Document';
+    final displayTitle = title.isNotEmpty ? title : 'MaskerV QR Code Document';
     page.graphics.drawString(
       displayTitle,
       fontTitle,

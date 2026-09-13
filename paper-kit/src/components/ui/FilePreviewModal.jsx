@@ -1,4 +1,4 @@
-/* FilePreviewModal.jsx — Comprehensive Multi-Format Document & Media Previewer for PaperKit */
+/* FilePreviewModal.jsx — Comprehensive Multi-Format Document & Media Previewer for MaskerV */
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as docxPreview from 'docx-preview';

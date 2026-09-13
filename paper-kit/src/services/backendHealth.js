@@ -1,7 +1,7 @@
 /* backendHealth.js — Resilient Backend Health & Dual-Service Render Cold-Start Poller */
 
-export const RENDER_BACKEND_URL = import.meta.env.VITE_API_URL || 'https://paperkit-backend.onrender.com';
-export const RENDER_WEB_URL = import.meta.env.VITE_WEB_URL || 'https://paperkit-web.onrender.com';
+export const RENDER_BACKEND_URL = import.meta.env.VITE_API_URL || 'https://maskerv-backend.onrender.com';
+export const RENDER_WEB_URL = import.meta.env.VITE_WEB_URL || 'https://maskerv-web.onrender.com';
 export const API_BASE = RENDER_BACKEND_URL;
 
 /**
@@ -11,7 +11,7 @@ export const API_BASE = RENDER_BACKEND_URL;
  * @returns {Promise<{ ok: boolean, status?: number, data?: any, error?: string }>}
  */
 export async function pingUrl(url, timeoutMs = 7000) {
-  const isWebUrl = url.includes('paperkit-web.onrender.com');
+  const isWebUrl = url.includes('maskerv-web.onrender.com') || url.includes('paperkit-web.onrender.com');
   if (isWebUrl) {
     // Skip external web ping in development with COEP to prevent browser COEP violations
     return { ok: true, status: 200 };

@@ -137,7 +137,7 @@ async def test_pdf_metadata_get_and_update(client, seeded_file, auth_headers):
     # 2. Update
     resp_update = await client.post(
         "/tools/metadata",
-        json={"file_id": file_id, "updates": {"title": "PaperKit Automated Title"}},
+        json={"file_id": file_id, "updates": {"title": "MaskerV Automated Title"}},
         headers=auth_headers,
     )
     assert resp_update.status_code == 200

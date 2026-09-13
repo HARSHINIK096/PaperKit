@@ -247,7 +247,7 @@ class ToolFeaturesRegistry {
       ),
       ToolFeatureStep(
         title: 'Instant Download',
-        subtitle: 'Save converted videos directly to your PaperKit workspace.',
+        subtitle: 'Save converted videos directly to your MaskerV workspace.',
         icon: LucideIcons.download,
         color: AppColors.toolTeal,
       ),
@@ -347,7 +347,7 @@ class ToolFeaturesRegistry {
       ),
       ToolFeatureStep(
         title: 'Workspace Access',
-        subtitle: 'View & extract downloaded archives inside PaperKit storage.',
+        subtitle: 'View & extract downloaded archives inside MaskerV storage.',
         icon: LucideIcons.share2,
         color: AppColors.toolGreen,
       ),
@@ -758,7 +758,7 @@ class ToolFeaturesRegistry {
       ),
       ToolFeatureStep(
         title: '5. Export & Share',
-        subtitle: 'Save the output directly to PaperKit workspace or share via apps.',
+        subtitle: 'Save the output directly to MaskerV workspace or share via apps.',
         icon: LucideIcons.download,
         color: AppColors.toolGreen,
       ),

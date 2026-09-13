@@ -10,7 +10,7 @@ from services.crypto_service import (
 
 
 def test_encryption_roundtrip():
-    data = b"PaperKit Confidential Document Content 2026"
+    data = b"MaskerV Confidential Document Content 2026"
     password = "SuperSecurePassword987!"
     share_id = "test_share_001"
 

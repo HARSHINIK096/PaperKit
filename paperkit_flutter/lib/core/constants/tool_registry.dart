@@ -4,7 +4,7 @@ import '../theme/app_colors.dart';
 
 /// Canonical ToolRegistry — one ToolItem definition per tool.
 ///
-/// Organized into the 15 Authoritative Functional Domains of PaperKit
+/// Organized into the 15 Authoritative Functional Domains of MaskerV
 /// with shared cross-domain general utilities.
 class ToolRegistry {
   ToolRegistry._();
@@ -383,7 +383,7 @@ class ToolRegistry {
     id: 'biometric-app-lock',
     label: 'Biometric App Lock',
     description: 'Hardware biometric fingerprint & Face ID vault security',
-    route: '/security/protect',
+    route: '/security/biometric-lock',
     icon: LucideIcons.fingerprint,
     color: AppColors.toolTeal,
     softColor: AppColors.toolTealSoft,

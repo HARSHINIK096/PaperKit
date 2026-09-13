@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-/* ToolIcons.jsx — SVG icon components for all PaperKit tools.
+/* ToolIcons.jsx — SVG icon components for all MaskerV tools.
    Each icon uses a colored rounded-square background with a white pictogram.
    Colors come from design tokens. */
 import { Archive, FolderArchive, FileArchive } from 'lucide-react';

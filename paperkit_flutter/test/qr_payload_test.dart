@@ -13,9 +13,9 @@ void main() {
     test('Formats URL with https scheme', () {
       final formatted = QrPayloadFormatter.format(
         type: QrContentType.url,
-        values: {'url': 'paperkit.app'},
+        values: {'url': 'maskerv.app'},
       );
-      expect(formatted, 'https://paperkit.app');
+      expect(formatted, 'https://maskerv.app');
     });
 
     test('Formats Wi-Fi configuration payload correctly', () {
@@ -52,9 +52,9 @@ void main() {
     test('Formats Social handles to actual URLs', () {
       final github = QrPayloadFormatter.format(
         type: QrContentType.github,
-        values: {'username': 'paperkit-dev'},
+        values: {'username': 'maskerv-dev'},
       );
-      expect(github, 'https://github.com/paperkit-dev');
+      expect(github, 'https://github.com/maskerv-dev');
 
       final instagram = QrPayloadFormatter.format(
         type: QrContentType.instagram,
@@ -99,9 +99,9 @@ END:VCARD''';
     });
 
     test('Parses URL and detects non-https suspicious warning', () {
-      final secure = QrPayloadParser.parse('https://paperkit.app');
+      final secure = QrPayloadParser.parse('https://maskerv.app');
       expect(secure.type, QrPayloadType.url);
-      expect(secure.domain, 'paperkit.app');
+      expect(secure.domain, 'maskerv.app');
       expect(secure.isSuspiciousUrl, isFalse);
 
       final insecure = QrPayloadParser.parse('http://192.168.1.1/login');
@@ -114,9 +114,9 @@ END:VCARD''';
       expect(phone.type, QrPayloadType.phone);
       expect(phone.phone, '+15551234567');
 
-      final email = QrPayloadParser.parse('mailto:support@paperkit.app?subject=Bug');
+      final email = QrPayloadParser.parse('mailto:support@maskerv.app?subject=Bug');
       expect(email.type, QrPayloadType.email);
-      expect(email.email, 'support@paperkit.app');
+      expect(email.email, 'support@maskerv.app');
       expect(email.subject, 'Bug');
 
       final geo = QrPayloadParser.parse('geo:37.7749,-122.4194');
@@ -153,7 +153,7 @@ END:VCARD''';
         frameLabel: 'SCAN ME',
       );
       final svg = QrExportService.generateSvg(
-        data: 'https://paperkit.app',
+        data: 'https://maskerv.app',
         config: config,
       );
       expect(svg.startsWith('<?xml version="1.0"'), isTrue);

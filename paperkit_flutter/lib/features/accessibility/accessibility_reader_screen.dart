@@ -19,7 +19,7 @@ class _AccessibilityReaderScreenState extends State<AccessibilityReaderScreen> {
   bool _lineFocusEnabled = false;
 
   String _documentText =
-      "PaperKit Accessibility Studio empowers readers with Bionic Reading word prefix emphasis, customizable typography, low-visual fatigue color profiles, and focused reading overlays.";
+      "MaskerV Accessibility Studio empowers readers with Bionic Reading word prefix emphasis, customizable typography, low-visual fatigue color profiles, and focused reading overlays.";
 
   File? _selectedFile;
 

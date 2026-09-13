@@ -55,7 +55,7 @@ export default function NavigationDrawer({ isOpen, onClose }) {
   function handleItemClick(item) {
     onClose();
     if (item.action === 'share') {
-      shareUrl('MASKERV', 'Check out MASKERV — All-in-One Open-Source Suite!', 'https://paperkit-web.onrender.com');
+      shareUrl('MASKERV', 'Check out MASKERV — All-in-One Open-Source Suite!', 'https://maskerv-web.onrender.com');
       return;
     }
     if (item.path) {

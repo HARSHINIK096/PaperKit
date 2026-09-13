@@ -52,7 +52,7 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
     if (_isUtilities) {
       return 'General Utilities & Media';
     }
-    return 'PaperKit Domain Hub';
+    return 'MaskerV Domain Hub';
   }
 
   String get _subtitle {

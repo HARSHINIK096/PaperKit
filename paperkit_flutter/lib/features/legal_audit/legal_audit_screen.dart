@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/models/audit_ledger_model.dart';
 import '../../core/services/share_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/compact_upload_container.dart';
 import 'legal_audit_service.dart';
 
 class LegalAuditScreen extends StatefulWidget {
@@ -46,6 +48,26 @@ class _LegalAuditScreenState extends State<LegalAuditScreen> with SingleTickerPr
     setState(() => _ledger = loaded);
   }
 
+  Future<void> _processDocument(File file) async {
+    setState(() => _isLoading = true);
+    final hash = await _service.computeSha256(file);
+    final clauses = await _service.analyzeContract(file);
+
+    await _service.logEvent(
+      eventType: 'imported_audit',
+      file: file,
+      actorId: 'user_local',
+    );
+
+    setState(() {
+      _selectedFile = file;
+      _documentHash = hash;
+      _clauses = clauses;
+      _isLoading = false;
+    });
+    await _loadLedger();
+  }
+
   Future<void> _pickDocument() async {
     setState(() => _isLoading = true);
     final result = await FilePicker.platform.pickFiles(
@@ -55,23 +77,7 @@ class _LegalAuditScreenState extends State<LegalAuditScreen> with SingleTickerPr
 
     if (result != null && result.files.single.path != null) {
       final file = File(result.files.single.path!);
-      final hash = await _service.computeSha256(file);
-      final clauses = await _service.analyzeContract(file);
-
-      // Record audit event
-      await _service.logEvent(
-        eventType: 'imported_audit',
-        file: file,
-        actorId: 'user_local',
-      );
-
-      setState(() {
-        _selectedFile = file;
-        _documentHash = hash;
-        _clauses = clauses;
-        _isLoading = false;
-      });
-      await _loadLedger();
+      await _processDocument(file);
     } else {
       setState(() => _isLoading = false);
     }
@@ -97,6 +103,22 @@ class _LegalAuditScreenState extends State<LegalAuditScreen> with SingleTickerPr
 
     setState(() => _isLoading = false);
     await _loadLedger();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Bates stamped file auto-downloaded & saved: ${stampedFile.uri.pathSegments.last}')),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    }
+
     ShareService.shareFile(filePath: stampedFile.path);
   }
 
@@ -133,10 +155,27 @@ class _LegalAuditScreenState extends State<LegalAuditScreen> with SingleTickerPr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ElevatedButton.icon(
-            onPressed: _isLoading ? null : _pickDocument,
-            icon: const Icon(LucideIcons.fileUp),
-            label: const Text('Select PDF Document'),
+          CompactUploadContainer(
+            files: _selectedFile != null ? [_selectedFile!] : [],
+            title: 'Upload Legal Document',
+            subtitle: 'Compute cryptographic SHA-256 integrity hash & audit history',
+            icon: LucideIcons.shieldCheck,
+            primaryColor: AppColors.toolIndigo,
+            allowedExtensions: const ['pdf'],
+            useShader: true,
+            enabled: !_isLoading,
+            onFilesSelected: (files) {
+              if (files.isNotEmpty) {
+                _processDocument(files.first);
+              }
+            },
+            onClear: () {
+              setState(() {
+                _selectedFile = null;
+                _documentHash = null;
+                _clauses = [];
+              });
+            },
           ),
           const SizedBox(height: 16),
           if (_isLoading)

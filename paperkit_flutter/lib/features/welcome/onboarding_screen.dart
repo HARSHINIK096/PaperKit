@@ -4,7 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../../core/providers/i18n_provider.dart';
 import '../../core/services/api_service.dart';
+import '../../core/widgets/language_selector_sheet.dart';
 import '../../core/widgets/particle_background.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -379,6 +382,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _cloudBootPoller?.cancel();
     try {
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('maskerv_onboarding_done', true);
       await prefs.setBool('paperkit_onboarding_done', true);
     } catch (_) {}
     if (mounted) {
@@ -514,6 +518,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                         ),
 
+                        // Quick Language Switcher Pill
+                        GestureDetector(
+                          onTap: () => LanguageSelectorSheet.show(context),
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.35),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  context.watch<I18nProvider>().currentAppLanguage.flag,
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  context.watch<I18nProvider>().currentAppLanguage.countryCode,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
                         // Skip button — appears with fade+slide when server pings back
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 500),
@@ -535,7 +574,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   key: const ValueKey('skip_btn'),
                                   onTap: _finishTour,
                                   child: Container(
-                                    margin: const EdgeInsets.only(left: 10),
+                                    margin: const EdgeInsets.only(left: 8),
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
@@ -556,7 +595,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
-                                          'Skip',
+                                          context.t('ob_skip'),
                                           style: TextStyle(
                                             color: Colors.white.withValues(alpha: 0.9),
                                             fontSize: 12,

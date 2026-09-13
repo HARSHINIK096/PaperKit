@@ -16,7 +16,7 @@ class BarcodeGeneratorScreen extends StatefulWidget {
 }
 
 class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
-  final TextEditingController _codeController = TextEditingController(text: 'PAPERKIT-89412');
+  final TextEditingController _codeController = TextEditingController(text: 'MASKERV-89412');
   bool _isGenerating = false;
   File? _barcodeFile;
 
@@ -119,7 +119,7 @@ class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
                     controller: _codeController,
                     decoration: const InputDecoration(
                       labelText: 'Barcode Code / SKU',
-                      hintText: 'e.g. PAPERKIT-89412',
+                      hintText: 'e.g. MASKERV-89412',
                       prefixIcon: Icon(LucideIcons.barcode, size: 20),
                     ),
                   ),

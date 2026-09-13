@@ -314,6 +314,7 @@ export default function OnboardingScreen({ onFinish = null }) {
 
   const handleFinish = useCallback(() => {
     try {
+      localStorage.setItem('maskerv_onboarding_done', 'true');
       localStorage.setItem('paperkit_onboarding_done', 'true');
     } catch {
       // Ignore storage error

@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('PaperKit Full System End-to-End Tests', () => {
+test.describe('MaskerV Full System End-to-End Tests', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
+      window.localStorage.setItem('maskerv_onboarding_done', 'true');
       window.localStorage.setItem('paperkit_onboarding_done', 'true');
     });
   });
@@ -11,7 +12,7 @@ test.describe('PaperKit Full System End-to-End Tests', () => {
   test('User can load the homepage and view the dashboard', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('h1').first()).toContainText(/PaperKit|Welcome/i);
+    await expect(page.locator('h1').first()).toContainText(/MaskerV|PaperKit|Welcome/i);
     
     // Check for dashboard sections
     await expect(page.locator('text=AI Document Intelligence')).toBeVisible();

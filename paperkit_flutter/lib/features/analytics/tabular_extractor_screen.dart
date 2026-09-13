@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/models/table_extractor_model.dart';
 import '../../core/services/share_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/compact_upload_container.dart';
 import 'table_extractor_service.dart';
 
 class TabularExtractorScreen extends StatefulWidget {
@@ -20,6 +22,16 @@ class _TabularExtractorScreenState extends State<TabularExtractorScreen> {
   List<ExtractedTableData> _extractedTables = [];
   bool _isLoading = false;
 
+  Future<void> _processDocument(File file) async {
+    setState(() => _isLoading = true);
+    final tables = await _service.extractTablesFromPdf(file);
+    setState(() {
+      _selectedFile = file;
+      _extractedTables = tables;
+      _isLoading = false;
+    });
+  }
+
   Future<void> _pickDocument() async {
     setState(() => _isLoading = true);
     final result = await FilePicker.platform.pickFiles(
@@ -29,13 +41,7 @@ class _TabularExtractorScreenState extends State<TabularExtractorScreen> {
 
     if (result != null && result.files.single.path != null) {
       final file = File(result.files.single.path!);
-      final tables = await _service.extractTablesFromPdf(file);
-
-      setState(() {
-        _selectedFile = file;
-        _extractedTables = tables;
-        _isLoading = false;
-      });
+      await _processDocument(file);
     } else {
       setState(() => _isLoading = false);
     }
@@ -43,11 +49,39 @@ class _TabularExtractorScreenState extends State<TabularExtractorScreen> {
 
   Future<void> _exportCsv(ExtractedTableData table) async {
     final csvFile = await _service.exportToCsv(table);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Auto-downloaded & saved: ${csvFile.uri.pathSegments.last}')),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    }
     ShareService.shareFile(filePath: csvFile.path);
   }
 
   Future<void> _exportXlsx(ExtractedTableData table) async {
     final xlsxFile = await _service.exportToXlsx(table);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Auto-downloaded & saved: ${xlsxFile.uri.pathSegments.last}')),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    }
     ShareService.shareFile(filePath: xlsxFile.path);
   }
 
@@ -69,10 +103,26 @@ class _TabularExtractorScreenState extends State<TabularExtractorScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _pickDocument,
-              icon: const Icon(LucideIcons.fileSpreadsheet),
-              label: const Text('Extract Tables from PDF'),
+            CompactUploadContainer(
+              files: _selectedFile != null ? [_selectedFile!] : [],
+              title: 'Upload Tabular PDF Document',
+              subtitle: 'Extract rows, columns and data into CSV or Excel spreadsheet',
+              icon: LucideIcons.tableProperties,
+              primaryColor: AppColors.toolBlue,
+              allowedExtensions: const ['pdf'],
+              useShader: true,
+              enabled: !_isLoading,
+              onFilesSelected: (files) {
+                if (files.isNotEmpty) {
+                  _processDocument(files.first);
+                }
+              },
+              onClear: () {
+                setState(() {
+                  _selectedFile = null;
+                  _extractedTables = [];
+                });
+              },
             ),
             const SizedBox(height: 16),
             if (_isLoading)

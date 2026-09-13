@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../theme/app_colors.dart';
 
-/// The 15 Authoritative Functional Domains of PaperKit
+/// The 15 Authoritative Functional Domains of MaskerV
 enum DomainId {
   fileManipulation,      // 1. File Manipulation & Document Tools
   securityVault,         // 2. Security, Cryptography & Compliance Vault

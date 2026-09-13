@@ -76,10 +76,10 @@ export default function AppRouter() {
   const [splashVisible, setSplashVisible] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
-    return localStorage.getItem('paperkit_onboarding_done') !== 'true';
+    return (localStorage.getItem('maskerv_onboarding_done') ?? localStorage.getItem('paperkit_onboarding_done')) !== 'true';
   });
   const [showWelcome, setShowWelcome] = useState(() => {
-    return localStorage.getItem('paperkit_welcome_done') !== 'true';
+    return (localStorage.getItem('maskerv_welcome_done') ?? localStorage.getItem('paperkit_welcome_done')) !== 'true';
   });
 
   const [healthState, setHealthState] = useState({

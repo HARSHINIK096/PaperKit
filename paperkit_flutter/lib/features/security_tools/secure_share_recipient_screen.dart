@@ -188,7 +188,7 @@ class _SecureShareRecipientScreenState extends State<SecureShareRecipientScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppShell(
-      title: 'PaperKit Secure Share',
+      title: 'MaskerV Secure Share',
       showBottomNav: false,
       child: Center(
         child: SingleChildScrollView(

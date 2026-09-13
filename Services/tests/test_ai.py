@@ -7,7 +7,7 @@ from services import ai_service
 @pytest.mark.asyncio
 async def test_summarize_pdf(client, seeded_file, auth_headers):
     """POST /ai/summarize returns AI summary."""
-    mock_summary = "This is a concise summary of the PaperKit document."
+    mock_summary = "This is a concise summary of the MaskerV document."
     with patch.object(ai_service, "summarize_pdf", new=AsyncMock(return_value=mock_summary)):
         file_id = str(seeded_file["_id"])
         resp = await client.post(
@@ -24,12 +24,12 @@ async def test_summarize_pdf(client, seeded_file, auth_headers):
 @pytest.mark.asyncio
 async def test_ask_pdf_question(client, seeded_file, auth_headers):
     """POST /ai/ask answers user query based on PDF context."""
-    mock_answer = "PaperKit is an open-source document platform."
+    mock_answer = "MaskerV is an open-source document platform."
     with patch.object(ai_service, "ask_pdf", new=AsyncMock(return_value=mock_answer)):
         file_id = str(seeded_file["_id"])
         resp = await client.post(
             "/ai/ask",
-            json={"file_id": file_id, "question": "What is PaperKit?"},
+            json={"file_id": file_id, "question": "What is MaskerV?"},
             headers=auth_headers,
         )
         assert resp.status_code == 200
@@ -39,7 +39,7 @@ async def test_ask_pdf_question(client, seeded_file, auth_headers):
 @pytest.mark.asyncio
 async def test_ocr_extract(client, seeded_file, auth_headers):
     """POST /ai/ocr extracts text content with AI vision OCR."""
-    mock_ocr = "PaperKit OCR Extracted Text"
+    mock_ocr = "MaskerV OCR Extracted Text"
     with patch.object(ai_service, "ocr_pdf", new=AsyncMock(return_value=mock_ocr)):
         file_id = str(seeded_file["_id"])
         resp = await client.post(
@@ -68,7 +68,7 @@ async def test_compare_documents(client, auth_headers):
 @pytest.mark.asyncio
 async def test_semantic_search(client, auth_headers):
     """POST /ai/search performs semantic search inside document text."""
-    mock_results = {"query": "Universal Test", "results": [{"chunk": "PaperKit Universal Test Document", "score": 0.95}]}
+    mock_results = {"query": "Universal Test", "results": [{"chunk": "MaskerV Universal Test Document", "score": 0.95}]}
     with patch.object(ai_service, "semantic_search", new=AsyncMock(return_value=mock_results)):
         resp = await client.post(
             "/ai/search",
@@ -82,11 +82,11 @@ async def test_semantic_search(client, auth_headers):
 @pytest.mark.asyncio
 async def test_translate_document(client, auth_headers):
     """POST /ai/translate translates text to target language."""
-    mock_translation = "Documento de prueba universal PaperKit"
+    mock_translation = "Documento de prueba universal MaskerV"
     with patch.object(ai_service, "translate_pdf", new=AsyncMock(return_value=mock_translation)):
         resp = await client.post(
             "/ai/translate",
-            json={"text": "PaperKit Universal Test Document", "target_language": "Spanish"},
+            json={"text": "MaskerV Universal Test Document", "target_language": "Spanish"},
             headers=auth_headers,
         )
         assert resp.status_code == 200
@@ -114,7 +114,7 @@ async def test_classify_document(client, auth_headers):
     with patch.object(ai_service, "classify_document", new=AsyncMock(return_value=mock_classification)):
         resp = await client.post(
             "/ai/classify",
-            json={"text": "Technical Report: Architecture of PaperKit"},
+            json={"text": "Technical Report: Architecture of MaskerV"},
             headers=auth_headers,
         )
         assert resp.status_code == 200

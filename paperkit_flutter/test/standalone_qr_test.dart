@@ -34,7 +34,7 @@ END:VCARD''';
   print('[PASS] vCard Parser');
 
   // 3. Test URL & Security check
-  final secureUrl = QrPayloadParser.parse('https://paperkit.app/tools');
+  final secureUrl = QrPayloadParser.parse('https://maskerv.app/tools');
   assert(secureUrl.type == QrPayloadType.url && !secureUrl.isSuspiciousUrl, 'Secure URL match');
 
   final insecureUrl = QrPayloadParser.parse('http://192.168.1.1/admin');
@@ -45,8 +45,8 @@ END:VCARD''';
   final tel = QrPayloadParser.parse('tel:+15551234567');
   assert(tel.type == QrPayloadType.phone && tel.phone == '+15551234567', 'Tel match');
 
-  final email = QrPayloadParser.parse('mailto:support@paperkit.app?subject=Hello');
-  assert(email.type == QrPayloadType.email && email.email == 'support@paperkit.app', 'Email match');
+  final email = QrPayloadParser.parse('mailto:support@maskerv.app?subject=Hello');
+  assert(email.type == QrPayloadType.email && email.email == 'support@maskerv.app', 'Email match');
 
   final geo = QrPayloadParser.parse('geo:37.7749,-122.4194');
   assert(geo.type == QrPayloadType.geo && geo.latitude == 37.7749, 'Geo match');
@@ -56,7 +56,7 @@ END:VCARD''';
   print('[PASS] Telephony, Email, Geo, and Calendar Parsers');
 
   // 5. Test Pure Dart QR Generation & zxing_lib Decoding Roundtrip
-  const testString = 'https://paperkit.app/test-roundtrip-verified';
+  const testString = 'https://maskerv.app/test-roundtrip-verified';
   final qrCode = QrCode.fromData(data: testString, errorCorrectLevel: QrErrorCorrectLevel.M);
   final qrImg = QrImage(qrCode);
   final count = qrImg.moduleCount;
@@ -86,7 +86,7 @@ END:VCARD''';
   final decoded = QrImageDecoder.decodeBytes(pngBytes);
   assert(decoded != null, 'Decoded must not be null');
   assert(decoded!.rawData == testString, 'Decoded rawData matches original');
-  assert(decoded!.domain == 'paperkit.app', 'Decoded domain matches');
+  assert(decoded!.domain == 'maskerv.app', 'Decoded domain matches');
   print('[PASS] Pure Dart QR Matrix Generation & zxing_lib Decoding Roundtrip');
 
   print('=== ALL STANDALONE QR ENGINE TESTS PASSED! ===');

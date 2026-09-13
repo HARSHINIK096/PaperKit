@@ -228,7 +228,7 @@ void main() {
       );
 
       final url = payload.toEncodedUrl();
-      expect(url.contains('paperkit://airshare'), isTrue);
+      expect(url.contains('maskerv://airshare'), isTrue);
       expect(url.contains('ip=192.168.1.50'), isTrue);
       expect(url.contains('port=8080'), isTrue);
     });

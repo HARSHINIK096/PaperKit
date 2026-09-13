@@ -6,10 +6,12 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/providers/backend_provider.dart';
 import '../../core/providers/files_provider.dart';
+import '../../core/providers/i18n_provider.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/language_selector_sheet.dart';
 import '../../core/widgets/particle_background.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -69,7 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               controller: controller,
               decoration: const InputDecoration(
                 labelText: 'Base URL',
-                hintText: 'https://paperkit-backend.onrender.com',
+                hintText: 'https://maskerv-backend.onrender.com',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -95,31 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showLanguageDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Select Language', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: _languages.length,
-            itemBuilder: (context, index) {
-              final lang = _languages[index];
-              return RadioListTile<String>(
-                value: lang,
-                groupValue: _selectedLanguage,
-                title: Text(lang),
-                onChanged: (val) {
-                  setState(() => _selectedLanguage = val!);
-                  Navigator.pop(ctx);
-                },
-              );
-            },
-          ),
-        ),
-      ),
-    );
+    LanguageSelectorSheet.show(context);
   }
 
   void _showClearDataDialog() {
@@ -265,8 +243,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildSettingsTile(
                     icon: LucideIcons.globe,
                     iconColor: AppColors.toolBlue,
-                    title: 'Interface Language',
-                    subtitle: _selectedLanguage,
+                    title: context.t('language'),
+                    subtitle: '${context.watch<I18nProvider>().currentAppLanguage.flag} ${context.watch<I18nProvider>().currentAppLanguage.nativeName} (${context.watch<I18nProvider>().currentAppLanguage.name})',
                     onTap: _showLanguageDialog,
                   ),
                   _buildSettingsTile(
@@ -464,7 +442,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Email
               Text(
-                'user@paperkit.local',
+                'user@maskerv.local',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.85),
                   fontSize: 14,

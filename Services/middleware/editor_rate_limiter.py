@@ -1,5 +1,5 @@
 """
-PaperKit PDF Editor Rate Limiter
+MaskerV PDF Editor Rate Limiter
 Tracks client daily edit operations using an isolated SQLite database.
 Enforces 3 edit operations per client per calendar day.
 """
@@ -12,7 +12,7 @@ DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "storage")
 DB_PATH = os.path.join(DB_DIR, "rate_limits.db")
 
 DAILY_LIMIT = 3
-COOKIE_NAME = "paperkit_client_id"
+COOKIE_NAME = "maskerv_client_id"
 
 def init_db():
     os.makedirs(DB_DIR, exist_ok=True)
@@ -33,7 +33,7 @@ init_db()
 def get_client_key(request: Request, response: Response = None) -> str:
     """Extract or generate client identifier based on IP and cookie token."""
     client_ip = request.client.host if request.client else "unknown"
-    cookie_token = request.cookies.get(COOKIE_NAME)
+    cookie_token = request.cookies.get(COOKIE_NAME) or request.cookies.get("paperkit_client_id")
     
     if not cookie_token:
         import uuid

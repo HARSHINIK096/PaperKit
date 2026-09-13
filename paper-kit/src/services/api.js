@@ -1,7 +1,7 @@
 /* api.js — Axios instance with auth interceptor, cold-start retries, and error normalization */
 import axios from 'axios';
 
-export const REMOTE_API_BASE = 'https://paperkit-backend.onrender.com';
+export const REMOTE_API_BASE = 'https://maskerv-backend.onrender.com';
 
 const configuredUrl = import.meta.env.VITE_API_URL;
 export const API_BASE = configuredUrl || REMOTE_API_BASE;

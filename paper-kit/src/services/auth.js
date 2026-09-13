@@ -14,7 +14,7 @@ export async function getMe() {
     return {
       _id: 'local_user',
       name: 'Open Source User',
-      email: 'user@paperkit.local',
+      email: 'user@maskerv.local',
       preferences: { dark_mode: false, default_view: 'list', language: 'en' },
     };
   }
@@ -26,7 +26,7 @@ export async function getMe() {
     return {
       _id: 'local_user',
       name: 'Open Source User',
-      email: 'user@paperkit.local',
+      email: 'user@maskerv.local',
       preferences: { dark_mode: false, default_view: 'list', language: 'en' },
     };
   }
@@ -53,7 +53,7 @@ export async function updateMe(data) {
     const updatedUser = {
       _id: 'local_user',
       name: data.name || storedUser.name || 'Open Source User',
-      email: storedUser.email || 'user@paperkit.local',
+      email: storedUser.email || 'user@maskerv.local',
       preferences: {
         ...(storedUser.preferences || { dark_mode: false, default_view: 'list', language: 'en' }),
         ...(data.preferences || {}),

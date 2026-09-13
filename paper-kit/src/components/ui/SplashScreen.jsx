@@ -53,11 +53,11 @@ export default function SplashScreen({
 
               {/* Dual Render service indicators */}
               <div className="splash-screen__services-row">
-                <span className={`splash-screen__service-chip ${services?.backend ? 'splash-screen__service-chip--online' : 'splash-screen__service-chip--syncing'}`} title="https://paperkit-backend.onrender.com">
+                <span className={`splash-screen__service-chip ${services?.backend ? 'splash-screen__service-chip--online' : 'splash-screen__service-chip--syncing'}`} title="https://maskerv-backend.onrender.com">
                   <span className="splash-screen__service-dot" />
                   <span>MASKERV Backend {services?.backend ? '(Ready)' : '(Connecting...)'}</span>
                 </span>
-                <span className={`splash-screen__service-chip ${services?.web ? 'splash-screen__service-chip--online' : 'splash-screen__service-chip--syncing'}`} title="https://paperkit-web.onrender.com">
+                <span className={`splash-screen__service-chip ${services?.web ? 'splash-screen__service-chip--online' : 'splash-screen__service-chip--syncing'}`} title="https://maskerv-web.onrender.com">
                   <span className="splash-screen__service-dot" />
                   <span>MASKERV Web {services?.web ? '(Ready)' : '(Syncing...)'}</span>
                 </span>

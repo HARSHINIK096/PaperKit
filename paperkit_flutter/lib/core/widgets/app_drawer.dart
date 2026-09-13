@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:provider/provider.dart';
+import '../providers/i18n_provider.dart';
 import '../theme/app_colors.dart';
+import 'language_selector_sheet.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -10,6 +13,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final i18n = context.watch<I18nProvider>();
 
     return Drawer(
       backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
@@ -88,7 +92,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'user@paperkit.local',
+                  'user@maskerv.local',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.85),
                     fontSize: 13,
@@ -187,56 +191,66 @@ class AppDrawer extends StatelessWidget {
                 _buildNavTile(
                   context,
                   icon: LucideIcons.home,
-                  title: 'Home',
+                  title: context.t('home'),
                   route: '/',
                   isDark: isDark,
                 ),
                 _buildNavTile(
                   context,
                   icon: LucideIcons.sparkles,
-                  title: 'Welcome & Feature Tour',
+                  title: context.t('welcome_tour'),
                   route: '/welcome',
                   isDark: isDark,
                 ),
                 _buildNavTile(
                   context,
                   icon: LucideIcons.files,
-                  title: 'My Files',
+                  title: context.t('files'),
                   route: '/files',
                   isDark: isDark,
                 ),
                 _buildNavTile(
                   context,
                   icon: LucideIcons.clock,
-                  title: 'Recent Files',
+                  title: context.t('recent'),
                   route: '/history',
                   isDark: isDark,
                 ),
                 _buildNavTile(
                   context,
                   icon: LucideIcons.star,
-                  title: 'Favorites',
+                  title: context.t('favorites'),
                   route: '/files',
                   isDark: isDark,
                 ),
                 _buildNavTile(
                   context,
                   icon: LucideIcons.trash2,
-                  title: 'Trash',
+                  title: context.t('trash'),
                   route: '/files',
                   isDark: isDark,
                 ),
                 _buildNavTile(
                   context,
+                  icon: LucideIcons.globe,
+                  title: '${context.t('language')} (${i18n.currentAppLanguage.nativeName} ${i18n.currentAppLanguage.flag})',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    LanguageSelectorSheet.show(context);
+                  },
+                  isDark: isDark,
+                ),
+                _buildNavTile(
+                  context,
                   icon: LucideIcons.settings,
-                  title: 'Settings',
+                  title: context.t('settings'),
                   route: '/profile',
                   isDark: isDark,
                 ),
                 _buildNavTile(
                   context,
                   icon: LucideIcons.helpCircle,
-                  title: 'Help & Support',
+                  title: context.t('help'),
                   onTap: () {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -251,7 +265,7 @@ class AppDrawer extends StatelessWidget {
                 _buildNavTile(
                   context,
                   icon: LucideIcons.share2,
-                  title: 'Share MASKERV',
+                  title: context.t('share'),
                   onTap: () {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(

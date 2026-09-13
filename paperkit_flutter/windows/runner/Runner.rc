@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.paperkit.app" "\0"
-            VALUE "FileDescription", "paperkit_flutter" "\0"
+            VALUE "CompanyName", "com.maskerv.app" "\0"
+            VALUE "FileDescription", "maskerv_flutter" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "paperkit_flutter" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.paperkit.app. All rights reserved." "\0"
-            VALUE "OriginalFilename", "paperkit_flutter.exe" "\0"
-            VALUE "ProductName", "paperkit_flutter" "\0"
+            VALUE "InternalName", "maskerv_flutter" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.maskerv.app. All rights reserved." "\0"
+            VALUE "OriginalFilename", "maskerv_flutter.exe" "\0"
+            VALUE "ProductName", "MaskerV" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
