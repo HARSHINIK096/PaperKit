@@ -18,6 +18,12 @@ class PeerDevice {
   final String ipAddress;
   final int port;
   final DateTime lastSeen;
+  final String deviceType; // 'phone', 'tablet', 'laptop', 'desktop'
+  final double distanceMeters;
+  final double signalStrength; // 0.0 to 1.0
+  final double angleRadians; // 0 to 2*PI for radar positioning
+  final String deviceModel;
+  final bool isAvailable;
 
   PeerDevice({
     required this.id,
@@ -25,7 +31,25 @@ class PeerDevice {
     required this.ipAddress,
     this.port = 8080,
     DateTime? lastSeen,
+    this.deviceType = 'phone',
+    this.distanceMeters = 2.5,
+    this.signalStrength = 0.85,
+    this.angleRadians = 0.0,
+    this.deviceModel = 'Android Device',
+    this.isAvailable = true,
   }) : lastSeen = lastSeen ?? DateTime.now();
+
+  String get distanceLabel {
+    if (distanceMeters < 2.0) {
+      return '${distanceMeters.toStringAsFixed(1)}m (Immediate)';
+    } else if (distanceMeters < 5.0) {
+      return '${distanceMeters.toStringAsFixed(1)}m (Same Room)';
+    } else if (distanceMeters < 10.0) {
+      return '${distanceMeters.toStringAsFixed(1)}m (Nearby)';
+    } else {
+      return '${distanceMeters.toStringAsFixed(1)}m (Area)';
+    }
+  }
 
   factory PeerDevice.fromJson(Map<String, dynamic> json) => PeerDevice(
         id: json['id'] as String,
@@ -35,6 +59,12 @@ class PeerDevice {
         lastSeen: json['lastSeen'] != null
             ? DateTime.parse(json['lastSeen'] as String)
             : DateTime.now(),
+        deviceType: json['deviceType'] as String? ?? 'phone',
+        distanceMeters: (json['distanceMeters'] as num?)?.toDouble() ?? 2.5,
+        signalStrength: (json['signalStrength'] as num?)?.toDouble() ?? 0.85,
+        angleRadians: (json['angleRadians'] as num?)?.toDouble() ?? 0.0,
+        deviceModel: json['deviceModel'] as String? ?? 'Android Device',
+        isAvailable: json['isAvailable'] as bool? ?? true,
       );
 
   Map<String, dynamic> toJson() => {
@@ -43,8 +73,70 @@ class PeerDevice {
         'ipAddress': ipAddress,
         'port': port,
         'lastSeen': lastSeen.toIso8601String(),
+        'deviceType': deviceType,
+        'distanceMeters': distanceMeters,
+        'signalStrength': signalStrength,
+        'angleRadians': angleRadians,
+        'deviceModel': deviceModel,
+        'isAvailable': isAvailable,
       };
 }
+
+class DirectTransferInvite {
+  final String senderDeviceId;
+  final String senderDeviceName;
+  final String senderIp;
+  final int senderPort;
+  final String sessionToken;
+  final String documentName;
+  final int fileSize;
+  final String sha256;
+
+  DirectTransferInvite({
+    required this.senderDeviceId,
+    required this.senderDeviceName,
+    required this.senderIp,
+    required this.senderPort,
+    required this.sessionToken,
+    required this.documentName,
+    required this.fileSize,
+    required this.sha256,
+  });
+
+  factory DirectTransferInvite.fromJson(Map<String, dynamic> json) => DirectTransferInvite(
+        senderDeviceId: json['senderDeviceId'] as String? ?? 'unknown',
+        senderDeviceName: json['senderDeviceName'] as String? ?? 'Nearby Peer',
+        senderIp: json['senderIp'] as String? ?? '127.0.0.1',
+        senderPort: json['senderPort'] as int? ?? 8080,
+        sessionToken: json['sessionToken'] as String? ?? '',
+        documentName: json['documentName'] as String? ?? 'document.pdf',
+        fileSize: json['fileSize'] as int? ?? 0,
+        sha256: json['sha256'] as String? ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'senderDeviceId': senderDeviceId,
+        'senderDeviceName': senderDeviceName,
+        'senderIp': senderIp,
+        'senderPort': senderPort,
+        'sessionToken': sessionToken,
+        'documentName': documentName,
+        'fileSize': fileSize,
+        'sha256': sha256,
+      };
+
+  QrSessionPayload toQrSessionPayload() {
+    return QrSessionPayload(
+      sessionId: 'p2p_${DateTime.now().millisecondsSinceEpoch}',
+      hostIp: senderIp,
+      port: senderPort,
+      secretToken: sessionToken,
+      documentName: documentName,
+      expiresAt: DateTime.now().add(const Duration(minutes: 10)),
+    );
+  }
+}
+
 
 class QrSessionPayload {
   final String protocolVersion;

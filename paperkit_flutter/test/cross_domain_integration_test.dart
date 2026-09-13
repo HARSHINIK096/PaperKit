@@ -13,6 +13,7 @@ import 'package:maskerv_flutter/core/models/translation_model.dart';
 import 'package:maskerv_flutter/features/accessibility/bionic_reading_engine.dart';
 import 'package:maskerv_flutter/features/cognitive_retention/cognitive_retention_service.dart';
 import 'package:maskerv_flutter/features/forms/form_engine_service.dart';
+import 'package:maskerv_flutter/features/p2p_share/p2p_mesh_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -230,6 +231,50 @@ void main() {
       expect(url.contains('paperkit://airshare'), isTrue);
       expect(url.contains('ip=192.168.1.50'), isTrue);
       expect(url.contains('port=8080'), isTrue);
+    });
+
+    test('P2PMeshService.scanNearbyDevices filters devices strictly by radius boundary', () async {
+      final service = P2PMeshService();
+
+      // Proximity < 2m (Immediate)
+      final immediateDevices = await service.scanNearbyDevices(maxRadiusMeters: 2.0);
+      expect(immediateDevices.isNotEmpty, isTrue);
+      for (final device in immediateDevices) {
+        expect(device.distanceMeters, lessThanOrEqualTo(2.0));
+      }
+
+      // Proximity < 5m (Room)
+      final roomDevices = await service.scanNearbyDevices(maxRadiusMeters: 5.0);
+      expect(roomDevices.length, greaterThanOrEqualTo(immediateDevices.length));
+      for (final device in roomDevices) {
+        expect(device.distanceMeters, lessThanOrEqualTo(5.0));
+      }
+
+      // Proximity < 20m (Area)
+      final allDevices = await service.scanNearbyDevices(maxRadiusMeters: 20.0);
+      expect(allDevices.length, greaterThanOrEqualTo(roomDevices.length));
+    });
+
+    test('DirectTransferInvite serializes and converts to QrSessionPayload', () {
+      final invite = DirectTransferInvite(
+        senderDeviceId: 'dev_123',
+        senderDeviceName: 'Pixel 8 Pro',
+        senderIp: '192.168.1.105',
+        senderPort: 8089,
+        sessionToken: 'tok_abc',
+        documentName: 'report.pdf',
+        fileSize: 1048576,
+        sha256: 'sha256hash',
+      );
+
+      final json = invite.toJson();
+      final restored = DirectTransferInvite.fromJson(json);
+      expect(restored.senderDeviceName, equals('Pixel 8 Pro'));
+      expect(restored.documentName, equals('report.pdf'));
+
+      final qrPayload = invite.toQrSessionPayload();
+      expect(qrPayload.hostIp, equals('192.168.1.105'));
+      expect(qrPayload.documentName, equals('report.pdf'));
     });
   });
 

@@ -87,5 +87,32 @@ void main() {
       expect(decoded.projectName, equals('Test Project'));
       expect(decoded.pdfFiles.length, equals(1));
     });
+
+    test('PeerDevice model supports proximity radius, angle, and distance labeling', () {
+      final immediateDevice = PeerDevice(
+        id: 'p1',
+        deviceName: 'Pixel 8 Pro',
+        ipAddress: '192.168.1.100',
+        distanceMeters: 1.5,
+        deviceType: 'phone',
+        angleRadians: 1.2,
+      );
+      expect(immediateDevice.distanceLabel, contains('Immediate'));
+
+      final roomDevice = PeerDevice(
+        id: 'p2',
+        deviceName: 'MacBook Pro',
+        ipAddress: '192.168.1.101',
+        distanceMeters: 3.5,
+        deviceType: 'laptop',
+      );
+      expect(roomDevice.distanceLabel, contains('Same Room'));
+
+      final json = immediateDevice.toJson();
+      final fromJson = PeerDevice.fromJson(json);
+      expect(fromJson.distanceMeters, equals(1.5));
+      expect(fromJson.deviceType, equals('phone'));
+      expect(fromJson.deviceName, equals('Pixel 8 Pro'));
+    });
   });
 }

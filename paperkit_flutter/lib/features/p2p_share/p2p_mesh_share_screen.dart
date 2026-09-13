@@ -12,6 +12,7 @@ import '../../core/services/biometric_auth_service.dart';
 import '../../core/services/share_service.dart';
 import '../../core/widgets/particle_background.dart';
 import 'p2p_mesh_service.dart';
+import 'widgets/nearby_device_radar.dart';
 
 class P2PMeshShareScreen extends StatefulWidget {
   final File? initialFile;
@@ -25,6 +26,18 @@ class P2PMeshShareScreen extends StatefulWidget {
 class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTickerProviderStateMixin {
   final P2PMeshService _service = P2PMeshService();
   late TabController _tabController;
+
+  // Mode Selection: 0 = Nearby Radar, 1 = QR Matrix
+  int _sendModeIndex = 0;
+  int _receiveModeIndex = 0;
+
+  // Nearby Device Proximity & Radar State
+  double _selectedRadius = 10.0;
+  List<PeerDevice> _nearbyDevices = [];
+  PeerDevice? _selectedDevice;
+  bool _isScanningNearby = false;
+  StreamSubscription<DirectTransferInvite>? _inviteSubscription;
+  bool _isDiscoverable = true;
 
   // Person A (Host) State
   File? _hostSelectedFile;
@@ -53,6 +66,10 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _scanNearbyDevices();
+    _startDiscoveryListener();
+    _listenToIncomingInvites();
+
     if (widget.initialFile != null) {
       _hostSelectedFile = widget.initialFile;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,9 +82,146 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
   void dispose() {
     _tabController.dispose();
     _qrPayloadController.dispose();
+    _inviteSubscription?.cancel();
+    _service.stopDiscoveryBeaconListener();
     _service.stopHostSession();
     super.dispose();
   }
+
+  Future<void> _startDiscoveryListener() async {
+    await _service.startDiscoveryBeaconListener(deviceName: "PaperKit User");
+  }
+
+  void _listenToIncomingInvites() {
+    _inviteSubscription = _service.onIncomingInvite.listen((invite) {
+      if (mounted) {
+        _showIncomingInviteDialog(invite);
+      }
+    });
+  }
+
+  Future<void> _scanNearbyDevices() async {
+    setState(() => _isScanningNearby = true);
+    final devices = await _service.scanNearbyDevices(maxRadiusMeters: _selectedRadius);
+    if (mounted) {
+      setState(() {
+        _nearbyDevices = devices;
+        _isScanningNearby = false;
+      });
+    }
+  }
+
+  Future<void> _beamToSelectedDevice(PeerDevice device) async {
+    if (_hostSelectedFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a document or MASKERV file to share first.'),
+          backgroundColor: Color(0xFFE11D48),
+        ),
+      );
+      return;
+    }
+
+    final authenticated = await BiometricAuthService().authenticate(
+      reason: 'Authenticate to beam "${_hostSelectedFile!.uri.pathSegments.last}" to ${device.deviceName} (${device.distanceMeters.toStringAsFixed(1)}m away).',
+      context: context,
+    );
+
+    if (!authenticated) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Biometric verification cancelled.')),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _selectedDevice = device;
+      _isHosting = true;
+    });
+
+    await _service.sendDirectTransferInvite(
+      target: device,
+      file: _hostSelectedFile!,
+    );
+
+    setState(() => _isHosting = false);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('AirShare beam sent to ${device.deviceName} (${device.distanceLabel})!'),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showIncomingInviteDialog(DirectTransferInvite invite) async {
+    HapticFeedback.heavyImpact();
+    final accept = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(LucideIcons.radio, color: Color(0xFF10B981), size: 24),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text('Incoming AirShare Transfer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('From: ${invite.senderDeviceName}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text('Document: ${invite.documentName}', style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: 4),
+            Text('Size: ${(invite.fileSize / 1024).toStringAsFixed(1)} KB', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 12),
+            const Text(
+              'Would you like to authorize biometric verification and download this file directly?',
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Decline', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Accept & Download'),
+          ),
+        ],
+      ),
+    );
+
+    if (accept == true) {
+      final payload = invite.toQrSessionPayload();
+      setState(() {
+        _scannedPayload = payload;
+        _connectedHostInfo = {
+          'fileName': invite.documentName,
+          'fileSize': invite.fileSize,
+          'sha256': invite.sha256,
+        };
+        _tabController.animateTo(1);
+      });
+      await _acceptAndDownloadTransfer();
+    }
+  }
+
 
   // ───────────────────────────────────────────────────────────────────────────
   // PERSON A — HOST ACTIONS
@@ -417,108 +571,266 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // PERSON A UI: HOST & GENERATE QR
+  // ───────────────────────────────────────────────────────────────────────────
+  // PERSON A UI: HOST & GENERATE QR OR BEAM VIA RADAR
   // ───────────────────────────────────────────────────────────────────────────
 
   Widget _buildSendHostTab() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ElevatedButton.icon(
-            onPressed: _isHosting ? null : _pickHostDocument,
-            icon: const Icon(LucideIcons.fileUp),
-            label: const Text('Select Document to Host & Share'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          // Document Selection Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.15),
+                  child: const Icon(LucideIcons.fileText, color: Color(0xFF2563EB)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _hostSelectedFile != null
+                            ? _hostSelectedFile!.uri.pathSegments.last
+                            : 'No Document Selected',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _hostSelectedFile != null
+                            ? 'Ready for AirShare Transfer'
+                            : 'Select a PDF or MASKERV file to beam',
+                        style: TextStyle(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _isHosting ? null : _pickHostDocument,
+                  icon: const Icon(LucideIcons.fileUp, size: 16),
+                  label: Text(_hostSelectedFile != null ? 'Change' : 'Browse'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
             ),
           ),
+
           const SizedBox(height: 20),
-          if (_activeHostPayload != null) ...[
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Chip(
-                          avatar: const Icon(LucideIcons.wifi, size: 16),
-                          label: Text('Host IP: ${_activeHostPayload!.hostIp}:${_activeHostPayload!.port}'),
-                        ),
-                        OutlinedButton(
-                          onPressed: _stopHostSession,
-                          child: const Text('Cancel Host'),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 24),
-                    const Text('PAIRING QR CODE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blue)),
-                    const SizedBox(height: 12),
-                    // QR Code visual container
-                    Container(
-                      padding: const EdgeInsets.all(16),
+
+          // Transfer Mode Selector: Radar Proximity vs QR Code Matrix
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _sendModeIndex = 0),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade300, width: 2),
+                        color: _sendModeIndex == 0
+                            ? const Color(0xFF2563EB)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Column(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          DynamicQrWidget(
-                            data: _activeHostPayload!.toEncodedUrl(),
-                            size: 170,
-                            color: Theme.of(context).primaryColor,
+                          Icon(
+                            LucideIcons.radar,
+                            size: 16,
+                            color: _sendModeIndex == 0 ? Colors.white : Colors.grey,
                           ),
-                          const SizedBox(height: 12),
-                          const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Share.share(
-                                'PaperKit AirShare P2P Transfer Session for "${_activeHostPayload!.documentName}":\n${_activeHostPayload!.toEncodedUrl()}',
-                              );
-                            },
-                            icon: const Icon(LucideIcons.share2, size: 16),
-                            label: const Text('Share QR Link via Other Apps'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF4F46E5),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Nearby Radar (Radius)',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: _sendModeIndex == 0 ? Colors.white : Colors.grey,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Document: ${_activeHostPayload!.documentName}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      setState(() => _sendModeIndex = 1);
+                      if (_activeHostPayload == null && _hostSelectedFile != null) {
+                        await _startHostSession();
+                      }
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _sendModeIndex == 1
+                            ? const Color(0xFF2563EB)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.qrCode,
+                            size: 16,
+                            color: _sendModeIndex == 1 ? Colors.white : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'QR Code Matrix',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: _sendModeIndex == 1 ? Colors.white : Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    const Text('Person B: Open PaperKit Air-Share ➔ Scan QR to pair and receive file.', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Mode 0: Nearby Device Radar (Radius Proximity)
+          if (_sendModeIndex == 0) ...[
+            NearbyDeviceRadar(
+              devices: _nearbyDevices,
+              currentMaxRadius: _selectedRadius,
+              onRadiusChanged: (newRadius) {
+                setState(() => _selectedRadius = newRadius);
+                _scanNearbyDevices();
+              },
+              onDeviceSelected: _beamToSelectedDevice,
+              selectedDevice: _selectedDevice,
+              isScanning: _isScanningNearby,
+            ),
+          ]
+
+          // Mode 1: QR Code Matrix & Share Sheet
+          else ...[
+            if (_activeHostPayload != null) ...[
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Chip(
+                            avatar: const Icon(LucideIcons.wifi, size: 16),
+                            label: Text('Host IP: ${_activeHostPayload!.hostIp}:${_activeHostPayload!.port}'),
+                          ),
+                          OutlinedButton(
+                            onPressed: _stopHostSession,
+                            child: const Text('Cancel Host'),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      const Text('PAIRING QR CODE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blue)),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300, width: 2),
+                        ),
+                        child: Column(
+                          children: [
+                            DynamicQrWidget(
+                              data: _activeHostPayload!.toEncodedUrl(),
+                              size: 170,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Share.share(
+                                  'PaperKit AirShare P2P Transfer Session for "${_activeHostPayload!.documentName}":\n${_activeHostPayload!.toEncodedUrl()}',
+                                );
+                              },
+                              icon: const Icon(LucideIcons.share2, size: 16),
+                              label: const Text('Share QR Link via Other Apps'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4F46E5),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Document: ${_activeHostPayload!.documentName}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text('Person B: Open PaperKit Air-Share ➔ Scan QR to pair and receive file.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ] else
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    Icon(LucideIcons.share2, size: 48, color: Colors.blue),
-                    SizedBox(height: 12),
-                    Text('PaperKit-to-PaperKit Offline P2P Sharing', style: TextStyle(fontWeight: FontWeight.bold)),
-                    SizedBox(height: 6),
-                    Text('Select a document to create an offline local socket session and display your pairing QR code.'),
-                  ],
+            ] else
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      const Icon(LucideIcons.qrCode, size: 48, color: Colors.blue),
+                      const SizedBox(height: 12),
+                      const Text('Generate P2P QR Code', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      const Text('Select a document above and tap below to start local server and render the scannable pairing QR code.'),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: _hostSelectedFile == null ? null : _startHostSession,
+                        icon: const Icon(LucideIcons.play),
+                        label: const Text('Generate Pairing QR Matrix'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
+          ],
         ],
       ),
     );
@@ -529,79 +841,242 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
   // ───────────────────────────────────────────────────────────────────────────
 
   Widget _buildReceiveJoinTab() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Scan / Enter PaperKit QR Payload', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 14),
+          // Receive Mode Selector: Discoverable Radar vs QR Scanner
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _receiveModeIndex = 0),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _receiveModeIndex == 0
+                            ? const Color(0xFF2563EB)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.radio,
+                            size: 16,
+                            color: _receiveModeIndex == 0 ? Colors.white : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Discoverable Radar',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: _receiveModeIndex == 0 ? Colors.white : Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _receiveModeIndex = 1),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _receiveModeIndex == 1
+                            ? const Color(0xFF2563EB)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            LucideIcons.scanLine,
+                            size: 16,
+                            color: _receiveModeIndex == 1 ? Colors.white : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Scan QR Code',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: _receiveModeIndex == 1 ? Colors.white : Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-          // Camera QR Scanner & Gallery Trigger Buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _openCameraQrScanner,
-                  icon: const Icon(LucideIcons.camera, size: 18),
-                  label: const Text('Scan QR with Camera'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+          const SizedBox(height: 20),
+
+          // Receiver Mode 0: Discoverable Radar Active
+          if (_receiveModeIndex == 0) ...[
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 36,
+                    backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
+                    child: const Icon(LucideIcons.radio, size: 36, color: Color(0xFF10B981)),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Discoverable to Nearby Senders',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'This device is broadcasting on your local Wi-Fi / Hotspot. Any nearby PaperKit user can detect this device on their radar and beam documents to you directly.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.shieldCheck, size: 16, color: Color(0xFF10B981)),
+                        SizedBox(width: 8),
+                        Text(
+                          'Biometric Verification Enabled on Arrival',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Discoverable by Nearby Devices', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    subtitle: Text(_isDiscoverable ? 'Broadcasting on local radius' : 'Device hidden', style: const TextStyle(fontSize: 11)),
+                    value: _isDiscoverable,
+                    onChanged: (val) {
+                      setState(() => _isDiscoverable = val);
+                      if (val) {
+                        _startDiscoveryListener();
+                      } else {
+                        _service.stopDiscoveryBeaconListener();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ]
+
+          // Receiver Mode 1: QR Code Scanner & Manual Paste
+          else ...[
+            const Text('Scan / Enter PaperKit QR Payload', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 14),
+
+            // Camera QR Scanner & Gallery Trigger Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _openCameraQrScanner,
+                    icon: const Icon(LucideIcons.camera, size: 18),
+                    label: const Text('Scan QR with Camera'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: _pickQrImageFromGallery,
+                  icon: const Icon(LucideIcons.image, size: 18),
+                  label: const Text('Pick Image'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              OutlinedButton.icon(
-                onPressed: _pickQrImageFromGallery,
-                icon: const Icon(LucideIcons.image, size: 18),
-                label: const Text('Pick Image'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ],
+            ),
+            const SizedBox(height: 18),
+
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('OR PASTE PAYLOAD', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            TextField(
+              controller: _qrPayloadController,
+              maxLines: 2,
+              decoration: InputDecoration(
+                hintText: 'Paste or scan paperkit://airshare?session=...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                suffixIcon: IconButton(
+                  icon: const Icon(LucideIcons.qrCode),
+                  onPressed: () {
+                    if (_activeHostPayload != null) {
+                      _qrPayloadController.text = _activeHostPayload!.toEncodedUrl();
+                    }
+                  },
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          const Row(
-            children: [
-              Expanded(child: Divider()),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text('OR PASTE PAYLOAD', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-              ),
-              Expanded(child: Divider()),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          TextField(
-            controller: _qrPayloadController,
-            maxLines: 2,
-            decoration: InputDecoration(
-              hintText: 'Paste or scan paperkit://airshare?session=...',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              suffixIcon: IconButton(
-                icon: const Icon(LucideIcons.qrCode),
-                onPressed: () {
-                  if (_activeHostPayload != null) {
-                    _qrPayloadController.text = _activeHostPayload!.toEncodedUrl();
-                  }
-                },
-              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _isConnecting ? null : () => _parseAndConnectQrPayload(_qrPayloadController.text.trim()),
-            icon: const Icon(LucideIcons.link),
-            label: const Text('Validate & Pair Session'),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: _isConnecting ? null : () => _parseAndConnectQrPayload(_qrPayloadController.text.trim()),
+              icon: const Icon(LucideIcons.link),
+              label: const Text('Validate & Pair Session'),
+            ),
+            const SizedBox(height: 20),
+          ],
+
           if (_isConnecting)
             const Center(child: CircularProgressIndicator())
           else if (_transferError != null)
