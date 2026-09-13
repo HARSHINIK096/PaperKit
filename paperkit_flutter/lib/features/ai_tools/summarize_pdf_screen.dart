@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
@@ -25,20 +24,6 @@ class _SummarizePDFScreenState extends State<SummarizePDFScreen> {
   String _summaryLength = 'detailed'; // 'concise', 'detailed', 'bullets', 'actions'
   bool _isProcessing = false;
   String _summaryResult = '';
-
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'docx', 'txt'],
-    );
-
-    if (result != null && result.files.single.path != null) {
-      setState(() {
-        _selectedFile = File(result.files.single.path!);
-        _summaryResult = '';
-      });
-    }
-  }
 
   Future<void> _generateSummary() async {
     if (_selectedFile == null) return;

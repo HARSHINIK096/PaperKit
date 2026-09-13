@@ -22,19 +22,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _selectedLanguage = 'English';
   Map<String, int>? _storageBreakdown;
-
-  final List<String> _languages = [
-    'English',
-    'Spanish (Español)',
-    'French (Français)',
-    'German (Deutsch)',
-    'Hindi (हिन्दी)',
-    'Japanese (日本語)',
-    'Chinese (中文)',
-    'Arabic (العربية)',
-  ];
 
   @override
   void initState() {

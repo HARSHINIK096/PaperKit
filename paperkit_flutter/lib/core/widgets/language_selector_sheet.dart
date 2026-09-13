@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
-import '../i18n/app_language.dart';
 import '../providers/i18n_provider.dart';
 import '../theme/app_colors.dart';
 

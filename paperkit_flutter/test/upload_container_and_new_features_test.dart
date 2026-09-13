@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maskerv_flutter/core/constants/tool_registry.dart';
-import 'package:maskerv_flutter/core/router/app_router.dart';
 import 'package:maskerv_flutter/core/widgets/compact_upload_container.dart';
 import 'package:maskerv_flutter/features/security_tools/biometric_app_lock_screen.dart';
 import 'package:maskerv_flutter/features/ai_tools/resume_scanner_screen.dart';

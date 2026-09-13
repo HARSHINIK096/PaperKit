@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/models/audit_ledger_model.dart';
@@ -66,21 +65,6 @@ class _LegalAuditScreenState extends State<LegalAuditScreen> with SingleTickerPr
       _isLoading = false;
     });
     await _loadLedger();
-  }
-
-  Future<void> _pickDocument() async {
-    setState(() => _isLoading = true);
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      await _processDocument(file);
-    } else {
-      setState(() => _isLoading = false);
-    }
   }
 
   Future<void> _applyBatesStamping() async {

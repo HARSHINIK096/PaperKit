@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/models/table_extractor_model.dart';
@@ -30,21 +29,6 @@ class _TabularExtractorScreenState extends State<TabularExtractorScreen> {
       _extractedTables = tables;
       _isLoading = false;
     });
-  }
-
-  Future<void> _pickDocument() async {
-    setState(() => _isLoading = true);
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      await _processDocument(file);
-    } else {
-      setState(() => _isLoading = false);
-    }
   }
 
   Future<void> _exportCsv(ExtractedTableData table) async {

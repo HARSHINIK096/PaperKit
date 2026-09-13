@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/i18n_provider.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/widgets/language_selector_sheet.dart';
 import '../../core/widgets/particle_background.dart';
 
@@ -17,7 +16,6 @@ class LandingScreen extends StatefulWidget {
 
 class _LandingScreenState extends State<LandingScreen> {
   String _selectedCategory = 'All';
-  String _selectedLanguage = 'us English (English)';
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/models/study_session_model.dart';
@@ -54,58 +53,6 @@ class _CognitiveRetentionScreenState extends State<CognitiveRetentionScreen> wit
     setState(() {
       _decks = loaded;
     });
-  }
-
-  Future<void> _pickDocument() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'txt', 'md'],
-      );
-
-      if (result != null && result.files.single.path != null) {
-        final path = result.files.single.path!;
-        final file = File(path);
-        String text = '';
-        if (path.endsWith('.pdf')) {
-          text = await PdfEngine.extractTextFromPdf(file);
-        } else {
-          text = await file.readAsString();
-        }
-
-        final cards = _service.extractRecallItemsFromText(text, documentPath: path);
-
-        setState(() {
-          _selectedFile = file;
-          _recallCards = cards;
-          _isLoading = false;
-        });
-
-        // Save auto-created deck
-        if (cards.isNotEmpty) {
-          final deck = StudyDeck(
-            id: 'deck_${DateTime.now().millisecondsSinceEpoch}',
-            name: file.uri.pathSegments.last,
-            documentPath: path,
-            cards: cards,
-          );
-          await _service.saveDeck(deck);
-          await _loadDecks();
-        }
-      } else {
-        setState(() => _isLoading = false);
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Failed to load document: ${e.toString()}';
-      });
-    }
   }
 
   Future<void> _processDocument(File file) async {
