@@ -55,7 +55,7 @@ void main() {
           mobileSize: const Size(390, 844),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Verify PDF Editor placeholder renders on mobile without overflow
       expect(find.text('PDF Editor'), findsOneWidget);

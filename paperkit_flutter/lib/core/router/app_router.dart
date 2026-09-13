@@ -93,6 +93,7 @@ import '../../features/p2p_share/p2p_mesh_share_screen.dart';
 import '../../features/analytics/tabular_extractor_screen.dart';
 import '../../features/translation/translation_hub_screen.dart';
 import '../../features/publishing/publishing_studio_screen.dart';
+import '../widgets/cloud_transition_route.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -104,7 +105,10 @@ class AppRouter {
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        pageBuilder: (context, state) => CloudTransitionPage(
+          child: const OnboardingScreen(),
+          key: state.pageKey,
+        ),
       ),
       GoRoute(
         path: '/',
@@ -112,7 +116,10 @@ class AppRouter {
       ),
       GoRoute(
         path: '/tools',
-        builder: (context, state) => const AllToolsScreen(),
+        pageBuilder: (context, state) => CloudTransitionPage(
+          child: const AllToolsScreen(),
+          key: state.pageKey,
+        ),
       ),
       GoRoute(
         path: '/scanner',

@@ -65,6 +65,7 @@ dependencies:
   # Audio & Speech
   flutter_tts: ^4.2.0
   qr: ^3.0.2
+  local_auth: ^3.0.2
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../constants/tool_features_registry.dart';
 import '../theme/app_colors.dart';
+import 'particle_background.dart';
 
 class HowItWorksCarousel extends StatefulWidget {
   final String toolId;
@@ -45,7 +46,6 @@ class _HowItWorksCarouselState extends State<HowItWorksCarousel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: ⓘ How it works (Swipe to explore)
           Row(
             children: [
               Container(
@@ -78,7 +78,6 @@ class _HowItWorksCarouselState extends State<HowItWorksCarousel> {
           ),
           const SizedBox(height: 10),
 
-          // Swipeable Cards PageView
           SizedBox(
             height: 114,
             child: PageView.builder(
@@ -96,7 +95,6 @@ class _HowItWorksCarouselState extends State<HowItWorksCarousel> {
           ),
           const SizedBox(height: 8),
 
-          // Pagination indicator dots
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
@@ -147,61 +145,73 @@ class _HowItWorksCarouselState extends State<HowItWorksCarousel> {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          // Circular Icon Badge
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              step.icon,
-              size: 20,
-              color: cardColor,
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: ParticleBackground(
+                numberOfParticles: 12,
+                particleColor: cardColor.withOpacity(0.4),
+                enableLines: false,
+                maxSpeed: 0.3,
+              ),
             ),
           ),
-          const SizedBox(width: 12),
-
-          // Title & Subtitle Text
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  step.title,
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                    letterSpacing: -0.2,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  step.subtitle,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.3,
-                    color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                child: Icon(
+                  step.icon,
+                  size: 20,
+                  color: cardColor,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      step.title,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        letterSpacing: -0.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      step.subtitle,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.3,
+                        color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

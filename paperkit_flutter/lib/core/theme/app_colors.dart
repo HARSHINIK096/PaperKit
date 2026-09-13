@@ -79,4 +79,29 @@ class AppColors {
   static const Color toolPinkSoft = Color(0xFFFCE7F3);
   static const Color toolIndigo = Color(0xFF6366F1);
   static const Color toolIndigoSoft = Color(0xFFE0E7FF);
+
+  // Google Loader Dots & Overlay
+  static const Color googleBlue = Color(0xFF4285F4);
+  static const Color googleRed = Color(0xFFEA4335);
+  static const Color googleYellow = Color(0xFFFBBC05);
+  static const Color googleGreen = Color(0xFF34A853);
+  static const Color greyscaleOverlayLight = Color(0xCCF1F5F9);
+  static const Color greyscaleOverlayDark = Color(0xDD0F172A);
+
+  // 15 Unified Domain Palettes
+  static const Color domainPdf = Color(0xFF2563EB);           // PDF Tools - Blue
+  static const Color domainImage = Color(0xFF0D9488);         // Image & Media - Teal
+  static const Color domainSecurity = Color(0xFFDC2626);      // Security - Crimson
+  static const Color domainAi = Color(0xFF7C3AED);            // AI Tools - Deep Violet
+  static const Color domainForms = Color(0xFFD97706);         // Smart Forms - Amber
+  static const Color domainAccessibility = Color(0xFF0284C7); // Accessibility - Cyan/Sky
+  static const Color domainCognitive = Color(0xFFE11D48);     // Cognitive Retention - Rose
+  static const Color domainDiagram = Color(0xFF65A30D);       // Diagram Studio - Lime Green
+  static const Color domainLegal = Color(0xFF475569);         // Legal Audit - Slate
+  static const Color domainP2p = Color(0xFF4F46E5);           // P2P Share - Electric Indigo
+  static const Color domainPublishing = Color(0xFFB45309);    // Publishing Studio - Warm Gold
+  static const Color domainTranslation = Color(0xFF2563EB);   // Translation Hub - Azure
+  static const Color domainPodcast = Color(0xFF9333EA);       // Voice Podcast - Neon Purple
+  static const Color domainWorkspace = Color(0xFF059669);     // Dual-Pane Workspace - Emerald
+  static const Color domainAnalytics = Color(0xFF1E40AF);     // Tabular Analytics - Cobalt Blue
 }

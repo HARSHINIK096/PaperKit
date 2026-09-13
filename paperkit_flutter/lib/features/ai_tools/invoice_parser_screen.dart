@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/biometric_auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
@@ -36,6 +37,24 @@ class _InvoiceParserScreenState extends State<InvoiceParserScreen> {
 
   Future<void> _parseInvoice() async {
     if (_selectedFile == null) return;
+
+    final authenticated = await BiometricAuthService().authenticate(
+      reason: 'Authenticate via fingerprint or PIN to parse sensitive financial invoice data.',
+      context: context,
+    );
+
+    if (!authenticated) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Biometric authentication failed or cancelled.'),
+            backgroundColor: Color(0xFFDC2626),
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isProcessing = true);
 
     try {

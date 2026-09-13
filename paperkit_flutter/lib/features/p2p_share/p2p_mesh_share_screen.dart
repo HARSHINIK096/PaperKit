@@ -4,8 +4,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:qr/qr.dart';
 import '../../core/models/p2p_share_model.dart';
+import '../../core/services/biometric_auth_service.dart';
 import '../../core/services/share_service.dart';
+import '../../core/widgets/particle_background.dart';
 import 'p2p_mesh_service.dart';
 
 class P2PMeshShareScreen extends StatefulWidget {
@@ -77,6 +80,24 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
 
   Future<void> _startHostSession() async {
     if (_hostSelectedFile == null) return;
+
+    final authenticated = await BiometricAuthService().authenticate(
+      reason: 'Authenticate via fingerprint or PIN to generate P2P host session & pairing QR code.',
+      context: context,
+    );
+
+    if (!authenticated) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('P2P Host Biometric Authentication Cancelled.'),
+            backgroundColor: Color(0xFFDC2626),
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isHosting = true);
 
     final payload = await _service.startHostSession(file: _hostSelectedFile!);
@@ -129,6 +150,23 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
 
   Future<void> _acceptAndDownloadTransfer() async {
     if (_scannedPayload == null || _connectedHostInfo == null) return;
+
+    final authenticated = await BiometricAuthService().authenticate(
+      reason: 'Authenticate via fingerprint or PIN to authorize incoming P2P document download.',
+      context: context,
+    );
+
+    if (!authenticated) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Incoming P2P Transfer Authentication Cancelled.'),
+            backgroundColor: Color(0xFFDC2626),
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() {
       _isTransferring = true;
@@ -290,8 +328,12 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                       ),
                       child: Column(
                         children: [
-                          Icon(LucideIcons.qrCode, size: 140, color: Theme.of(context).primaryColor),
-                          const SizedBox(height: 8),
+                          DynamicQrWidget(
+                            data: _activeHostPayload!.toEncodedUrl(),
+                            size: 170,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                          const SizedBox(height: 12),
                           SelectableText(
                             _activeHostPayload!.toEncodedUrl(),
                             textAlign: TextAlign.center,
@@ -515,6 +557,284 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
   // ───────────────────────────────────────────────────────────────────────────
 
   Widget _buildCoReviewTab() {
-    return const Center(child: Text('Synchronized Co-Review session over local P2P socket (page position & laser pointer).'));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final event = _service.latestCoReviewEvent;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Synchronized Co-Review Card with Particle Background
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF1E1B4B), const Color(0xFF312E81)]
+                    : [const Color(0xFFEEF2FF), const Color(0xFFE0E7FF)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                const Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.all(Radius.circular(16)),
+                    child: ParticleBackground(
+                      numberOfParticles: 15,
+                      particleColor: Color(0xFF6366F1),
+                      enableLines: true,
+                      maxSpeed: 0.3,
+                    ),
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF6366F1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(LucideIcons.users, color: Colors.white, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'P2P Synchronized Co-Review',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Live page scrolling, laser pointer & real-time document sync over encrypted local socket.',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Active Sync Page', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8))),
+                              Text('Page ${event.currentPage + 1}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              const Text('Laser Pointer Status', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8))),
+                              Text(
+                                event.laserX != null ? 'Active (${event.laserX!.toStringAsFixed(0)}, ${event.laserY!.toStringAsFixed(0)})' : 'Inactive',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: event.laserX != null ? const Color(0xFF10B981) : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Co-Review Action Cards
+          GridView.count(
+            crossAxisCount: 2,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            shrinkWrap: true,
+            childAspectRatio: 1.35,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _buildCoReviewFeatureCard(
+                title: 'Broadcast Page',
+                subtitle: 'Sync active page index with all peer devices',
+                icon: LucideIcons.radio,
+                color: const Color(0xFF2563EB),
+                onTap: () {
+                  _service.sendCoReviewScrollEvent(pageIndex: event.currentPage + 1);
+                  setState(() {});
+                },
+              ),
+              _buildCoReviewFeatureCard(
+                title: 'Laser Pointer',
+                subtitle: 'Highlight sections on connected peers',
+                icon: LucideIcons.pointer,
+                color: const Color(0xFFDC2626),
+                onTap: () {
+                  _service.sendLaserPointerEvent(x: 180, y: 320);
+                  setState(() {});
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoReviewFeatureCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                maxLines: 1,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
+
+class DynamicQrWidget extends StatelessWidget {
+  final String data;
+  final double size;
+  final Color color;
+
+  const DynamicQrWidget({
+    super.key,
+    required this.data,
+    this.size = 180,
+    this.color = const Color(0xFF2563EB),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    try {
+      final qrCode = QrCode.fromData(
+        data: data,
+        errorCorrectLevel: QrErrorCorrectLevel.M,
+      );
+      final qrImage = QrImage(qrCode);
+
+      return CustomPaint(
+        size: Size(size, size),
+        painter: _QrCanvasPainter(qrImage: qrImage, color: color),
+      );
+    } catch (_) {
+      return Icon(LucideIcons.qrCode, size: size, color: color);
+    }
+  }
+}
+
+class _QrCanvasPainter extends CustomPainter {
+  final QrImage qrImage;
+  final Color color;
+
+  _QrCanvasPainter({required this.qrImage, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final moduleCount = qrImage.moduleCount;
+    final pixelSize = size.width / moduleCount;
+
+    for (int x = 0; x < moduleCount; x++) {
+      for (int y = 0; y < moduleCount; y++) {
+        if (qrImage.isDark(y, x)) {
+          final rect = Rect.fromLTWH(
+            x * pixelSize,
+            y * pixelSize,
+            pixelSize,
+            pixelSize,
+          );
+          canvas.drawRRect(
+            RRect.fromRectAndRadius(rect, Radius.circular(pixelSize * 0.2)),
+            paint,
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _QrCanvasPainter oldDelegate) => false;
+}
+

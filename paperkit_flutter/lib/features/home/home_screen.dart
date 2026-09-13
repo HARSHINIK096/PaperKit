@@ -632,6 +632,11 @@ class _HomeScreenState extends State<HomeScreen> {
     String? customRoute,
     String viewAllLabel = 'View All',
   }) {
+    if (tools.isEmpty) return const SizedBox.shrink();
+    final displayTools = tools.take(4).toList();
+    final totalCount = tools.length;
+    final labelText = viewAllLabel == 'View All' ? 'View All ($totalCount)' : viewAllLabel;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -661,7 +666,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   context.push('/category/$categoryId');
                 }
               },
-              child: Text(viewAllLabel, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+              child: Text(labelText, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             ),
           ],
         ),
@@ -669,7 +674,7 @@ class _HomeScreenState extends State<HomeScreen> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: tools.length,
+          itemCount: displayTools.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
             childAspectRatio: 0.74,
@@ -677,7 +682,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSpacing: 14,
           ),
           itemBuilder: (context, index) {
-            return ToolCard(tool: tools[index]);
+            return ToolCard(tool: displayTools[index]);
           },
         ),
       ],

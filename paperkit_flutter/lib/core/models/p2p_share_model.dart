@@ -109,6 +109,9 @@ class CoReviewEvent {
     this.annotationText = '',
   });
 
+  double? get laserX => pointerX > 0 ? pointerX : null;
+  double? get laserY => pointerY > 0 ? pointerY : null;
+
   factory CoReviewEvent.fromJson(Map<String, dynamic> json) => CoReviewEvent(
         senderId: json['senderId'] as String? ?? 'peer',
         currentPage: json['currentPage'] as int? ?? 0,

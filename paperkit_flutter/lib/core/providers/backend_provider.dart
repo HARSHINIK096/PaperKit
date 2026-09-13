@@ -21,9 +21,9 @@ class BackendProvider extends ChangeNotifier {
 
   BackendProvider() {
     checkHealth();
-    // Periodic background sync ping every 25 seconds
-    _periodicTimer = Timer.periodic(const Duration(seconds: 25), (_) {
-      checkHealth(isSilent: true);
+    // Periodic background sync ping every 5 seconds heartbeat
+    _periodicTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      checkHealth(isSilent: true, timeoutMs: 3000);
     });
   }
 

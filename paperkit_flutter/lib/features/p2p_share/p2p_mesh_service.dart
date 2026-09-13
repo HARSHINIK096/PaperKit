@@ -360,4 +360,23 @@ class P2PMeshService {
 
     return manifest;
   }
+
+  void sendCoReviewScrollEvent({required int pageIndex}) {
+    _latestCoReviewEvent = CoReviewEvent(
+      senderId: 'host',
+      currentPage: pageIndex,
+      pointerX: _latestCoReviewEvent.pointerX,
+      pointerY: _latestCoReviewEvent.pointerY,
+    );
+  }
+
+  void sendLaserPointerEvent({required double x, required double y}) {
+    _latestCoReviewEvent = CoReviewEvent(
+      senderId: 'host',
+      currentPage: _latestCoReviewEvent.currentPage,
+      pointerX: x,
+      pointerY: y,
+    );
+  }
 }
+

@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'particle_background.dart';
+import 'google_dotted_loader.dart';
 import 'tool_how_it_works_card.dart';
 
 enum ToolStep {
@@ -267,38 +268,43 @@ class _ToolFlowScaffoldState extends State<ToolFlowScaffold> with TickerProvider
           child: _build5StepProgressBar(),
         ),
       ),
-      body: Stack(
-        children: [
-          // Background Particle Canvas
-          Positioned.fill(
-            child: ParticleBackground(
-              numberOfParticles: 25,
-              particleColor: widget.primaryColor,
-              enableLines: true,
-              maxSpeed: 0.25,
+      body: GreyscaleOverlayLoader(
+        isLoading: _currentStep == ToolStep.processing,
+        message: widget.processingMessage,
+        progressPercent: _processingPercent,
+        child: Stack(
+          children: [
+            // Background Particle Canvas
+            Positioned.fill(
+              child: ParticleBackground(
+                numberOfParticles: 22,
+                particleColor: widget.primaryColor,
+                enableLines: true,
+                maxSpeed: 0.3,
+              ),
             ),
-          ),
 
-          // Main 5-Stage Animated Switcher
-          SafeArea(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 320),
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.05, 0),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                );
-              },
-              child: _buildCurrentStage(),
+            // Main 5-Stage Animated Switcher
+            SafeArea(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 320),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.05, 0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: _buildCurrentStage(),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
