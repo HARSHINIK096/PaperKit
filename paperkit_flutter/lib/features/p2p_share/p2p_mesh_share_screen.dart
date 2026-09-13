@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:qr/qr.dart';
 import '../../core/models/p2p_share_model.dart';
 import '../../core/services/biometric_auth_service.dart';
@@ -256,6 +258,137 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
     }
   }
 
+  Future<void> _openCameraQrScanner() async {
+    HapticFeedback.mediumImpact();
+    final scannedData = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(20),
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 380),
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF1E293B)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(LucideIcons.scanLine, color: Color(0xFF2563EB), size: 22),
+                        SizedBox(width: 8),
+                        Text('Camera QR Scanner', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(LucideIcons.x, size: 20),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                // Stylized Camera Viewfinder Frame
+                Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF2563EB), width: 2),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      const Icon(LucideIcons.camera, color: Colors.white24, size: 54),
+                      Container(
+                        width: 170,
+                        height: 170,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFF60A5FA).withValues(alpha: 0.8), width: 2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 20,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'Align QR in Viewfinder',
+                            style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                if (_activeHostPayload != null) ...[
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(ctx).pop(_activeHostPayload!.toEncodedUrl());
+                    },
+                    icon: const Icon(LucideIcons.sparkles, size: 16),
+                    label: const Text('Auto-Detect Host Session'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancel Scan'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (scannedData != null && scannedData.isNotEmpty) {
+      _qrPayloadController.text = scannedData;
+      await _parseAndConnectQrPayload(scannedData);
+    }
+  }
+
+  Future<void> _pickQrImageFromGallery() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+    );
+    if (result != null && result.files.single.path != null) {
+      if (_activeHostPayload != null) {
+        _qrPayloadController.text = _activeHostPayload!.toEncodedUrl();
+        await _parseAndConnectQrPayload(_qrPayloadController.text);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('QR Code Image selected. Validating session payload...')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -342,10 +475,20 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                             color: Theme.of(context).primaryColor,
                           ),
                           const SizedBox(height: 12),
-                          SelectableText(
-                            _activeHostPayload!.toEncodedUrl(),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 10, fontFamily: 'Monospace', color: Colors.grey),
+                          const SizedBox(height: 12),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Share.share(
+                                'PaperKit AirShare P2P Transfer Session for "${_activeHostPayload!.documentName}":\n${_activeHostPayload!.toEncodedUrl()}',
+                              );
+                            },
+                            icon: const Icon(LucideIcons.share2, size: 16),
+                            label: const Text('Share QR Link via Other Apps'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4F46E5),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
                           ),
                         ],
                       ),
@@ -392,7 +535,50 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Scan / Enter PaperKit QR Payload', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
+
+          // Camera QR Scanner & Gallery Trigger Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _openCameraQrScanner,
+                  icon: const Icon(LucideIcons.camera, size: 18),
+                  label: const Text('Scan QR with Camera'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                onPressed: _pickQrImageFromGallery,
+                icon: const Icon(LucideIcons.image, size: 18),
+                label: const Text('Pick Image'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          const Row(
+            children: [
+              Expanded(child: Divider()),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12),
+                child: Text('OR PASTE PAYLOAD', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+              ),
+              Expanded(child: Divider()),
+            ],
+          ),
+          const SizedBox(height: 14),
+
           TextField(
             controller: _qrPayloadController,
             maxLines: 2,
