@@ -87,13 +87,11 @@ class _SecureShareScreenState extends State<SecureShareScreen> {
 
       _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (!mounted) return;
-        final now = DateTime.now();
-        final diff = res.expiresAt.difference(now).inSeconds;
-        if (diff <= 0) {
+        if (_remainingSeconds <= 1) {
           timer.cancel();
           setState(() => _remainingSeconds = 0);
         } else {
-          setState(() => _remainingSeconds = diff);
+          setState(() => _remainingSeconds--);
         }
       });
 
@@ -196,7 +194,7 @@ class _SecureShareScreenState extends State<SecureShareScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('QR Code image exported!'),
+              content: Text('QR Code saved to Phone Storage: ${file.path.split('/').last} (Downloads/PaperKit)'),
               action: SnackBarAction(label: 'Open', onPressed: () => OpenFilex.open(file.path)),
             ),
           );

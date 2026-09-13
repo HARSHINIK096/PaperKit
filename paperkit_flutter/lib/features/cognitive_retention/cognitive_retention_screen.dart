@@ -263,7 +263,49 @@ class _CognitiveRetentionScreenState extends State<CognitiveRetentionScreen> wit
 
   Widget _buildSpacedRepetitionTab() {
     if (_recallCards.isEmpty) {
-      return const Center(child: Text('Load a document in Blur Recall to populate Spaced Repetition queue.'));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(LucideIcons.repeat, size: 36, color: Theme.of(context).colorScheme.primary),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Spaced Repetition Queue Empty',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Load a study document in the Blur Recall tab to automatically extract flashcard terms and populate your Leitner review boxes.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () => _tabController.animateTo(0),
+                    icon: const Icon(LucideIcons.eyeOff),
+                    label: const Text('Go to Blur Recall & Load Doc'),
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     final card = _recallCards.first;

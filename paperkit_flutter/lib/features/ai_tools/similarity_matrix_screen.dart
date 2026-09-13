@@ -132,13 +132,51 @@ class _SimilarityMatrixScreenState extends State<SimilarityMatrixScreen> {
 
           if (_files.isEmpty)
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
               ),
-              child: const Center(child: Text('Add 2 or more files to calculate cross-document similarity')),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.toolIndigo.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(LucideIcons.fileSpreadsheet, size: 32, color: AppColors.toolIndigo),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'No Documents Added',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Add 2 or more PDF/TXT files to compare content similarity and generate a TF-IDF cosine heatmap.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: _pickFiles,
+                      icon: const Icon(LucideIcons.plus, size: 16),
+                      label: const Text('Add Documents Now'),
+                    ),
+                  ],
+                ),
+              ),
             )
           else
             ..._files.map((f) => ListTile(

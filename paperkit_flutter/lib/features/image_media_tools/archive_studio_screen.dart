@@ -277,13 +277,51 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
 
         if (_filesToZip.isEmpty)
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
             decoration: BoxDecoration(
               color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
             ),
-            child: const Center(child: Text('No files added yet')),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.toolOrange.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.archive, size: 32, color: AppColors.toolOrange),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'No Files Added to Archive',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Select files to compress into a ZIP, TAR, or TAR.GZ archive.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _pickFilesToZip,
+                    icon: const Icon(LucideIcons.plus, size: 16),
+                    label: const Text('Add Files'),
+                  ),
+                ],
+              ),
+            ),
           )
         else
           ..._filesToZip.map((f) => ListTile(

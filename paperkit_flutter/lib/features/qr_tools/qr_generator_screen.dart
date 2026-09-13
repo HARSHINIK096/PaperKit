@@ -27,7 +27,7 @@ class QrGeneratorScreen extends StatefulWidget {
 
 class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
   QrContentType _selectedType = QrContentType.url;
-  String _formattedPayload = 'https://paperkit.app';
+  String _formattedPayload = '';
 
   QrDesignConfig _config = const QrDesignConfig();
   bool _isExporting = false;
@@ -88,7 +88,7 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('QR Code exported as ${_selectedExportFormat.name.toUpperCase()} successfully!'),
+            content: Text('QR Code saved to Phone Storage: ${file.path.split('/').last} (Downloads/PaperKit)'),
             action: SnackBarAction(
               label: 'Open',
               onPressed: () => OpenFilex.open(file.path),

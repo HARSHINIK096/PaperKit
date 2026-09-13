@@ -22,6 +22,41 @@ enum QrExportFormat {
 class QrExportService {
   const QrExportService._();
 
+  static Future<Directory> _getPublicStorageDirectory() async {
+    if (Platform.isAndroid) {
+      final downloadDir = Directory('/storage/emulated/0/Download/PaperKit');
+      try {
+        if (!downloadDir.existsSync()) {
+          downloadDir.createSync(recursive: true);
+        }
+        return downloadDir;
+      } catch (_) {}
+
+      final fallbackDownload = Directory('/storage/emulated/0/Download');
+      if (fallbackDownload.existsSync()) {
+        return fallbackDownload;
+      }
+
+      try {
+        final extDirs = await getExternalStorageDirectories(type: StorageDirectory.downloads);
+        if (extDirs != null && extDirs.isNotEmpty) {
+          return extDirs.first;
+        }
+      } catch (_) {}
+    }
+
+    try {
+      final downloads = await getDownloadsDirectory();
+      if (downloads != null) {
+        final pkDir = Directory('${downloads.path}/PaperKit');
+        if (!pkDir.existsSync()) pkDir.createSync(recursive: true);
+        return pkDir;
+      }
+    } catch (_) {}
+
+    return await getApplicationDocumentsDirectory();
+  }
+
   /// Export QR code to target format and write to disk.
   static Future<File> export({
     required String data,
@@ -30,13 +65,13 @@ class QrExportService {
     int? resolution,
   }) async {
     final targetRes = resolution ?? config.exportResolution;
-    final tempDir = await getApplicationDocumentsDirectory();
+    final exportDir = await _getPublicStorageDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
     switch (format) {
       case QrExportFormat.png:
         final pngBytes = await renderToPngBytes(data: data, config: config, size: targetRes.toDouble());
-        final file = File('${tempDir.path}/qr_code_$timestamp.png');
+        final file = File('${exportDir.path}/qr_code_$timestamp.png');
         await file.writeAsBytes(pngBytes);
         return file;
 
@@ -44,19 +79,19 @@ class QrExportService {
         final pngBytes = await renderToPngBytes(data: data, config: config, size: targetRes.toDouble());
         final decoded = img.decodeImage(pngBytes);
         final jpgBytes = img.encodeJpg(decoded ?? img.Image(width: targetRes, height: targetRes), quality: 95);
-        final file = File('${tempDir.path}/qr_code_$timestamp.jpg');
+        final file = File('${exportDir.path}/qr_code_$timestamp.jpg');
         await file.writeAsBytes(jpgBytes);
         return file;
 
       case QrExportFormat.svg:
         final svgString = generateSvg(data: data, config: config);
-        final file = File('${tempDir.path}/qr_code_$timestamp.svg');
+        final file = File('${exportDir.path}/qr_code_$timestamp.svg');
         await file.writeAsString(svgString);
         return file;
 
       case QrExportFormat.pdf:
         final pngBytes = await renderToPngBytes(data: data, config: config, size: targetRes.toDouble());
-        final file = File('${tempDir.path}/qr_code_$timestamp.pdf');
+        final file = File('${exportDir.path}/qr_code_$timestamp.pdf');
         final pdfBytes = await _createPdfDocument(pngBytes: pngBytes, title: config.frameLabel, data: data);
         await file.writeAsBytes(pdfBytes);
         return file;

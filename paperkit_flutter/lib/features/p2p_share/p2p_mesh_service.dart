@@ -244,50 +244,7 @@ class P2PMeshService {
 
   Future<List<PeerDevice>> scanNearbyDevices({
     double maxRadiusMeters = 20.0,
-    bool simulateForTesting = false,
   }) async {
-    if (simulateForTesting) {
-      final testDevices = [
-        PeerDevice(
-          id: 'test_1',
-          deviceName: 'Test Device A',
-          deviceModel: 'Test Model',
-          deviceType: 'phone',
-          ipAddress: '192.168.1.101',
-          port: 8089,
-          distanceMeters: 1.5,
-          signalStrength: 0.95,
-          angleRadians: 0.5,
-          isAvailable: true,
-        ),
-        PeerDevice(
-          id: 'test_2',
-          deviceName: 'Test Device B',
-          deviceModel: 'Test Model',
-          deviceType: 'laptop',
-          ipAddress: '192.168.1.102',
-          port: 8089,
-          distanceMeters: 3.5,
-          signalStrength: 0.85,
-          angleRadians: 1.5,
-          isAvailable: true,
-        ),
-        PeerDevice(
-          id: 'test_3',
-          deviceName: 'Test Device C',
-          deviceModel: 'Test Model',
-          deviceType: 'tablet',
-          ipAddress: '192.168.1.103',
-          port: 8089,
-          distanceMeters: 8.0,
-          signalStrength: 0.65,
-          angleRadians: 3.0,
-          isAvailable: true,
-        ),
-      ];
-      return testDevices.where((d) => d.distanceMeters <= maxRadiusMeters).toList();
-    }
-
     final localIp = await _getLocalIpAddress();
     if (localIp == '127.0.0.1' || !localIp.contains('.')) {
       return [];
