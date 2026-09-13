@@ -27,8 +27,9 @@ class Settings(BaseSettings):
     groq_text_model: str = "openai/gpt-oss-120b"
     groq_vision_model: str = ""
 
-    # Frontend
+    # Frontend & Backend URLs on Render
     frontend_url: str = "https://paperkit-web.onrender.com"
+    backend_url: str = "https://paperkit-backend.onrender.com"
 
     # PDF Rectification & Positional Engine Configuration
     pdf_editor_engine: str = "positional"

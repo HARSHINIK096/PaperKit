@@ -54,7 +54,7 @@ class PeerDevice {
   factory PeerDevice.fromJson(Map<String, dynamic> json) => PeerDevice(
         id: json['id'] as String,
         deviceName: json['deviceName'] as String? ?? 'Peer Device',
-        ipAddress: json['ipAddress'] as String? ?? '127.0.0.1',
+        ipAddress: json['ipAddress'] as String? ?? '',
         port: json['port'] as int? ?? 8080,
         lastSeen: json['lastSeen'] != null
             ? DateTime.parse(json['lastSeen'] as String)
@@ -106,7 +106,7 @@ class DirectTransferInvite {
   factory DirectTransferInvite.fromJson(Map<String, dynamic> json) => DirectTransferInvite(
         senderDeviceId: json['senderDeviceId'] as String? ?? 'unknown',
         senderDeviceName: json['senderDeviceName'] as String? ?? 'Nearby Peer',
-        senderIp: json['senderIp'] as String? ?? '127.0.0.1',
+        senderIp: json['senderIp'] as String? ?? '',
         senderPort: json['senderPort'] as int? ?? 8080,
         sessionToken: json['sessionToken'] as String? ?? '',
         documentName: json['documentName'] as String? ?? 'document.pdf',

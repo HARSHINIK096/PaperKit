@@ -74,22 +74,15 @@ app = FastAPI(
 
 origins = [
     settings.frontend_url,
+    settings.backend_url,
     "https://paperkit-web.onrender.com",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-    "http://localhost",
-    "https://localhost",
-    "capacitor://localhost",
-    "ionic://localhost",
+    "https://paperkit-backend.onrender.com",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:[0-9]+)?|capacitor://.*|ionic://.*|https://.*\.onrender\.com",
+    allow_origin_regex=r"https://.*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -105,7 +98,7 @@ async def log_requests(request: Request, call_next):
     start_time = time.time()
     method = request.method
     path = request.url.path
-    client_ip = request.client.host if request.client else "127.0.0.1"
+    client_ip = request.client.host if request.client else "unknown"
     
     try:
         response = await call_next(request)

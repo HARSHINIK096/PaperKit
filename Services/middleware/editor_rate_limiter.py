@@ -32,7 +32,7 @@ init_db()
 
 def get_client_key(request: Request, response: Response = None) -> str:
     """Extract or generate client identifier based on IP and cookie token."""
-    client_ip = request.client.host if request.client else "127.0.0.1"
+    client_ip = request.client.host if request.client else "unknown"
     cookie_token = request.cookies.get(COOKIE_NAME)
     
     if not cookie_token:

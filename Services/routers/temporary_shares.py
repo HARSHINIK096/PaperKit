@@ -148,10 +148,9 @@ async def create_temporary_share(
     if db is not None:
         await db.temporary_shares.insert_one(share_doc)
 
-    # Generate access URL
-    base_url = str(request.base_url).rstrip("/")
-    # If request came through a proxy or frontend_url is configured, prefer frontend or current host
-    share_url = f"{base_url}/share/{share_id}"
+    # Generate access URL with production-ready Render backend URL
+    production_url = (getattr(settings, "backend_url", None) or "https://paperkit-backend.onrender.com").rstrip("/")
+    share_url = f"{production_url}/share/{share_id}"
 
     return {
         "success": True,

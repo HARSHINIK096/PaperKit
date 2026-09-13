@@ -48,13 +48,13 @@ class P2PMeshService {
       );
       for (final interface in interfaces) {
         for (final addr in interface.addresses) {
-          if (!addr.isLoopback) {
+          if (!addr.isLoopback && addr.address != '127.0.0.1') {
             return addr.address;
           }
         }
       }
     } catch (_) {}
-    return '127.0.0.1';
+    return '';
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -70,6 +70,10 @@ class P2PMeshService {
     _currentSharingFile = file;
 
     final localIp = await _getLocalIpAddress();
+    if (localIp.isEmpty) {
+      _sessionState = AirShareSessionState.idle;
+      throw Exception('Device is not connected to a local Wi-Fi or hotspot network.');
+    }
     final rnd = Random.secure();
     final secretToken = List.generate(16, (_) => rnd.nextInt(256))
         .map((b) => b.toRadixString(16).padLeft(2, '0'))
@@ -246,7 +250,7 @@ class P2PMeshService {
     double maxRadiusMeters = 20.0,
   }) async {
     final localIp = await _getLocalIpAddress();
-    if (localIp == '127.0.0.1' || !localIp.contains('.')) {
+    if (localIp.isEmpty || localIp == '127.0.0.1' || !localIp.contains('.')) {
       return [];
     }
 
