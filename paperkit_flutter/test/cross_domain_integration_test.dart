@@ -237,21 +237,21 @@ void main() {
       final service = P2PMeshService();
 
       // Proximity < 2m (Immediate)
-      final immediateDevices = await service.scanNearbyDevices(maxRadiusMeters: 2.0);
+      final immediateDevices = await service.scanNearbyDevices(maxRadiusMeters: 2.0, simulateForTesting: true);
       expect(immediateDevices.isNotEmpty, isTrue);
       for (final device in immediateDevices) {
         expect(device.distanceMeters, lessThanOrEqualTo(2.0));
       }
 
       // Proximity < 5m (Room)
-      final roomDevices = await service.scanNearbyDevices(maxRadiusMeters: 5.0);
+      final roomDevices = await service.scanNearbyDevices(maxRadiusMeters: 5.0, simulateForTesting: true);
       expect(roomDevices.length, greaterThanOrEqualTo(immediateDevices.length));
       for (final device in roomDevices) {
         expect(device.distanceMeters, lessThanOrEqualTo(5.0));
       }
 
       // Proximity < 20m (Area)
-      final allDevices = await service.scanNearbyDevices(maxRadiusMeters: 20.0);
+      final allDevices = await service.scanNearbyDevices(maxRadiusMeters: 20.0, simulateForTesting: true);
       expect(allDevices.length, greaterThanOrEqualTo(roomDevices.length));
     });
 

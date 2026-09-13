@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/history_provider.dart';
@@ -18,7 +19,9 @@ import 'widgets/qr_scan_result_sheet.dart';
 import 'widgets/qr_viewfinder_overlay.dart';
 
 class QrScannerScreen extends StatefulWidget {
-  const QrScannerScreen({super.key});
+  final bool isModalPicker;
+
+  const QrScannerScreen({super.key, this.isModalPicker = false});
 
   @override
   State<QrScannerScreen> createState() => _QrScannerScreenState();
@@ -27,6 +30,8 @@ class QrScannerScreen extends StatefulWidget {
 class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingObserver {
   late MobileScannerController _cameraController;
   bool _isCameraSupported = true;
+  bool _hasCameraPermission = false;
+  bool _isCheckingPermission = true;
   bool _isScanning = true;
   bool _isTorchOn = false;
   CameraFacing _facing = CameraFacing.back;
@@ -42,16 +47,57 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
       facing: _facing,
       torchEnabled: false,
     );
-    _checkCameraSupport();
+    _checkCameraSupportAndPermissions();
     _loadScanHistory();
   }
 
-  void _checkCameraSupport() {
+  Future<void> _checkCameraSupportAndPermissions() async {
     // Windows and Linux desktop typically don't have mobile_scanner camera driver
     if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
-      setState(() {
-        _isCameraSupported = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isCameraSupported = false;
+          _isCheckingPermission = false;
+        });
+      }
+      return;
+    }
+
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      final status = await Permission.camera.status;
+      if (status.isGranted) {
+        if (mounted) {
+          setState(() {
+            _hasCameraPermission = true;
+            _isCheckingPermission = false;
+          });
+        }
+      } else {
+        final result = await Permission.camera.request();
+        if (mounted) {
+          setState(() {
+            _hasCameraPermission = result.isGranted;
+            _isCheckingPermission = false;
+          });
+        }
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _hasCameraPermission = true;
+          _isCheckingPermission = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_isCameraSupported || !_hasCameraPermission) return;
+    if (state == AppLifecycleState.resumed) {
+      _cameraController.start();
+    } else if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      _cameraController.stop();
     }
   }
 
@@ -85,6 +131,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
   Future<void> _handleDecodedRawString(String raw) async {
     HapticFeedback.mediumImpact();
     setState(() => _isScanning = false);
+
+    if (widget.isModalPicker) {
+      Navigator.of(context).pop(raw);
+      return;
+    }
 
     final payload = QrPayloadParser.parse(raw);
 
@@ -190,6 +241,46 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
 
   @override
   Widget build(BuildContext context) {
+    Widget content;
+    if (!_isCameraSupported) {
+      content = _buildDesktopFallbackView();
+    } else if (_isCheckingPermission) {
+      content = const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF2563EB)),
+            SizedBox(height: 16),
+            Text('Checking camera permissions...', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
+    } else if (!_hasCameraPermission) {
+      content = _buildPermissionDeniedView();
+    } else {
+      content = _buildCameraScannerView();
+    }
+
+    if (widget.isModalPicker) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Scan QR Code'),
+          leading: IconButton(
+            icon: const Icon(LucideIcons.x),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(LucideIcons.history, size: 20),
+              tooltip: 'Scan History',
+              onPressed: _openScanHistorySheet,
+            ),
+          ],
+        ),
+        body: content,
+      );
+    }
+
     return AppShell(
       title: 'QR Code Scanner',
       showBottomNav: false,
@@ -200,7 +291,64 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
           onPressed: _openScanHistorySheet,
         ),
       ],
-      child: _isCameraSupported ? _buildCameraScannerView() : _buildDesktopFallbackView(),
+      child: content,
+    );
+  }
+
+  Widget _buildPermissionDeniedView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.cameraOff, size: 48, color: Color(0xFFEF4444)),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Camera Permission Required',
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'PaperKit needs camera access to scan QR codes with your device sensor.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final status = await Permission.camera.request();
+                if (status.isGranted) {
+                  setState(() => _hasCameraPermission = true);
+                } else if (status.isPermanentlyDenied) {
+                  await openAppSettings();
+                }
+              },
+              icon: const Icon(LucideIcons.shieldAlert, size: 18),
+              label: const Text('Grant Camera Permission'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: _pickImageFromGallery,
+              icon: const Icon(LucideIcons.image, size: 16),
+              label: const Text('Or Scan from Gallery Image'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -211,6 +359,21 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
         MobileScanner(
           controller: _cameraController,
           onDetect: _onDetect,
+          placeholderBuilder: (context) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF2563EB)),
+                  SizedBox(height: 16),
+                  Text(
+                    'Starting camera sensor...',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ],
+              ),
+            );
+          },
           errorBuilder: (context, error) {
             return _buildCameraErrorView(error);
           },

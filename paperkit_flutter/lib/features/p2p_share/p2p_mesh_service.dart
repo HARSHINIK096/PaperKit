@@ -242,77 +242,103 @@ class P2PMeshService {
     }
   }
 
-  Future<List<PeerDevice>> scanNearbyDevices({double maxRadiusMeters = 20.0}) async {
+  Future<List<PeerDevice>> scanNearbyDevices({
+    double maxRadiusMeters = 20.0,
+    bool simulateForTesting = false,
+  }) async {
+    if (simulateForTesting) {
+      final testDevices = [
+        PeerDevice(
+          id: 'test_1',
+          deviceName: 'Test Device A',
+          deviceModel: 'Test Model',
+          deviceType: 'phone',
+          ipAddress: '192.168.1.101',
+          port: 8089,
+          distanceMeters: 1.5,
+          signalStrength: 0.95,
+          angleRadians: 0.5,
+          isAvailable: true,
+        ),
+        PeerDevice(
+          id: 'test_2',
+          deviceName: 'Test Device B',
+          deviceModel: 'Test Model',
+          deviceType: 'laptop',
+          ipAddress: '192.168.1.102',
+          port: 8089,
+          distanceMeters: 3.5,
+          signalStrength: 0.85,
+          angleRadians: 1.5,
+          isAvailable: true,
+        ),
+        PeerDevice(
+          id: 'test_3',
+          deviceName: 'Test Device C',
+          deviceModel: 'Test Model',
+          deviceType: 'tablet',
+          ipAddress: '192.168.1.103',
+          port: 8089,
+          distanceMeters: 8.0,
+          signalStrength: 0.65,
+          angleRadians: 3.0,
+          isAvailable: true,
+        ),
+      ];
+      return testDevices.where((d) => d.distanceMeters <= maxRadiusMeters).toList();
+    }
+
     final localIp = await _getLocalIpAddress();
-    final baseSubnet = localIp.contains('.')
-        ? localIp.substring(0, localIp.lastIndexOf('.'))
-        : '192.168.1';
+    if (localIp == '127.0.0.1' || !localIp.contains('.')) {
+      return [];
+    }
 
-    final candidateDevices = [
-      PeerDevice(
-        id: 'peer_1_phone',
-        deviceName: "Harshini's Pixel 8 Pro",
-        deviceModel: 'Google Pixel 8 Pro',
-        deviceType: 'phone',
-        ipAddress: '$baseSubnet.105',
-        port: 8089,
-        distanceMeters: 1.4,
-        signalStrength: 0.98,
-        angleRadians: 0.82, // ~47°
-        isAvailable: true,
-      ),
-      PeerDevice(
-        id: 'peer_2_laptop',
-        deviceName: "MacBook Pro M3",
-        deviceModel: 'Apple MacBook Pro 14"',
-        deviceType: 'laptop',
-        ipAddress: '$baseSubnet.122',
-        port: 8080,
-        distanceMeters: 3.2,
-        signalStrength: 0.90,
-        angleRadians: 2.15, // ~123°
-        isAvailable: true,
-      ),
-      PeerDevice(
-        id: 'peer_3_tablet',
-        deviceName: "Study Room iPad Air",
-        deviceModel: 'iPad Air 11-inch M2',
-        deviceType: 'tablet',
-        ipAddress: '$baseSubnet.140',
-        port: 8080,
-        distanceMeters: 5.6,
-        signalStrength: 0.76,
-        angleRadians: 3.84, // ~220°
-        isAvailable: true,
-      ),
-      PeerDevice(
-        id: 'peer_4_desktop',
-        deviceName: "Campus Lab Workstation",
-        deviceModel: 'Dell XPS Desktop',
-        deviceType: 'desktop',
-        ipAddress: '$baseSubnet.188',
-        port: 8080,
-        distanceMeters: 8.9,
-        signalStrength: 0.58,
-        angleRadians: 5.10, // ~292°
-        isAvailable: true,
-      ),
-      PeerDevice(
-        id: 'peer_5_phone',
-        deviceName: "Galaxy S24 Ultra",
-        deviceModel: 'Samsung Galaxy S24 Ultra',
-        deviceType: 'phone',
-        ipAddress: '$baseSubnet.195',
-        port: 8089,
-        distanceMeters: 14.5,
-        signalStrength: 0.38,
-        angleRadians: 1.45, // ~83°
-        isAvailable: true,
-      ),
-    ];
+    final baseSubnet = localIp.substring(0, localIp.lastIndexOf('.'));
+    final myLastOctet = int.tryParse(localIp.substring(localIp.lastIndexOf('.') + 1)) ?? 0;
 
-    // Filter strictly within the requested radius
-    return candidateDevices
+    final List<PeerDevice> foundDevices = [];
+    final dio = Dio(BaseOptions(
+      connectTimeout: const Duration(milliseconds: 350),
+      receiveTimeout: const Duration(milliseconds: 350),
+    ));
+
+    // Ping active IPs on local subnet around host
+    final targets = <int>[];
+    for (int offset = 1; offset <= 25; offset++) {
+      if (myLastOctet - offset > 0) targets.add(myLastOctet - offset);
+      if (myLastOctet + offset < 255) targets.add(myLastOctet + offset);
+    }
+
+    await Future.wait(
+      targets.map((octet) async {
+        final targetIp = '$baseSubnet.$octet';
+        try {
+          final resp = await dio.get<Map<String, dynamic>>('http://$targetIp:8089/p2p/ping');
+          if (resp.statusCode == 200 && resp.data != null) {
+            final data = resp.data!;
+            if (data['app'] == 'PaperKit') {
+              final name = data['deviceName'] as String? ?? 'PaperKit Peer';
+              foundDevices.add(
+                PeerDevice(
+                  id: 'peer_$targetIp',
+                  deviceName: name,
+                  deviceModel: 'PaperKit Device',
+                  deviceType: 'phone',
+                  ipAddress: targetIp,
+                  port: 8089,
+                  distanceMeters: 2.0,
+                  signalStrength: 0.92,
+                  angleRadians: (targetIp.hashCode.abs() % 360) * (pi / 180),
+                  isAvailable: true,
+                ),
+              );
+            }
+          }
+        } catch (_) {}
+      }),
+    );
+
+    return foundDevices
         .where((d) => d.distanceMeters <= maxRadiusMeters)
         .toList();
   }
