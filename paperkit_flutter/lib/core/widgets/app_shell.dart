@@ -38,7 +38,8 @@ class AppShell extends StatelessWidget {
         path == '/ai' ||
         path == '/ai/hub' ||
         path.startsWith('/category/') ||
-        path.startsWith('/tools/category/')) {
+        path.startsWith('/tools/category/') ||
+        path.startsWith('/domain/')) {
       return false;
     }
     return path.startsWith('/tools/') ||
@@ -67,7 +68,7 @@ class AppShell extends StatelessWidget {
 
   int _calculateSelectedIndex(BuildContext context) {
     final location = _safeGetLocation(context);
-    if (location.startsWith('/tools') || location.startsWith('/category')) return 1;
+    if (location.startsWith('/tools') || location.startsWith('/category') || location.startsWith('/domain')) return 1;
     if (location.startsWith('/scanner')) return 2;
     if (location.startsWith('/files')) return 3;
     if (location.startsWith('/profile') || location.startsWith('/history') || location.startsWith('/storage')) return 4;
@@ -113,7 +114,7 @@ class AppShell extends StatelessWidget {
       appBar: showAppBar
           ? AppBar(
               title: Text(
-                title ?? 'MASKERV',
+                title ?? 'PaperKit',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18.5, letterSpacing: -0.3),
               ),
               leading: Builder(
@@ -362,9 +363,10 @@ class AppShell extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: color,
-                fontSize: 11,
+                fontSize: 10.5,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                letterSpacing: -0.2,
+                letterSpacing: -0.15,
+                height: 1.15,
               ),
             ),
           ],

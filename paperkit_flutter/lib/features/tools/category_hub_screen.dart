@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../core/constants/app_tools.dart';
+import '../../core/constants/tool_registry.dart';
 import '../../core/models/tool_item.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_shell.dart';
@@ -18,254 +18,373 @@ class CategoryHubScreen extends StatefulWidget {
 
 class _CategoryHubScreenState extends State<CategoryHubScreen> {
   String _searchQuery = '';
+  late String _currentKey;
 
-  String get _catKey => widget.categoryId.toLowerCase().trim();
+  @override
+  void initState() {
+    super.initState();
+    _currentKey = widget.categoryId;
+  }
+
+  @override
+  void didUpdateWidget(covariant CategoryHubScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.categoryId != widget.categoryId) {
+      setState(() {
+        _currentKey = widget.categoryId;
+        _searchQuery = '';
+      });
+    }
+  }
+
+  DomainItem? get _domain => DomainRegistry.resolve(_currentKey);
+
+  bool get _isUtilities =>
+      _domain == null &&
+      (_currentKey.toLowerCase() == 'utilities' ||
+          _currentKey.toLowerCase() == 'utility' ||
+          _currentKey.toLowerCase() == 'media');
 
   String get _title {
-    switch (_catKey) {
-      case 'pdf':
-        return 'PDF Processing & Page Manager';
-      case 'conversion':
-      case 'conversions':
-      case 'convert':
-        return 'Document Conversions Studio';
-      case 'image':
-      case 'images':
-      case 'image-compressor':
-        return 'Image Converter & Compressor Studio';
-      case 'ai':
-      case 'intelligence':
-        return 'AI Document Intelligence Suite';
-      case 'security':
-      case 'privacy':
-        return 'Security & Privacy Suite';
-      case 'archive':
-      case 'compression':
-        return 'Archive & Compression Studio';
-      case 'video':
-        return 'Video Conversion & Compression Suite';
-      case 'media':
-      case 'audio':
-        return 'Media Downloader & Audio Studio';
-      default:
-        return 'Tools Studio';
+    if (_domain != null) {
+      return 'Domain ${_domain!.number}: ${_domain!.name}';
     }
+    if (_isUtilities) {
+      return 'General Utilities & Media';
+    }
+    return 'PaperKit Domain Hub';
   }
 
   String get _subtitle {
-    switch (_catKey) {
-      case 'pdf':
-        return 'Edit, merge, split, compress, reorder, and permanently protect PDF documents with zero cloud uploads.';
-      case 'conversion':
-      case 'conversions':
-      case 'convert':
-        return 'Bidirectional document conversions between PDF, Word, Excel, PowerPoint, and high-resolution images.';
-      case 'image':
-      case 'images':
-      case 'image-compressor':
-        return 'Convert between PNG, JPG, WebP, HEIC & BMP formats, plus multi-level lossless & lossy image compression.';
-      case 'ai':
-      case 'intelligence':
-        return 'Multimodal OCR, semantic comparison, document Q&A, translation & automated classification.';
-      case 'security':
-      case 'privacy':
-        return 'AES-256 password encryption, permanent smart redaction, cryptographic digital signatures & metadata sanitization.';
-      case 'archive':
-      case 'compression':
-        return 'Extract, inspect, create, and convert .ZIP, .RAR, .TAR, .GZ, .7Z, and .BZ2 archives with multi-level compression.';
-      case 'video':
-        return 'Convert videos between MP4, WebM, MOV, and animated GIF formats with fast GPU-backed presets.';
-      case 'media':
-      case 'audio':
-        return 'Download audio/video from YouTube & Spotify, plus high-fidelity audio format conversion.';
-      default:
-        return 'Process and transform documents with local and cloud-accelerated intelligence.';
+    if (_domain != null) {
+      return _domain!.description;
     }
+    if (_isUtilities) {
+      return 'Cross-domain general utilities, barcodes, QR tools, video processing and compression archives.';
+    }
+    return 'Select an authoritative domain to explore and run document intelligence tools.';
   }
 
-  String get _searchPlaceholder {
-    switch (_catKey) {
-      case 'pdf':
-        return 'Search PDF Processing & Page Manager...';
-      case 'conversion':
-      case 'conversions':
-      case 'convert':
-        return 'Search Document Conversions Studio...';
-      case 'image':
-      case 'images':
-      case 'image-compressor':
-        return 'Search Image Converter & Compressor Studio...';
-      case 'ai':
-      case 'intelligence':
-        return 'Search AI Document Intelligence Suite...';
-      case 'security':
-      case 'privacy':
-        return 'Search Security & Privacy Suite...';
-      case 'archive':
-      case 'compression':
-        return 'Search Archive & Compression Studio...';
-      case 'video':
-        return 'Search Video Conversion & Compression Suite...';
-      default:
-        return 'Search $_title...';
+  List<ToolItem> get _primaryTools {
+    if (_domain != null) {
+      return ToolRegistry.getByDomainNumber(_domain!.number);
     }
+    if (_isUtilities) {
+      return ToolRegistry.generalUtilities;
+    }
+    return ToolRegistry.getByDomainNumber(1);
   }
 
-  List<ToolItem> get _categoryTools {
-    switch (_catKey) {
-      case 'pdf':
-        return AppTools.pdfTools;
-      case 'conversion':
-      case 'conversions':
-      case 'convert':
-        return AppTools.conversionTools;
-      case 'image':
-      case 'images':
-      case 'image-compressor':
-        return [...AppTools.imageFormatTools, ...AppTools.imageCompressorTools];
-      case 'ai':
-      case 'intelligence':
-        return AppTools.aiTools;
-      case 'security':
-      case 'privacy':
-        return AppTools.securityTools;
-      case 'archive':
-      case 'compression':
-        return AppTools.archiveTools;
-      case 'video':
-        return ToolRegistry.getByCategory(ToolCategory.video);
-      case 'media':
-      case 'audio':
-        return AppTools.audioConverterTools;
-      default:
-        return AppTools.pdfTools;
+  List<ToolItem> get _crossDomainTools {
+    if (_domain != null) {
+      return ToolRegistry.getCrossDomainTools(_domain!.number);
     }
+    return [];
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final domain = _domain;
+    final primaryColor = domain?.color ?? AppColors.primary;
+    final softColor = domain?.softColor ?? AppColors.primarySoft;
 
-    final filteredTools = _categoryTools.where((tool) {
-      if (_searchQuery.isEmpty) return true;
-      final q = _searchQuery.toLowerCase();
-      return tool.label.toLowerCase().contains(q) || tool.description.toLowerCase().contains(q);
-    }).toList();
+    final query = _searchQuery.toLowerCase().trim();
+    final filteredPrimary = query.isEmpty
+        ? _primaryTools
+        : _primaryTools.where((t) {
+            return t.label.toLowerCase().contains(query) ||
+                t.description.toLowerCase().contains(query) ||
+                t.tags.any((tag) => tag.toLowerCase().contains(query));
+          }).toList();
+
+    final filteredCross = query.isEmpty
+        ? _crossDomainTools
+        : _crossDomainTools.where((t) {
+            return t.label.toLowerCase().contains(query) ||
+                t.description.toLowerCase().contains(query) ||
+                t.tags.any((tag) => tag.toLowerCase().contains(query));
+          }).toList();
 
     return AppShell(
-      title: _title,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => context.pop(),
-        ),
-      ],
+      title: domain != null ? 'Domain ${domain.number}' : 'Domain Hub',
       child: Column(
         children: [
-          // Studio Hero Banner
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _title,
+          // ── Horizontal Domain Selector Strip ─────────────────────────
+          Container(
+            height: 48,
+            margin: const EdgeInsets.only(top: 8, bottom: 4),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: DomainRegistry.domains.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final d = DomainRegistry.domains[index];
+                final isSelected = domain?.number == d.number;
+
+                return ChoiceChip(
+                  label: Text(
+                    'D${d.number} • ${d.shortName}',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _subtitle,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      height: 1.4,
-                      color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
+                  selected: isSelected,
+                  selectedColor: d.color,
+                  backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isSelected
+                          ? d.color
+                          : (isDark ? AppColors.borderDark : const Color(0xFFE2E8F0)),
+                      width: 1.2,
                     ),
                   ),
-                ],
-              ),
+                  onSelected: (selected) {
+                    if (selected) {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        _currentKey = '${d.number}';
+                        _searchQuery = '';
+                      });
+                    }
+                  },
+                );
+              },
             ),
           ),
 
-          // Search Field
+          // ── Search Input ─────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
             child: TextField(
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
-                hintText: _searchPlaceholder,
+                hintText: domain != null
+                    ? 'Search Domain ${domain.number} (${domain.shortName})...'
+                    : 'Search tools in this hub...',
                 hintStyle: TextStyle(
-                  fontSize: 13,
-                  color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+                  fontSize: 13.5,
+                  color: isDark ? AppColors.textMutedDark : const Color(0xFF94A3B8),
                 ),
-                prefixIcon: const Icon(LucideIcons.search, size: 18),
+                prefixIcon: const Icon(LucideIcons.search, size: 18, color: Color(0xFF64748B)),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear, size: 16),
                         onPressed: () => setState(() => _searchQuery = ''),
                       )
                     : null,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 14),
+                filled: true,
+                fillColor: isDark ? AppColors.surfaceDark : Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0),
                   ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: primaryColor, width: 1.5),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
 
-          // Tools Grid
+          // ── Scrollable Body ──────────────────────────────────────────
           Expanded(
-            child: filteredTools.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          LucideIcons.searchX,
-                          size: 36,
-                          color: isDark ? AppColors.textMutedDark : AppColors.textMutedLight,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              children: [
+                // Domain Header Banner
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryColor.withValues(alpha: isDark ? 0.2 : 0.06),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: softColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: primaryColor.withValues(alpha: 0.25)),
                         ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'No tools found for "$_searchQuery"',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                          ),
+                        child: Icon(domain?.icon ?? LucideIcons.layers, size: 24, color: primaryColor),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (domain != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                margin: const EdgeInsets.only(bottom: 6),
+                                decoration: BoxDecoration(
+                                  color: primaryColor.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'DOMAIN ${domain.number} OF 15',
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.6,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                              ),
+                            Text(
+                              _title,
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                                color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _subtitle,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                height: 1.4,
+                                color: isDark ? AppColors.textMutedDark : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Primary Owned Tools Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Primary Domain Tools (${filteredPrimary.length})',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    if (domain != null)
+                      Text(
+                        'Authoritative Owner',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: primaryColor,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                if (filteredPrimary.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 36),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'No tools match "$_searchQuery"',
+                      style: TextStyle(
+                        color: isDark ? AppColors.textMutedDark : const Color(0xFF94A3B8),
+                      ),
                     ),
                   )
-                : GridView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: filteredTools.length,
+                else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filteredPrimary.length,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 4,
-                      childAspectRatio: 0.74,
-                      crossAxisSpacing: 6,
-                      mainAxisSpacing: 14,
+                      childAspectRatio: 0.76,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 12,
                     ),
                     itemBuilder: (context, index) {
-                      return ToolCard(tool: filteredTools[index]);
+                      return ToolCard(tool: filteredPrimary[index], compact: true);
                     },
                   ),
+
+                // Cross-Domain Workflow Tools Section
+                if (filteredCross.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Cross-Domain Workflow Tools (${filteredCross.length})',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.surfaceElevatedDark : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Linked Workflows',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filteredCross.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      childAspectRatio: 0.76,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemBuilder: (context, index) {
+                      return ToolCard(tool: filteredCross[index], compact: true);
+                    },
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),

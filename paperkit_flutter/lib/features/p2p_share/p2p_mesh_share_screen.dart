@@ -9,7 +9,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:qr/qr.dart';
 import '../../core/models/p2p_share_model.dart';
 import '../../core/services/biometric_auth_service.dart';
-import '../../core/services/share_service.dart';
 import '../../core/widgets/particle_background.dart';
 import 'p2p_mesh_service.dart';
 import 'widgets/nearby_device_radar.dart';
@@ -57,15 +56,10 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
   File? _receivedFile;
   String? _transferError;
 
-  // Project Bundle State
-  List<File> _bundleFiles = [];
-  PaperKitProjectBundleManifest? _unpackedManifest;
-  bool _isBundleLoading = false;
-
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _scanNearbyDevices();
     _startDiscoveryListener();
     _listenToIncomingInvites();
@@ -229,8 +223,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
 
   Future<void> _pickHostDocument() async {
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'txt', 'paperkit'],
+      type: FileType.any,
     );
 
     if (result != null && result.files.single.path != null) {
@@ -365,52 +358,6 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
     }
   }
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // BUNDLE ACTIONS
-  // ───────────────────────────────────────────────────────────────────────────
-
-  Future<void> _pickBundleFiles() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'txt'],
-      allowMultiple: true,
-    );
-    if (result != null) {
-      setState(() {
-        _bundleFiles = result.files.where((f) => f.path != null).map((f) => File(f.path!)).toList();
-      });
-    }
-  }
-
-  Future<void> _exportBundle() async {
-    if (_bundleFiles.isEmpty) return;
-    setState(() => _isBundleLoading = true);
-
-    final bundle = await _service.createProjectBundle(
-      projectName: 'PaperKit_Project_${DateTime.now().millisecondsSinceEpoch}',
-      createdBy: 'PaperKit User',
-      pdfFiles: _bundleFiles,
-      noteFiles: [],
-    );
-
-    setState(() => _isBundleLoading = false);
-    ShareService.shareFile(filePath: bundle.path);
-  }
-
-  Future<void> _importBundle() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['paperkit', 'zip'],
-    );
-    if (result != null && result.files.single.path != null) {
-      setState(() => _isBundleLoading = true);
-      final manifest = await _service.unpackProjectBundle(File(result.files.single.path!));
-      setState(() {
-        _unpackedManifest = manifest;
-        _isBundleLoading = false;
-      });
-    }
-  }
 
   Future<void> _openCameraQrScanner() async {
     HapticFeedback.mediumImpact();
@@ -553,7 +500,6 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
           tabs: const [
             Tab(icon: Icon(LucideIcons.arrowUpRight), text: 'Send / Host'),
             Tab(icon: Icon(LucideIcons.arrowDownLeft), text: 'Receive / Join'),
-            Tab(icon: Icon(LucideIcons.package), text: '.paperkit Bundle'),
             Tab(icon: Icon(LucideIcons.users), text: 'Co-Review'),
           ],
         ),
@@ -563,7 +509,6 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
         children: [
           _buildSendHostTab(),
           _buildReceiveJoinTab(),
-          _buildBundleTab(),
           _buildCoReviewTab(),
         ],
       ),
@@ -1152,67 +1097,6 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                   onPressed: () => OpenFilex.open(_receivedFile!.path),
                   child: const Text('Open'),
                 ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // ───────────────────────────────────────────────────────────────────────────
-  // PROJECT BUNDLE UI
-  // ───────────────────────────────────────────────────────────────────────────
-
-  Widget _buildBundleTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              ElevatedButton.icon(
-                onPressed: _pickBundleFiles,
-                icon: const Icon(LucideIcons.files),
-                label: const Text('Select Files for Bundle'),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton.icon(
-                onPressed: _importBundle,
-                icon: const Icon(LucideIcons.fileInput),
-                label: const Text('Import .paperkit'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (_bundleFiles.isNotEmpty) ...[
-            Text('Selected Files (${_bundleFiles.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _bundleFiles.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  leading: const Icon(LucideIcons.fileText),
-                  title: Text(_bundleFiles[index].uri.pathSegments.last),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _isBundleLoading ? null : _exportBundle,
-              icon: const Icon(LucideIcons.archive),
-              label: const Text('Export .paperkit Package'),
-            ),
-          ],
-          if (_unpackedManifest != null) ...[
-            const Divider(height: 32),
-            Card(
-              child: ListTile(
-                title: Text('Imported Project: ${_unpackedManifest!.projectName}'),
-                subtitle: Text('PDF Documents: ${_unpackedManifest!.pdfFiles.length}\nChecksum: ${_unpackedManifest!.checksumSha256.substring(0, 16)}...'),
               ),
             ),
           ],

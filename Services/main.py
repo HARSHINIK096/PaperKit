@@ -13,6 +13,7 @@ if os.path.exists(bin_dir):
 
 import asyncio
 from services.storage import cleanup_expired_guest_files
+from routers.temporary_shares import cleanup_expired_temporary_shares, router as temporary_shares_router
 from database import get_db, close_client
 from config import get_settings
 from routers.auth import router as auth_router
@@ -36,14 +37,15 @@ async def _guest_cleanup_loop():
         try:
             db = get_db()
             cleaned = await cleanup_expired_guest_files(db, max_age_minutes=15)
-            if cleaned > 0:
-                print(f"[Storage] Auto-purged {cleaned} ephemeral/session storage files & chunks.")
-            await asyncio.sleep(180)  # Run every 3 minutes
+            cleaned_shares = await cleanup_expired_temporary_shares(db)
+            if cleaned > 0 or cleaned_shares > 0:
+                print(f"[Storage] Auto-purged {cleaned} ephemeral files & {cleaned_shares} expired temporary shares.")
+            await asyncio.sleep(120)  # Run every 2 minutes
         except asyncio.CancelledError:
             break
         except Exception as e:
             print(f"[Storage] Auto-cleanup error: {e}")
-            await asyncio.sleep(180)
+            await asyncio.sleep(120)
 
 
 from middleware.editor_rate_limiter import init_db as init_rate_limiter_db
@@ -183,6 +185,8 @@ app.include_router(media_router, prefix="/media", tags=["media"])
 app.include_router(media_router, prefix="/api/media", tags=["media"])
 app.include_router(editor_router, prefix="/editor", tags=["editor"])
 app.include_router(editor_router, prefix="/api/editor", tags=["editor"])
+app.include_router(temporary_shares_router, tags=["temporary-shares"])
+app.include_router(temporary_shares_router, prefix="/api", tags=["temporary-shares"])
 
 
 from fastapi.responses import Response

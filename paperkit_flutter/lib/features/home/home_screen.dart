@@ -157,20 +157,21 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'MASKERV Intelligent Platform',
+                  'PaperKit Intelligent Suite',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.4,
+                    height: 1.25,
                     color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
-                  'Process, summarize, compare, and protect your documents with zero friction.',
+                  '15 specialized functional domains for intelligent document creation, analysis & protection.',
                   style: TextStyle(
                     fontSize: 13,
-                    height: 1.4,
+                    height: 1.45,
                     color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
                   ),
                 ),
@@ -199,101 +200,80 @@ class _HomeScreenState extends State<HomeScreen> {
             context,
             isDark: isDark,
             title: 'Featured Tools',
-            categoryId: 'all',
+            categoryId: '1',
             tools: AppTools.featuredTools,
             customRoute: '/tools',
-            viewAllLabel: 'See All (40+)',
+            viewAllLabel: 'See All 15 Domains',
           ),
           const SizedBox(height: 26),
 
-          // ── 2. AI Document Intelligence Category Section ─────────
+          // ── 2. Domain 1: File Manipulation & Document Tools ──────
           _buildCategorySection(
             context,
             isDark: isDark,
-            title: 'AI Document Intelligence',
-            categoryId: 'ai',
-            tools: AppTools.aiTools,
+            title: 'Domain 1: File Manipulation & Document Tools',
+            categoryId: '1',
+            tools: AppTools.fileManipulationTools,
           ),
           const SizedBox(height: 26),
 
-          // ── 3. PDF Processing & Pages Category Section ───────────
+          // ── 3. Domain 2: Security, Cryptography & Compliance ─────
           _buildCategorySection(
             context,
             isDark: isDark,
-            title: 'PDF Processing & Pages',
-            categoryId: 'pdf',
-            tools: AppTools.pdfTools,
-          ),
-          const SizedBox(height: 26),
-
-          // ── 4. Security & Privacy Category Section ───────────────
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Security & Privacy',
-            categoryId: 'security',
+            title: 'Domain 2: Security, Cryptography & Compliance',
+            categoryId: '2',
             tools: AppTools.securityTools,
           ),
           const SizedBox(height: 26),
 
-          // ── 5. Document Conversions Category Section ─────────────
+          // ── 4. Domain 3: Academic & Research Intelligence Suite ──
           _buildCategorySection(
             context,
             isDark: isDark,
-            title: 'Conversions',
-            categoryId: 'conversions',
-            tools: AppTools.conversionTools,
+            title: 'Domain 3: Academic & Research Intelligence Suite',
+            categoryId: '3',
+            tools: AppTools.academicTools,
           ),
           const SizedBox(height: 26),
 
-          // ── 6. Image Format Converter Section ────────────────────
+          // ── 5. Domain 4: Optical Scanning & Vision Engine (OCR) ──
           _buildCategorySection(
             context,
             isDark: isDark,
-            title: 'Image Format Converter',
-            categoryId: 'image',
-            tools: AppTools.imageFormatTools,
+            title: 'Domain 4: Optical Scanning & Vision Engine (OCR)',
+            categoryId: '4',
+            tools: AppTools.scannerTools,
           ),
           const SizedBox(height: 26),
 
-          // ── 7. Image Compressor ⭐ Section ───────────────────────
+          // ── 6. Domain 8: Legal & Forensic Compliance Audit Suite ─
           _buildCategorySection(
             context,
             isDark: isDark,
-            title: 'Image Compressor ⭐',
-            categoryId: 'image',
-            tools: AppTools.imageCompressorTools,
+            title: 'Domain 8: Legal & Forensic Compliance Audit Suite',
+            categoryId: '8',
+            tools: AppTools.legalTools,
           ),
           const SizedBox(height: 26),
 
-
-          // ── 9. Video Conversion & Compression Section ───────────
+          // ── 7. Domain 13: Data Analytics & Tabular Data Extractor 
           _buildCategorySection(
             context,
             isDark: isDark,
-            title: 'Video Conversion & Compression',
-            categoryId: 'video',
-            tools: ToolRegistry.getByCategory(ToolCategory.video),
+            title: 'Domain 13: Data Analytics & Tabular Data Extractor',
+            categoryId: '13',
+            tools: AppTools.analyticsTools,
           ),
           const SizedBox(height: 26),
 
-          // ── 11. Archive & Compression Section ────────────────────
+          // ── 8. Domain 14: Translation & Localization Hub ─────────
           _buildCategorySection(
             context,
             isDark: isDark,
-            title: 'Archive & Compression (.ZIP, .RAR, .TAR, .GZ, .7Z, .BZ2)',
-            categoryId: 'archive',
-            tools: AppTools.archiveTools,
-          ),
-          const SizedBox(height: 26),
-
-          // ── 12. Audio Format Converter Section ───────────────────
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Audio Format Converter',
-            categoryId: 'audio',
-            tools: AppTools.audioConverterTools,
+            title: 'Domain 14: Translation & Localization Hub',
+            categoryId: '14',
+            tools: AppTools.translationTools,
           ),
           const SizedBox(height: 26),
 
@@ -677,12 +657,12 @@ class _HomeScreenState extends State<HomeScreen> {
           itemCount: displayTools.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 4,
-            childAspectRatio: 0.74,
+            childAspectRatio: 0.76,
             crossAxisSpacing: 6,
-            mainAxisSpacing: 14,
+            mainAxisSpacing: 12,
           ),
           itemBuilder: (context, index) {
-            return ToolCard(tool: displayTools[index]);
+            return ToolCard(tool: displayTools[index], compact: true);
           },
         ),
       ],
@@ -795,31 +775,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryPills(BuildContext context, bool isDark) {
-    final categories = [
-      {'name': 'PDF Tools', 'cat': 'pdf', 'icon': LucideIcons.fileText, 'color': AppColors.toolBlue},
-      {'name': 'AI Intelligence', 'cat': 'ai', 'icon': LucideIcons.sparkles, 'color': AppColors.toolPurple},
-      {'name': 'Conversions', 'cat': 'conversions', 'icon': LucideIcons.fileSpreadsheet, 'color': AppColors.toolGreen},
-      {'name': 'Security', 'cat': 'security', 'icon': LucideIcons.shieldCheck, 'color': AppColors.toolRed},
-      {'name': 'Images', 'cat': 'image', 'icon': LucideIcons.image, 'color': AppColors.toolPink},
-      {'name': 'Video & Audio', 'cat': 'video', 'icon': LucideIcons.video, 'color': AppColors.toolIndigo},
-      {'name': 'Archive Studio', 'cat': 'archive', 'icon': LucideIcons.archive, 'color': AppColors.toolOrange},
-    ];
+    final domains = DomainRegistry.domains;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: categories.map((cat) {
-          final color = cat['color'] as Color;
+        children: domains.map((d) {
           return Padding(
             padding: const EdgeInsets.only(right: 10),
             child: InkWell(
               onTap: () {
                 HapticFeedback.selectionClick();
-                context.push('/category/${cat['cat']}');
+                context.push(d.route);
               },
               borderRadius: BorderRadius.circular(14),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(14),
@@ -829,12 +800,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(cat['icon'] as IconData, size: 17, color: color),
-                    const SizedBox(width: 9),
+                    Icon(d.icon, size: 16, color: d.color),
+                    const SizedBox(width: 8),
                     Text(
-                      cat['name'] as String,
+                      'D${d.number} • ${d.shortName}',
                       style: TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.2,
                         color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,

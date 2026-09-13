@@ -19,6 +19,11 @@ class ToolCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final badgeSize = compact ? 44.0 : 48.0;
+    final iconSize = compact ? 21.0 : 23.0;
+    final radius = compact ? 13.0 : 15.0;
+    final fontSize = compact ? 11.0 : 11.5;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -26,11 +31,11 @@ class ToolCard extends StatelessWidget {
           HapticFeedback.lightImpact();
           context.push(tool.route);
         },
-        borderRadius: BorderRadius.circular(20),
-        splashColor: tool.color.withOpacity(0.12),
-        highlightColor: tool.color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        splashColor: tool.color.withValues(alpha: 0.12),
+        highlightColor: tool.color.withValues(alpha: 0.05),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -41,24 +46,27 @@ class ToolCard extends StatelessWidget {
                 icon: tool.icon,
                 color: tool.color,
                 softColor: tool.softColor,
-                size: compact ? 48 : 58,
-                iconSize: compact ? 23 : 27,
-                borderRadius: compact ? 16 : 20,
+                size: badgeSize,
+                iconSize: iconSize,
+                borderRadius: radius,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 5),
 
-              // ── Centered Label Underneath ──
-              Text(
-                tool.label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: compact ? 11.5 : 12.5,
-                  fontWeight: FontWeight.w600,
-                  height: 1.2,
-                  letterSpacing: -0.2,
-                  color: isDark ? AppColors.textPrimaryDark : const Color(0xFF334155),
+              // ── Centered Fluid Label Underneath ──
+              Flexible(
+                fit: FlexFit.loose,
+                child: Text(
+                  tool.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w600,
+                    height: 1.15,
+                    letterSpacing: -0.15,
+                    color: isDark ? AppColors.textPrimaryDark : const Color(0xFF334155),
+                  ),
                 ),
               ),
             ],

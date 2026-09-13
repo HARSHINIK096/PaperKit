@@ -44,9 +44,14 @@ import '../../features/image_media_tools/image_manipulator_screen.dart';
 import '../../features/image_media_tools/audio_converter_screen.dart';
 import '../../features/image_media_tools/video_converter_screen.dart';
 import '../../features/image_media_tools/video_compressor_screen.dart';
+import '../../features/image_media_tools/video_to_frames_screen.dart';
+import '../../features/image_media_tools/video_editor_screen.dart';
+import '../../features/security_tools/secure_share_screen.dart';
+import '../../features/security_tools/secure_share_recipient_screen.dart';
 import '../../features/image_media_tools/archive_studio_screen.dart';
 import '../../features/image_media_tools/image_resizer_screen.dart';
-import '../../features/image_media_tools/qr_generator_screen.dart';
+import '../../features/qr_tools/qr_generator_screen.dart';
+import '../../features/qr_tools/qr_scanner_screen.dart';
 import '../../features/image_media_tools/barcode_generator_screen.dart';
 
 // AI Tools
@@ -157,13 +162,19 @@ class AppRouter {
       GoRoute(
         path: '/category/:categoryId',
         builder: (context, state) => CategoryHubScreen(
-          categoryId: state.pathParameters['categoryId'] ?? 'pdf',
+          categoryId: state.pathParameters['categoryId'] ?? '1',
         ),
       ),
       GoRoute(
         path: '/tools/category/:categoryId',
         builder: (context, state) => CategoryHubScreen(
-          categoryId: state.pathParameters['categoryId'] ?? 'pdf',
+          categoryId: state.pathParameters['categoryId'] ?? '1',
+        ),
+      ),
+      GoRoute(
+        path: '/domain/:domainId',
+        builder: (context, state) => CategoryHubScreen(
+          categoryId: state.pathParameters['domainId'] ?? '1',
         ),
       ),
 
@@ -229,6 +240,7 @@ class AppRouter {
       GoRoute(path: '/tools/image-manipulator', builder: (context, state) => const ImageManipulatorScreen()),
       GoRoute(path: '/tools/image-resizer', builder: (context, state) => const ImageResizerScreen()),
       GoRoute(path: '/tools/qr-generator', builder: (context, state) => const QrGeneratorScreen()),
+      GoRoute(path: '/tools/qr-scanner', builder: (context, state) => const QrScannerScreen()),
       GoRoute(path: '/tools/barcode-generator', builder: (context, state) => const BarcodeGeneratorScreen()),
       GoRoute(
         path: '/tools/audio-converter',
@@ -246,6 +258,24 @@ class AppRouter {
         path: '/tools/video-compressor',
         builder: (context, state) => VideoCompressorScreen(
           initialPreset: state.uri.queryParameters['preset'],
+        ),
+      ),
+      GoRoute(
+        path: '/tools/video-to-frames',
+        builder: (context, state) => const VideoToFramesScreen(),
+      ),
+      GoRoute(
+        path: '/tools/video-editor',
+        builder: (context, state) => const VideoEditorScreen(),
+      ),
+      GoRoute(
+        path: '/tools/secure-share',
+        builder: (context, state) => const SecureShareScreen(),
+      ),
+      GoRoute(
+        path: '/share/:shareId',
+        builder: (context, state) => SecureShareRecipientScreen(
+          shareId: state.pathParameters['shareId'] ?? '',
         ),
       ),
       GoRoute(

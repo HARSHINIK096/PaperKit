@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>PaperKit requires camera access to scan QR codes and capture documents.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PaperKit requires photo library access to import QR images and documents.</string>
 </dict>
 </plist>

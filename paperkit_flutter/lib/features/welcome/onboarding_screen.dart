@@ -233,25 +233,86 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     const _CloudTourSlide(
       id: 14,
+      badge: 'Render Media Studio',
+      title: 'Video to Frames & Lightweight Editor',
+      subtitle: 'Extract individual frames to JPG/PNG, download ZIP archives, and edit video safely.',
+      icon: LucideIcons.clapperboard,
+      cloudColor1: Color(0xFF0C4A6E),
+      cloudColor2: Color(0xFF0284C7),
+      accentColor: Color(0xFF38BDF8),
+      features: [
+        'Extract every frame, by FPS (1-10+), by interval, or exact timestamps',
+        'Lightweight editor: trim, crop (1:1, 16:9, etc.), rotate, speed & filters',
+        'Render safe bounds: ≤ 180s duration, ≤ 100 MB, ≤ 300 preview / 500 ZIP frames',
+      ],
+      tags: ['Frame Extract', 'ZIP Export', '≤ 180s Duration', 'Render Safe'],
+    ),
+    const _CloudTourSlide(
+      id: 15,
+      badge: 'Time-Limited Security',
+      title: '10-Minute Encrypted QR Share',
+      subtitle: 'Temporarily share files up to 50 MB with AES-256-GCM encryption and zero-knowledge QR codes.',
+      icon: LucideIcons.qrCode,
+      cloudColor1: Color(0xFF064E3B),
+      cloudColor2: Color(0xFF059669),
+      accentColor: Color(0xFF34D399),
+      features: [
+        'AES-256-GCM encrypted storage at rest with PBKDF2 key derivation',
+        'Server-enforced 10-minute expiry (HTTP 410 Gone) with auto-purging',
+        'QR contains URL only (zero password/key exposure); max 5 password attempts',
+      ],
+      tags: ['AES-256-GCM', '10-Min Expiry', 'Zero Plaintext', '≤ 50 MB'],
+    ),
+    const _CloudTourSlide(
+      id: 16,
       isRateLimits: true,
-      badge: 'Fair Use Policy',
-      title: 'Usage Limits & Fair Access',
-      subtitle: 'To keep performance fast and reliable for everyone, fair usage limits apply on shared cloud infrastructure.',
+      badge: 'Fair Use & Constraints',
+      title: 'Usage Limits & Operational Constraints',
+      subtitle: 'To keep performance fast, secure and reliable, fair usage constraints apply on shared cloud infrastructure.',
       icon: LucideIcons.gauge,
       cloudColor1: Color(0xFF431407),
       cloudColor2: Color(0xFF9A3412),
       accentColor: Color(0xFFF97316),
       features: [
         'Limits reset automatically — no account required',
-        'Client-side WASM PDF tools are always unlimited',
+        'Client-side WASM PDF tools are always 100% unlimited',
+        'Temporary shares and processed video frames auto-purged on expiry',
       ],
-      tags: ['Fair Use', 'Auto-Reset', '100% Free'],
-      pdfRule: '≤ 15 pages per document',
-      pdfNote: 'Merge, Split, Compress, Rotate, Watermark, Edit & all PDF tools.',
-      pdfTip: 'Split large PDFs into chunks under 15 pages before processing.',
-      aiRule: '5 requests per 1–4 hours',
-      aiNote: 'Summarize, Ask PDF, OCR, Translate, Tables & all AI tools.',
-      aiTip: 'Limits reset automatically. Each AI tool category has an independent counter.',
+      tags: ['Fair Use', 'Auto-Reset', '100% Free', 'Render Guard'],
+      rateLimits: [
+        _RateLimitItem(
+          title: 'PDF Manipulation Tools',
+          rule: '≤ 15 pages per document',
+          note: 'Merge, Split, Compress, Rotate, Watermark, Edit & PDF converters.',
+          tip: 'Split large PDFs into chunks under 15 pages. Offline WASM mode is unlimited.',
+          accentColor: Color(0xFFF87171),
+          icon: LucideIcons.fileText,
+        ),
+        _RateLimitItem(
+          title: 'Video & Frame Extraction',
+          rule: '≤ 180s • ≤ 100 MB',
+          note: 'Frame extraction (FPS, interval, timestamps), trim, crop & editor.',
+          tip: 'Capped to 180s duration and 300 preview frames for Render stability.',
+          accentColor: Color(0xFF38BDF8),
+          icon: LucideIcons.film,
+        ),
+        _RateLimitItem(
+          title: '10-Min Encrypted Share',
+          rule: '10m expiry • ≤ 50 MB',
+          note: 'AES-256-GCM encrypted temporary storage with zero-knowledge QR URL.',
+          tip: 'Server-authoritative 10m hard expiry (410 Gone). Max 5 password attempts.',
+          accentColor: Color(0xFF34D399),
+          icon: LucideIcons.shieldCheck,
+        ),
+        _RateLimitItem(
+          title: 'AI Intelligence Features',
+          rule: '5 reqs per 1–4 hours',
+          note: 'Summarize, Ask PDF, OCR, Translate, Tables & all AI tools.',
+          tip: 'Limits reset automatically. Independent counter per tool category.',
+          accentColor: Color(0xFFA78BFA),
+          icon: LucideIcons.brain,
+        ),
+      ],
     ),
   ];
 
@@ -671,29 +732,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               ),
                             ],
 
-                            // Rate Limits Breakdown (Slide 14)
+                            // Rate Limits Breakdown (Slide 16)
                             if (slide.isRateLimits) ...[
-                              _RateLimitCloudCard(
-                                title: 'PDF Manipulation Tools',
-                                rule: slide.pdfRule ?? '≤ 15 pages per document',
-                                note: slide.pdfNote ?? '',
-                                tip: slide.pdfTip ?? '',
-                                accentColor: const Color(0xFFF87171),
-                                icon: LucideIcons.fileText,
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: MediaQuery.of(context).size.height > 780 ? 270 : 210,
+                                ),
+                                child: RawScrollbar(
+                                  thumbColor: slide.accentColor.withValues(alpha: 0.5),
+                                  radius: const Radius.circular(4),
+                                  thickness: 3,
+                                  child: SingleChildScrollView(
+                                    physics: const BouncingScrollPhysics(),
+                                    child: Column(
+                                      children: [
+                                        if (slide.rateLimits != null && slide.rateLimits!.isNotEmpty) ...[
+                                          for (int i = 0; i < slide.rateLimits!.length; i++) ...[
+                                            if (i > 0) const SizedBox(height: 8),
+                                            _RateLimitCloudCard(
+                                              title: slide.rateLimits![i].title,
+                                              rule: slide.rateLimits![i].rule,
+                                              note: slide.rateLimits![i].note,
+                                              tip: slide.rateLimits![i].tip,
+                                              accentColor: slide.rateLimits![i].accentColor,
+                                              icon: slide.rateLimits![i].icon,
+                                            ),
+                                          ],
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
                               const SizedBox(height: 10),
-                              _RateLimitCloudCard(
-                                title: 'AI Intelligence Features',
-                                rule: slide.aiRule ?? '5 requests per 1–4 hours',
-                                note: slide.aiNote ?? '',
-                                tip: slide.aiTip ?? '',
-                                accentColor: const Color(0xFFA78BFA),
-                                icon: LucideIcons.brain,
-                              ),
-                              const SizedBox(height: 12),
                               ...slide.features.map(
                                 (feat) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
+                                  padding: const EdgeInsets.only(bottom: 5),
                                   child: Row(
                                     children: [
                                       const Icon(LucideIcons.checkCircle2, size: 14, color: Color(0xFF34D399)),
@@ -797,6 +871,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
+class _RateLimitItem {
+  final String title;
+  final String rule;
+  final String note;
+  final String tip;
+  final Color accentColor;
+  final IconData icon;
+
+  const _RateLimitItem({
+    required this.title,
+    required this.rule,
+    required this.note,
+    required this.tip,
+    required this.accentColor,
+    required this.icon,
+  });
+}
+
 class _RateLimitCloudCard extends StatelessWidget {
   final String title;
   final String rule;
@@ -817,10 +909,10 @@ class _RateLimitCloudCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: accentColor.withValues(alpha: 0.35),
         ),
@@ -830,7 +922,7 @@ class _RateLimitCloudCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: accentColor),
+              Icon(icon, size: 15, color: accentColor),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -838,38 +930,49 @@ class _RateLimitCloudCard extends StatelessWidget {
                   style: TextStyle(
                     color: accentColor,
                     fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                    fontSize: 11.5,
                   ),
                 ),
               ),
-              Text(
-                rule,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.20),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  rule,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             note,
             style: TextStyle(
-              fontSize: 11,
-              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 10.5,
+              color: Colors.white.withValues(alpha: 0.75),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(LucideIcons.alertTriangle, size: 11, color: Color(0xFFFBBF24)),
+              const Padding(
+                padding: EdgeInsets.only(top: 1.5),
+                child: Icon(LucideIcons.alertTriangle, size: 10, color: Color(0xFFFBBF24)),
+              ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   tip,
                   style: const TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFFFBBF24),
                   ),
@@ -895,12 +998,7 @@ class _CloudTourSlide {
   final List<String> features;
   final List<String> tags;
   final bool isRateLimits;
-  final String? pdfRule;
-  final String? pdfNote;
-  final String? pdfTip;
-  final String? aiRule;
-  final String? aiNote;
-  final String? aiTip;
+  final List<_RateLimitItem>? rateLimits;
 
   const _CloudTourSlide({
     required this.id,
@@ -914,11 +1012,6 @@ class _CloudTourSlide {
     required this.features,
     required this.tags,
     this.isRateLimits = false,
-    this.pdfRule,
-    this.pdfNote,
-    this.pdfTip,
-    this.aiRule,
-    this.aiNote,
-    this.aiTip,
+    this.rateLimits,
   });
 }

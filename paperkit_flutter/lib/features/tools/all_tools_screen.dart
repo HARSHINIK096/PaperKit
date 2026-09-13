@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../core/constants/app_tools.dart';
+import '../../core/constants/tool_registry.dart';
 import '../../core/models/tool_item.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_shell.dart';
@@ -19,204 +19,33 @@ class AllToolsScreen extends StatefulWidget {
 class _AllToolsScreenState extends State<AllToolsScreen> {
   String _searchQuery = '';
 
-  // Custom tool sub-lists for Organize PDF & Convert to/from PDF matching Image 1
-  static const List<ToolItem> _organizePdfTools = [
-    ToolItem(
-      id: 'merge-pdf',
-      label: 'Merge PDF',
-      description: 'Combine multiple PDFs into one',
-      route: '/tools/merge',
-      icon: LucideIcons.scan,
-      color: Color(0xFF2563EB),
-      softColor: Color(0xFFEFF6FF),
-      category: ToolCategory.pdf,
-    ),
-    ToolItem(
-      id: 'split-pdf',
-      label: 'Split PDF',
-      description: 'Split by ranges or single pages',
-      route: '/tools/split',
-      icon: LucideIcons.split,
-      color: Color(0xFFEF4444),
-      softColor: Color(0xFFFEF2F2),
-      category: ToolCategory.pdf,
-    ),
-    ToolItem(
-      id: 'extract-pages',
-      label: 'Extract Pages',
-      description: 'Extract specific pages into new PDF',
-      route: '/tools/extract-pages',
-      icon: LucideIcons.checkSquare,
-      color: Color(0xFF0D9488),
-      softColor: Color(0xFFF0FDFA),
-      category: ToolCategory.pdf,
-    ),
-    ToolItem(
-      id: 'remove-pages',
-      label: 'Remove Pages',
-      description: 'Delete unwanted pages from PDF',
-      route: '/tools/organize-pages',
-      icon: LucideIcons.trash2,
-      color: Color(0xFFDC2626),
-      softColor: Color(0xFFFEF2F2),
-      category: ToolCategory.pdf,
-    ),
-    ToolItem(
-      id: 'reorder-pages',
-      label: 'Reorder Pages',
-      description: 'Rearrange page sequences',
-      route: '/tools/organize-pages',
-      icon: LucideIcons.menu,
-      color: Color(0xFF3B82F6),
-      softColor: Color(0xFFEFF6FF),
-      category: ToolCategory.pdf,
-    ),
-    ToolItem(
-      id: 'rotate-pdf',
-      label: 'Rotate PDF',
-      description: 'Rotate pages orientation',
-      route: '/tools/rotate',
-      icon: LucideIcons.rotateCw,
-      color: Color(0xFF2563EB),
-      softColor: Color(0xFFEFF6FF),
-      category: ToolCategory.pdf,
-    ),
-  ];
-
-  static const List<ToolItem> _convertToPdfTools = [
-    ToolItem(
-      id: 'word-to-pdf',
-      label: 'Word to PDF',
-      description: 'Convert Word docs to PDF',
-      route: '/tools/convert?from=word&to=pdf',
-      icon: LucideIcons.fileText,
-      color: Color(0xFF2563EB),
-      softColor: Color(0xFFEFF6FF),
-      category: ToolCategory.convert,
-    ),
-    ToolItem(
-      id: 'excel-to-pdf',
-      label: 'Excel to PDF',
-      description: 'Convert Excel spreadsheets to PDF',
-      route: '/tools/convert?from=excel&to=pdf',
-      icon: LucideIcons.fileSpreadsheet,
-      color: Color(0xFF10B981),
-      softColor: Color(0xFFECFDF5),
-      category: ToolCategory.convert,
-    ),
-    ToolItem(
-      id: 'ppt-to-pdf',
-      label: 'PPT to PDF',
-      description: 'Convert PowerPoint slides to PDF',
-      route: '/tools/convert?from=ppt&to=pdf',
-      icon: LucideIcons.monitor,
-      color: Color(0xFFF59E0B),
-      softColor: Color(0xFFFFFBEB),
-      category: ToolCategory.convert,
-    ),
-    ToolItem(
-      id: 'image-to-pdf',
-      label: 'Image to PDF',
-      description: 'Convert images to PDF format',
-      route: '/tools/convert?from=image&to=pdf',
-      icon: LucideIcons.image,
-      color: Color(0xFF8B5CF6),
-      softColor: Color(0xFFF5F3FF),
-      category: ToolCategory.convert,
-    ),
-    ToolItem(
-      id: 'txt-to-pdf',
-      label: 'TXT to PDF',
-      description: 'Convert text files to PDF',
-      route: '/tools/convert?from=txt&to=pdf',
-      icon: LucideIcons.fileText,
-      color: Color(0xFF6366F1),
-      softColor: Color(0xFFEEF2FF),
-      category: ToolCategory.convert,
-    ),
-    ToolItem(
-      id: 'html-to-pdf',
-      label: 'HTML to PDF',
-      description: 'Convert web pages to PDF',
-      route: '/tools/convert?from=html&to=pdf',
-      icon: LucideIcons.code,
-      color: Color(0xFF14B8A6),
-      softColor: Color(0xFFF0FDFA),
-      category: ToolCategory.convert,
-    ),
-  ];
-
-  static const List<ToolItem> _convertFromPdfTools = [
-    ToolItem(
-      id: 'pdf-to-word',
-      label: 'PDF to Word',
-      description: 'Convert PDF to editable DOCX',
-      route: '/tools/convert?from=pdf&to=word',
-      icon: LucideIcons.fileText,
-      color: Color(0xFF2563EB),
-      softColor: Color(0xFFEFF6FF),
-      category: ToolCategory.convert,
-    ),
-    ToolItem(
-      id: 'pdf-to-excel',
-      label: 'PDF to Excel',
-      description: 'Extract tables to XLSX',
-      route: '/tools/convert?from=pdf&to=excel',
-      icon: LucideIcons.fileSpreadsheet,
-      color: Color(0xFF10B981),
-      softColor: Color(0xFFECFDF5),
-      category: ToolCategory.convert,
-    ),
-    ToolItem(
-      id: 'pdf-to-ppt',
-      label: 'PDF to PPT',
-      description: 'Convert PDF pages to PPT slides',
-      route: '/tools/convert?from=pdf&to=ppt',
-      icon: LucideIcons.presentation,
-      color: Color(0xFFF59E0B),
-      softColor: Color(0xFFFFFBEB),
-      category: ToolCategory.convert,
-    ),
-    ToolItem(
-      id: 'pdf-to-image',
-      label: 'PDF to Image',
-      description: 'Extract PDF pages as images',
-      route: '/tools/convert?from=pdf&to=image',
-      icon: LucideIcons.images,
-      color: Color(0xFF8B5CF6),
-      softColor: Color(0xFFF5F3FF),
-      category: ToolCategory.convert,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final isSearching = _searchQuery.trim().isNotEmpty;
     final searchResults = isSearching
-        ? AppTools.allTools.where((t) {
-            final q = _searchQuery.toLowerCase();
-            return t.label.toLowerCase().contains(q) ||
-                t.description.toLowerCase().contains(q);
-          }).toList()
+        ? ToolRegistry.search(_searchQuery)
         : <ToolItem>[];
 
+    final domains = DomainRegistry.domains;
+    final generalUtilities = ToolRegistry.generalUtilities;
+
     return AppShell(
-      title: 'Tools',
+      title: '15 Functional Domains',
       child: Stack(
         children: [
           // Background Particle Effect
           const Positioned.fill(
             child: ParticleBackground(
-              numberOfParticles: 35,
+              numberOfParticles: 30,
               particleColor: Color(0xFF3B82F6),
               enableLines: true,
-              maxSpeed: 0.25,
+              maxSpeed: 0.2,
             ),
           ),
 
-          // Main Scrollable Area
+          // Main Column
           Column(
             children: [
               // Search Header
@@ -225,9 +54,9 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                 child: TextField(
                   onChanged: (val) => setState(() => _searchQuery = val),
                   decoration: InputDecoration(
-                    hintText: 'Search 40+ PDF, AI, Media & Studio tools...',
+                    hintText: 'Search 50+ tools across 15 domains (e.g. Bates, citation, table, QR)...',
                     hintStyle: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13.5,
                       color: isDark ? AppColors.textMutedDark : const Color(0xFF94A3B8),
                     ),
                     prefixIcon: const Icon(LucideIcons.search, size: 19, color: Color(0xFF64748B)),
@@ -268,106 +97,32 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                 child: isSearching
                     ? _buildSearchResults(searchResults, isDark)
                     : ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 28),
                         children: [
-                          // 1. Organize PDF (Matching Image 1)
-                          _buildFunctionalCard(
-                            context,
-                            title: 'Organize PDF',
-                            viewAllRoute: '/category/pdf',
-                            tools: _organizePdfTools,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
+                          // ── 15 Authoritative Functional Domains ─────────────────────
+                          ...domains.map((domain) {
+                            final domainTools = ToolRegistry.getByDomainNumber(domain.number);
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 18),
+                              child: _buildDomainCard(
+                                context,
+                                domain: domain,
+                                tools: domainTools,
+                                isDark: isDark,
+                              ),
+                            );
+                          }),
 
-                          // 2. Convert to PDF (Matching Image 1)
-                          _buildFunctionalCard(
-                            context,
-                            title: 'Convert to PDF',
-                            viewAllRoute: '/category/convert',
-                            tools: _convertToPdfTools,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 3. Convert from PDF
-                          _buildFunctionalCard(
-                            context,
-                            title: 'Convert from PDF',
-                            viewAllRoute: '/category/convert',
-                            tools: _convertFromPdfTools,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 4. Security & Privacy
-                          _buildFunctionalCard(
-                            context,
-                            title: 'Security & Privacy',
-                            viewAllRoute: '/category/security',
-                            tools: AppTools.securityTools,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 5. AI Document Intelligence
-                          _buildFunctionalCard(
-                            context,
-                            title: 'AI Document Intelligence',
-                            viewAllRoute: '/category/ai',
-                            tools: AppTools.aiTools,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 6. Image Format Converter & Manipulator
-                          _buildFunctionalCard(
-                            context,
-                            title: 'Image Format Converter',
-                            viewAllRoute: '/category/image',
-                            tools: AppTools.imageFormatTools,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 7. Image Compressor ⭐
-                          _buildFunctionalCard(
-                            context,
-                            title: 'Image Compressor ⭐',
-                            viewAllRoute: '/category/image-compressor',
-                            tools: AppTools.imageCompressorTools,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 9. Video Format Converter & Compressor
-                          _buildFunctionalCard(
-                            context,
-                            title: 'Video Format Converter & Compressor',
-                            viewAllRoute: '/category/video',
-                            tools: ToolRegistry.getByCategory(ToolCategory.video),
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 10. Archive & Compression
-                          _buildFunctionalCard(
-                            context,
-                            title: 'Archive & Compression',
-                            viewAllRoute: '/category/archive',
-                            tools: AppTools.archiveTools,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // 11. Audio Format Converter
-                          _buildFunctionalCard(
-                            context,
-                            title: 'Audio Format Converter',
-                            viewAllRoute: '/category/audio',
-                            tools: AppTools.audioConverterTools,
-                            isDark: isDark,
-                          ),
+                          // ── General Utilities Layer (Cross-Domain Platform Layer) ────
+                          if (generalUtilities.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 18),
+                              child: _buildUtilitiesCard(
+                                context,
+                                tools: generalUtilities,
+                                isDark: isDark,
+                              ),
+                            ),
                         ],
                       ),
               ),
@@ -378,6 +133,7 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
     );
   }
 
+  /// Search Results view displaying tool title, description, route, and authoritative domain badge
   Widget _buildSearchResults(List<ToolItem> results, bool isDark) {
     if (results.isEmpty) {
       return Center(
@@ -399,25 +155,115 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       itemCount: results.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        childAspectRatio: 0.72,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 14,
-      ),
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        return ToolCard(tool: results[index], compact: true);
+        final tool = results[index];
+        final domainColor = tool.color;
+
+        return InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            context.push(tool.route);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: tool.softColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: tool.color.withValues(alpha: 0.2)),
+                  ),
+                  child: Center(
+                    child: Icon(tool.icon, size: 22, color: tool.color),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              tool.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: domainColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              tool.domainBadge,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: domainColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        tool.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          height: 1.35,
+                          color: isDark ? AppColors.textMutedDark : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(LucideIcons.chevronRight, size: 16, color: Color(0xFF94A3B8)),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
 
-  Widget _buildFunctionalCard(
+  /// Builds a functional domain card for each of the 15 Authoritative Domains
+  Widget _buildDomainCard(
     BuildContext context, {
-    required String title,
-    required String viewAllRoute,
+    required DomainItem domain,
     required List<ToolItem> tools,
     required bool isDark,
   }) {
@@ -437,49 +283,84 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Category Title + View All
+          // Header: Domain Badge + Title + View Domain Link
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                    color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
-                  ),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: domain.softColor,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: domain.color.withValues(alpha: 0.25)),
+                ),
+                child: Center(
+                  child: Icon(domain.icon, size: 19, color: domain.color),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'DOMAIN ${domain.number}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                        color: domain.color,
+                      ),
+                    ),
+                    Text(
+                      domain.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                        height: 1.22,
+                        color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
               InkWell(
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  context.push(viewAllRoute);
+                  context.push(domain.route);
                 },
-                borderRadius: BorderRadius.circular(6),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  child: Text(
-                    'View All',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2563EB),
-                    ),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'View (${tools.length})',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: domain.color,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(LucideIcons.chevronRight, size: 14, color: domain.color),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // Inner 4-column tool items grid
           GridView.builder(
@@ -488,9 +369,124 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
             itemCount: tools.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 4,
-              childAspectRatio: 0.72,
+              childAspectRatio: 0.76,
               crossAxisSpacing: 6,
-              mainAxisSpacing: 14,
+              mainAxisSpacing: 12,
+            ),
+            itemBuilder: (context, index) {
+              return ToolCard(tool: tools[index], compact: true);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a dedicated card for the cross-domain general utilities layer
+  Widget _buildUtilitiesCard(
+    BuildContext context, {
+    required List<ToolItem> tools,
+    required bool isDark,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : const Color(0xFFF1F5F9),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.035),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.toolPurpleSoft,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.toolPurple.withValues(alpha: 0.25)),
+                ),
+                child: const Center(
+                  child: Icon(LucideIcons.boxes, size: 19, color: AppColors.toolPurple),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'CROSS-DOMAIN PLATFORM LAYER',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                        color: AppColors.toolPurple,
+                      ),
+                    ),
+                    Text(
+                      'General Utilities & Media',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                        color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/category/utilities');
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'View All',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.toolPurple,
+                        ),
+                      ),
+                      SizedBox(width: 2),
+                      Icon(LucideIcons.chevronRight, size: 14, color: AppColors.toolPurple),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: tools.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              childAspectRatio: 0.76,
+              crossAxisSpacing: 6,
+              mainAxisSpacing: 12,
             ),
             itemBuilder: (context, index) {
               return ToolCard(tool: tools[index], compact: true);

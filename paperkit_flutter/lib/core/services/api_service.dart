@@ -8,6 +8,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/api_config.dart';
+import '../../features/image_media_tools/models/video_frame_models.dart';
+import '../../features/security_tools/models/temporary_share_models.dart';
 import 'pdf_engine.dart';
 import 'storage_service.dart';
 
@@ -887,6 +889,263 @@ class ApiService {
     );
     await outputFile.writeAsBytes(response.data!);
     return outputFile;
+  }
+
+  // Probe Video Metadata via backend FFprobe
+  Future<VideoProbeInfo> probeVideoInfo(File file) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: file.uri.pathSegments.last,
+      ),
+    });
+    final response = await dio.post(
+      '/api/media/video-info',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+    return VideoProbeInfo.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  // Extract frames from video
+  Future<FrameExtractionResult> extractVideoFrames({
+    required File file,
+    required String mode,
+    double fps = 1.0,
+    double interval = 1.0,
+    String timestamps = '',
+    String imageFormat = 'jpg',
+    int jpegQuality = 85,
+    int pngCompression = 6,
+  }) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: file.uri.pathSegments.last,
+      ),
+      'mode': mode,
+      'fps': fps,
+      'interval': interval,
+      'timestamps': timestamps,
+      'image_format': imageFormat,
+      'jpeg_quality': jpegQuality,
+      'png_compression': pngCompression,
+      'as_zip': false,
+    });
+    final response = await dio.post(
+      '/api/media/video-extract-frames',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+    return FrameExtractionResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  // Download all extracted frames as ZIP archive
+  Future<File> downloadFramesZip({
+    required File file,
+    required String mode,
+    double fps = 1.0,
+    double interval = 1.0,
+    String timestamps = '',
+    String imageFormat = 'jpg',
+    int jpegQuality = 85,
+    int pngCompression = 6,
+  }) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: file.uri.pathSegments.last,
+      ),
+      'mode': mode,
+      'fps': fps,
+      'interval': interval,
+      'timestamps': timestamps,
+      'image_format': imageFormat,
+      'jpeg_quality': jpegQuality,
+      'png_compression': pngCompression,
+      'as_zip': true,
+    });
+    final response = await dio.post<List<int>>(
+      '/api/media/video-extract-frames',
+      data: formData,
+      options: Options(
+        responseType: ResponseType.bytes,
+        contentType: 'multipart/form-data',
+      ),
+    );
+    if (response.data == null || response.data!.isEmpty) {
+      throw Exception('Failed to generate frames ZIP archive.');
+    }
+    final outputDir = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputFile = File('${outputDir.path}/video_frames_$timestamp.zip');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Download existing frames job ZIP
+  Future<File> downloadExistingFramesZip(String jobId) async {
+    final response = await dio.get<List<int>>(
+      '/api/media/video-frames/$jobId/zip',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    if (response.data == null || response.data!.isEmpty) {
+      throw Exception('Failed to download frames ZIP.');
+    }
+    final outputDir = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputFile = File('${outputDir.path}/video_frames_$timestamp.zip');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Download individual frame
+  Future<File> downloadSingleFrame(String jobId, int frameNumber, String ext) async {
+    final response = await dio.get<List<int>>(
+      '/api/media/video-frames/$jobId/frame/$frameNumber',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    if (response.data == null || response.data!.isEmpty) {
+      throw Exception('Failed to download frame image.');
+    }
+    final outputDir = await getApplicationDocumentsDirectory();
+    final outputFile = File('${outputDir.path}/frame_${frameNumber.toString().padLeft(6, '0')}.$ext');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // Edit Video via backend FFmpeg
+  Future<File> editVideo({
+    required File file,
+    double startTime = 0.0,
+    double endTime = 0.0,
+    String cropPreset = 'original',
+    int rotation = 0,
+    bool flipH = false,
+    bool flipV = false,
+    double speed = 1.0,
+    double volume = 1.0,
+    bool mute = false,
+    double fadeIn = 0.0,
+    double fadeOut = 0.0,
+    String filterPreset = 'none',
+    String textOverlay = '',
+    String textPosition = 'bottom',
+    int textSize = 24,
+    String textColor = 'white',
+    String exportResolution = 'original',
+    int exportCrf = 23,
+  }) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: file.uri.pathSegments.last,
+      ),
+      'start_time': startTime,
+      'end_time': endTime,
+      'crop_preset': cropPreset,
+      'rotation': rotation,
+      'flip_h': flipH,
+      'flip_v': flipV,
+      'speed': speed,
+      'volume': volume,
+      'mute': mute,
+      'fade_in': fadeIn,
+      'fade_out': fadeOut,
+      'filter_preset': filterPreset,
+      'text_overlay': textOverlay,
+      'text_position': textPosition,
+      'text_size': textSize,
+      'text_color': textColor,
+      'export_resolution': exportResolution,
+      'export_crf': exportCrf,
+    });
+    final response = await dio.post<List<int>>(
+      '/api/media/video-edit',
+      data: formData,
+      options: Options(
+        responseType: ResponseType.bytes,
+        contentType: 'multipart/form-data',
+      ),
+    );
+    if (response.data == null || response.data!.isEmpty) {
+      throw Exception('Video editing failed on server.');
+    }
+    final outputDir = await getApplicationDocumentsDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final outputFile = File('${outputDir.path}/Edited_Video_$timestamp.mp4');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  // 10-Minute Temporary Encrypted File Sharing
+  Future<TemporaryShareCreationResult> createTemporaryShare({
+    required File file,
+    required String password,
+  }) async {
+    final bytes = await file.readAsBytes();
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: file.uri.pathSegments.last,
+      ),
+      'password': password,
+    });
+    final response = await dio.post(
+      '/api/temporary-shares',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+    return TemporaryShareCreationResult.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<TemporaryShareMetadata> getTemporaryShareInfo(String shareId) async {
+    final response = await dio.get('/api/temporary-shares/$shareId');
+    return TemporaryShareMetadata.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<bool> verifyTemporarySharePassword(String shareId, String password) async {
+    final response = await dio.post(
+      '/api/temporary-shares/$shareId/verify',
+      data: {'password': password},
+    );
+    return (response.data as Map<String, dynamic>)['success'] == true;
+  }
+
+  Future<File> downloadTemporaryShareFile(String shareId, String password) async {
+    final formData = FormData.fromMap({'password': password});
+    final response = await dio.post<List<int>>(
+      '/api/temporary-shares/$shareId/download',
+      data: formData,
+      options: Options(
+        responseType: ResponseType.bytes,
+        contentType: 'multipart/form-data',
+      ),
+    );
+    if (response.data == null || response.data!.isEmpty) {
+      throw Exception('Failed to download and decrypt shared file.');
+    }
+    String filename = 'downloaded_file';
+    final disposition = response.headers.value('content-disposition');
+    if (disposition != null && disposition.contains('filename=')) {
+      final match = RegExp(r'filename[^;=\n]*=(([\x27\x22]).*?\2|[^;\n]*)').firstMatch(disposition);
+      if (match != null && match.group(1) != null) {
+        filename = match.group(1)!.replaceAll('"', '').replaceAll("'", '').trim();
+      }
+    }
+    final outputDir = await getApplicationDocumentsDirectory();
+    final outputFile = File('${outputDir.path}/$filename');
+    await outputFile.writeAsBytes(response.data!);
+    return outputFile;
+  }
+
+  Future<bool> revokeTemporaryShare(String shareId) async {
+    final response = await dio.delete('/api/temporary-shares/$shareId');
+    return (response.data as Map<String, dynamic>)['success'] == true;
   }
 
   // Convert Audio via backend FFmpeg

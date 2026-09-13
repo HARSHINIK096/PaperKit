@@ -178,6 +178,10 @@ class MockCollection:
                     for k, v in update["$set"].items():
                         doc[k] = v
                         modified += 1
+                if "$inc" in update:
+                    for k, v in update["$inc"].items():
+                        doc[k] = doc.get(k, 0) + v
+                        modified += 1
                 self._save()
                 break
         return UpdateResult(matched, modified)

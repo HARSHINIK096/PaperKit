@@ -619,6 +619,104 @@ class ToolFeaturesRegistry {
         color: AppColors.toolGreen,
       ),
     ],
+    'video-to-frames': [
+      ToolFeatureStep(
+        title: 'Input Video Probing',
+        subtitle: 'Inspect duration, resolution, fps & file size (Limits: ≤ 180s duration, ≤ 100 MB).',
+        icon: LucideIcons.fileVideo,
+        color: AppColors.toolBlue,
+      ),
+      ToolFeatureStep(
+        title: 'Flexible Extraction Modes',
+        subtitle: 'Extract every frame (safe limit ≤ 300 frames), by FPS (1-10+), interval, or timestamps.',
+        icon: LucideIcons.film,
+        color: AppColors.toolIndigo,
+      ),
+      ToolFeatureStep(
+        title: 'Lossless JPG & PNG Output',
+        subtitle: 'Format-specific encoding controls with adjustable quality (1-100) & compression (0-9).',
+        icon: LucideIcons.image,
+        color: AppColors.toolPurple,
+      ),
+      ToolFeatureStep(
+        title: 'Live Frame Grid Preview',
+        subtitle: 'Inspect actual extracted frames, timestamps & dimensions on screen before export.',
+        icon: LucideIcons.layoutGrid,
+        color: AppColors.toolTeal,
+      ),
+      ToolFeatureStep(
+        title: 'Instant Frame & ZIP Export',
+        subtitle: 'Save individual frames or download all extracted frames in a single ZIP (≤ 500 frames).',
+        icon: LucideIcons.archive,
+        color: AppColors.toolGreen,
+      ),
+    ],
+
+    'video-editor': [
+      ToolFeatureStep(
+        title: 'Precision Trim & Cut',
+        subtitle: 'Select exact start & end timestamps (Safe constraints: ≤ 180s duration, ≤ 100 MB).',
+        icon: LucideIcons.scissors,
+        color: AppColors.toolOrange,
+      ),
+      ToolFeatureStep(
+        title: 'Aspect Ratio Crop & Rotate',
+        subtitle: 'Crop to 1:1, 4:5, 16:9, 9:16 or 4:3, rotate 90°/180° and flip H/V.',
+        icon: LucideIcons.crop,
+        color: AppColors.toolBlue,
+      ),
+      ToolFeatureStep(
+        title: 'Speed & Audio Control',
+        subtitle: 'Adjust playback 0.5x–2x, mute, adjust volume (0–200%) and apply audio fade in/out.',
+        icon: LucideIcons.gauge,
+        color: AppColors.toolPurple,
+      ),
+      ToolFeatureStep(
+        title: 'Filters & Text Overlay',
+        subtitle: 'Apply grayscale, sharpen, contrast, blur, or add styled text captions with safe fonts.',
+        icon: LucideIcons.sparkles,
+        color: AppColors.toolIndigo,
+      ),
+      ToolFeatureStep(
+        title: 'Render-Safe MP4 Export',
+        subtitle: 'Fast encoding (H.264/AAC) constrained to 512 MB memory boundary for stability.',
+        icon: LucideIcons.clapperboard,
+        color: AppColors.toolGreen,
+      ),
+    ],
+
+    'secure-share': [
+      ToolFeatureStep(
+        title: 'Select Any File (≤ 50 MB)',
+        subtitle: 'Share documents, PDFs, images or media up to 50 MB with encrypted server storage.',
+        icon: LucideIcons.fileKey,
+        color: AppColors.toolBlue,
+      ),
+      ToolFeatureStep(
+        title: 'AES-256-GCM Encryption',
+        subtitle: 'Encrypted at rest with unique salt & nonce. Password never stored plaintext (PBKDF2/bcrypt).',
+        icon: LucideIcons.lock,
+        color: AppColors.toolIndigo,
+      ),
+      ToolFeatureStep(
+        title: 'Authoritative 10-Min Expiry',
+        subtitle: 'Server clock enforces strict 10-minute expiration (HTTP 410 Gone) with auto-cleanup.',
+        icon: LucideIcons.clock,
+        color: AppColors.toolOrange,
+      ),
+      ToolFeatureStep(
+        title: 'Instant QR Code Transport',
+        subtitle: 'Generate compact sharing QR codes without exposing passwords.',
+        icon: LucideIcons.qrCode,
+        color: AppColors.toolTeal,
+      ),
+      ToolFeatureStep(
+        title: 'Zero-Knowledge Recipient Unlock',
+        subtitle: 'Recipient enters password to decrypt & download directly from server.',
+        icon: LucideIcons.unlock,
+        color: AppColors.toolGreen,
+      ),
+    ],
   };
 
   /// Returns 5 customized feature/step cards for the specified [toolId].

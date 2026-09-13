@@ -4,16 +4,14 @@ import '../theme/app_colors.dart';
 
 /// Canonical ToolRegistry — one ToolItem definition per tool.
 ///
-/// All UI lists (featured, category, search, getTopToolsForCategory) MUST
-/// reference entries from this registry — never define duplicate ToolItems.
+/// Organized into the 15 Authoritative Functional Domains of PaperKit
+/// with shared cross-domain general utilities.
 class ToolRegistry {
   ToolRegistry._();
 
   // ──────────────────────────────────────────────────────────────────────────
-  // CANONICAL TOOL DEFINITIONS
+  // DOMAIN 1: File Manipulation & Document Tools
   // ──────────────────────────────────────────────────────────────────────────
-
-  // ── PDF Tools ─────────────────────────────────────────────────────────────
 
   static const ToolItem pdfEditor = ToolItem(
     id: 'pdf-editor',
@@ -24,6 +22,9 @@ class ToolRegistry {
     color: AppColors.toolPurple,
     softColor: AppColors.toolPurpleSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     isPro: true,
     tags: ['edit', 'annotate', 'pdf', 'text', 'draw', 'highlight'],
   );
@@ -37,6 +38,9 @@ class ToolRegistry {
     color: AppColors.toolBlue,
     softColor: AppColors.toolBlueSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['merge', 'combine', 'join', 'pdf'],
   );
 
@@ -49,6 +53,9 @@ class ToolRegistry {
     color: AppColors.toolRed,
     softColor: AppColors.toolRedSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['split', 'divide', 'pages', 'pdf'],
   );
 
@@ -61,6 +68,9 @@ class ToolRegistry {
     color: AppColors.toolOrange,
     softColor: AppColors.toolOrangeSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['compress', 'reduce', 'size', 'optimize', 'pdf'],
   );
 
@@ -73,6 +83,9 @@ class ToolRegistry {
     color: AppColors.toolTeal,
     softColor: AppColors.toolTealSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['extract', 'pages', 'pdf'],
   );
 
@@ -85,6 +98,9 @@ class ToolRegistry {
     color: AppColors.toolBlue,
     softColor: AppColors.toolBlueSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['rotate', 'orientation', 'pdf'],
   );
 
@@ -97,6 +113,9 @@ class ToolRegistry {
     color: AppColors.toolTeal,
     softColor: AppColors.toolTealSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['watermark', 'stamp', 'brand', 'pdf'],
   );
 
@@ -109,6 +128,9 @@ class ToolRegistry {
     color: AppColors.toolIndigo,
     softColor: AppColors.toolIndigoSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['organize', 'reorder', 'delete', 'pages', 'pdf'],
   );
 
@@ -121,6 +143,9 @@ class ToolRegistry {
     color: AppColors.toolBlue,
     softColor: AppColors.toolBlueSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['nup', 'print', 'tile', 'pages', 'pdf'],
   );
 
@@ -133,19 +158,10 @@ class ToolRegistry {
     color: AppColors.toolPurple,
     softColor: AppColors.toolPurpleSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['booklet', 'print', 'fold', 'pdf'],
-  );
-
-  static const ToolItem batesStamping = ToolItem(
-    id: 'bates-stamping',
-    label: 'Bates Stamping',
-    description: 'Sequential legal document numbering',
-    route: '/tools/bates',
-    icon: LucideIcons.binary,
-    color: AppColors.toolRed,
-    softColor: AppColors.toolRedSoft,
-    category: ToolCategory.pdf,
-    tags: ['bates', 'numbering', 'legal', 'stamp', 'pdf'],
   );
 
   static const ToolItem headerFooter = ToolItem(
@@ -157,7 +173,130 @@ class ToolRegistry {
     color: AppColors.toolTeal,
     softColor: AppColors.toolTealSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['header', 'footer', 'page number', 'date', 'pdf'],
+  );
+
+  static const ToolItem wordToPdf = ToolItem(
+    id: 'word-to-pdf',
+    label: 'Word to PDF',
+    description: 'Convert DOC/DOCX documents to PDF format',
+    route: '/tools/convert?from=word&to=pdf',
+    icon: LucideIcons.fileText,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.convert,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
+    tags: ['word', 'docx', 'doc', 'convert', 'pdf'],
+  );
+
+  static const ToolItem pdfToWord = ToolItem(
+    id: 'pdf-to-word',
+    label: 'PDF to Word',
+    description: 'Convert PDF documents to editable DOCX',
+    route: '/tools/convert?from=pdf&to=word',
+    icon: LucideIcons.fileOutput,
+    color: AppColors.toolIndigo,
+    softColor: AppColors.toolIndigoSoft,
+    category: ToolCategory.convert,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
+    tags: ['pdf', 'word', 'docx', 'convert', 'edit'],
+  );
+
+  static const ToolItem excelToPdf = ToolItem(
+    id: 'excel-to-pdf',
+    label: 'Excel to PDF',
+    description: 'Convert XLS/XLSX spreadsheets to PDF',
+    route: '/tools/convert?from=excel&to=pdf',
+    icon: LucideIcons.table,
+    color: AppColors.toolGreen,
+    softColor: AppColors.toolGreenSoft,
+    category: ToolCategory.convert,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
+    tags: ['excel', 'spreadsheet', 'xlsx', 'convert', 'pdf'],
+  );
+
+  static const ToolItem pdfToExcel = ToolItem(
+    id: 'pdf-to-excel',
+    label: 'PDF to Excel',
+    description: 'Extract tables and data to XLSX format',
+    route: '/tools/convert?from=pdf&to=excel',
+    icon: LucideIcons.fileSpreadsheet,
+    color: AppColors.toolTeal,
+    softColor: AppColors.toolTealSoft,
+    category: ToolCategory.convert,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
+    tags: ['pdf', 'excel', 'xlsx', 'convert', 'table'],
+  );
+
+  static const ToolItem pptToPdf = ToolItem(
+    id: 'ppt-to-pdf',
+    label: 'PPT to PDF',
+    description: 'Convert PowerPoint slides to PDF',
+    route: '/tools/convert?from=ppt&to=pdf',
+    icon: LucideIcons.presentation,
+    color: AppColors.toolOrange,
+    softColor: AppColors.toolOrangeSoft,
+    category: ToolCategory.convert,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
+    tags: ['powerpoint', 'ppt', 'pptx', 'slides', 'convert', 'pdf'],
+  );
+
+  static const ToolItem pdfToPpt = ToolItem(
+    id: 'pdf-to-ppt',
+    label: 'PDF to PPT',
+    description: 'Convert PDF pages into PowerPoint slides',
+    route: '/tools/convert?from=pdf&to=ppt',
+    icon: LucideIcons.fileSliders,
+    color: AppColors.toolPink,
+    softColor: AppColors.toolPinkSoft,
+    category: ToolCategory.convert,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
+    tags: ['pdf', 'powerpoint', 'pptx', 'slides', 'convert'],
+  );
+
+  static const ToolItem imageToPdf = ToolItem(
+    id: 'image-to-pdf',
+    label: 'Image to PDF',
+    description: 'Convert JPG, PNG, WEBP images to PDF',
+    route: '/tools/convert?from=image&to=pdf',
+    icon: LucideIcons.image,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.convert,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
+    tags: ['image', 'jpg', 'png', 'convert', 'pdf'],
+  );
+
+  static const ToolItem pdfToImage = ToolItem(
+    id: 'pdf-to-image',
+    label: 'PDF to Image',
+    description: 'Render PDF pages as high-resolution images',
+    route: '/tools/convert?from=pdf&to=image',
+    icon: LucideIcons.images,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.convert,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
+    tags: ['pdf', 'image', 'jpg', 'png', 'convert'],
   );
 
   static const ToolItem pdfToPdfa = ToolItem(
@@ -169,207 +308,15 @@ class ToolRegistry {
     color: AppColors.toolOrange,
     softColor: AppColors.toolOrangeSoft,
     category: ToolCategory.pdf,
+    domainNumber: 1,
+    domainName: 'File Manipulation & Document Tools',
+    domainId: DomainId.fileManipulation,
     tags: ['pdfa', 'archive', 'iso', 'long-term', 'pdf'],
   );
 
-  // ── AI Tools ──────────────────────────────────────────────────────────────
-
-  static const ToolItem aiOcr = ToolItem(
-    id: 'ai-ocr',
-    label: 'OCR Text & Layout',
-    description: 'Extract text & tables from scans/images',
-    route: '/ai/ocr',
-    icon: LucideIcons.scanLine,
-    color: AppColors.toolBlue,
-    softColor: AppColors.toolBlueSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['ocr', 'scan', 'text', 'extract', 'image', 'scanned'],
-  );
-
-  static const ToolItem aiSummary = ToolItem(
-    id: 'ai-summary',
-    label: 'AI Summary',
-    description: 'Detailed, short, key points & action items',
-    route: '/ai/summarize',
-    icon: LucideIcons.sparkles,
-    color: AppColors.toolPurple,
-    softColor: AppColors.toolPurpleSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['summary', 'summarize', 'overview', 'key points', 'ai'],
-  );
-
-  static const ToolItem semanticCompare = ToolItem(
-    id: 'semantic-compare',
-    label: 'Semantic Compare',
-    description: 'Compare meaning & temporal/financial changes',
-    route: '/ai/compare',
-    icon: LucideIcons.gitCompare,
-    color: AppColors.toolPurple,
-    softColor: AppColors.toolPurpleSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['compare', 'diff', 'difference', 'semantic', 'ai'],
-  );
-
-  static const ToolItem similarityMatrix = ToolItem(
-    id: 'similarity-matrix',
-    label: 'Similarity Score',
-    description: 'Pairwise similarity & duplicate detection',
-    route: '/ai/similarity',
-    icon: LucideIcons.layoutGrid,
-    color: AppColors.toolIndigo,
-    softColor: AppColors.toolIndigoSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['similarity', 'duplicate', 'matrix', 'ai'],
-  );
-
-  static const ToolItem aiDocChat = ToolItem(
-    id: 'ai-doc-chat',
-    label: 'AI Document Chat',
-    description: 'Interactive conversational Q&A and research',
-    route: '/ai/ask',
-    icon: LucideIcons.messageSquare,
-    color: AppColors.toolBlue,
-    softColor: AppColors.toolBlueSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['chat', 'ask', 'question', 'conversation', 'ai'],
-  );
-
-  static const ToolItem semanticSearch = ToolItem(
-    id: 'semantic-search',
-    label: 'Semantic Search',
-    description: 'Search document by intent and meaning',
-    route: '/ai/search',
-    icon: LucideIcons.search,
-    color: AppColors.toolTeal,
-    softColor: AppColors.toolTealSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['search', 'semantic', 'find', 'intent', 'ai'],
-  );
-
-  static const ToolItem classifyDocument = ToolItem(
-    id: 'classify-document',
-    label: 'Document Classify',
-    description: 'Auto-identify paper, resume, invoice, contract',
-    route: '/ai/classify',
-    icon: LucideIcons.tag,
-    color: AppColors.toolOrange,
-    softColor: AppColors.toolOrangeSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['classify', 'category', 'type', 'identify', 'ai'],
-  );
-
-  static const ToolItem extractInfo = ToolItem(
-    id: 'extract-info',
-    label: 'Information Extract',
-    description: 'Structured fields from invoices, CVs & papers',
-    route: '/ai/extract-info',
-    icon: LucideIcons.fileSearch,
-    color: AppColors.toolPink,
-    softColor: AppColors.toolPinkSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['extract', 'information', 'fields', 'invoice', 'resume', 'ai'],
-  );
-
-  static const ToolItem translateDoc = ToolItem(
-    id: 'translate-doc',
-    label: 'AI Translation',
-    description: 'Translate into 15+ languages',
-    route: '/ai/translate',
-    icon: LucideIcons.languages,
-    color: AppColors.toolGreen,
-    softColor: AppColors.toolGreenSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['translate', 'language', 'multilingual', 'ai'],
-  );
-
-  static const ToolItem writingAssistant = ToolItem(
-    id: 'writing-assistant',
-    label: 'Writing Assistant',
-    description: 'Grammar, paraphrase, formal & tone polish',
-    route: '/ai/writing-assist',
-    icon: LucideIcons.penTool,
-    color: AppColors.toolGreen,
-    softColor: AppColors.toolGreenSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['writing', 'grammar', 'paraphrase', 'tone', 'ai'],
-  );
-
-  static const ToolItem qualityChecker = ToolItem(
-    id: 'quality-checker',
-    label: 'Quality Checker',
-    description: 'Audit structure, citations & readability',
-    route: '/ai/quality-checker',
-    icon: LucideIcons.checkCheck,
-    color: AppColors.toolTeal,
-    softColor: AppColors.toolTealSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['quality', 'audit', 'check', 'readability', 'ai'],
-  );
-
-  static const ToolItem extractTables = ToolItem(
-    id: 'extract-tables',
-    label: 'Extract Tables',
-    description: 'Detect & export structured tables',
-    route: '/ai/extract-tables',
-    icon: LucideIcons.table,
-    color: AppColors.toolGreen,
-    softColor: AppColors.toolGreenSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['table', 'extract', 'csv', 'data', 'ai'],
-  );
-
-  static const ToolItem imageEnhancer = ToolItem(
-    id: 'image-enhancer',
-    label: 'Image Enhancer',
-    description: 'AI upscaling & image quality improvement',
-    route: '/ai/image-enhancer',
-    icon: LucideIcons.imagePlus,
-    color: AppColors.toolPurple,
-    softColor: AppColors.toolPurpleSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['enhance', 'upscale', 'image', 'quality', 'ai'],
-  );
-
-  static const ToolItem parseInvoice = ToolItem(
-    id: 'parse-invoice',
-    label: 'Invoice AI Parser',
-    description: 'Extract vendor, date, totals & line items',
-    route: '/ai/invoice',
-    icon: LucideIcons.receipt,
-    color: AppColors.toolGreen,
-    softColor: AppColors.toolGreenSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['invoice', 'receipt', 'vendor', 'amount', 'parse', 'ai'],
-  );
-
-  static const ToolItem parseCv = ToolItem(
-    id: 'parse-cv',
-    label: 'Resume AI Scanner',
-    description: 'Extract skills, experience & education',
-    route: '/ai/resume',
-    icon: LucideIcons.fileUser,
-    color: AppColors.toolOrange,
-    softColor: AppColors.toolOrangeSoft,
-    category: ToolCategory.ai,
-    isAi: true,
-    tags: ['resume', 'cv', 'skills', 'experience', 'ai'],
-  );
-
-  // ── Security Tools ────────────────────────────────────────────────────────
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 2: Security, Cryptography & Compliance Vault
+  // ──────────────────────────────────────────────────────────────────────────
 
   static const ToolItem protectPdf = ToolItem(
     id: 'protect-pdf',
@@ -380,6 +327,9 @@ class ToolRegistry {
     color: AppColors.toolRed,
     softColor: AppColors.toolRedSoft,
     category: ToolCategory.security,
+    domainNumber: 2,
+    domainName: 'Security, Cryptography & Compliance Vault',
+    domainId: DomainId.securityVault,
     tags: ['protect', 'password', 'encrypt', 'security', 'pdf'],
   );
 
@@ -392,6 +342,9 @@ class ToolRegistry {
     color: AppColors.toolOrange,
     softColor: AppColors.toolOrangeSoft,
     category: ToolCategory.security,
+    domainNumber: 2,
+    domainName: 'Security, Cryptography & Compliance Vault',
+    domainId: DomainId.securityVault,
     isAi: true,
     tags: ['redact', 'privacy', 'blackout', 'pii', 'security'],
   );
@@ -405,6 +358,9 @@ class ToolRegistry {
     color: AppColors.toolIndigo,
     softColor: AppColors.toolIndigoSoft,
     category: ToolCategory.security,
+    domainNumber: 2,
+    domainName: 'Security, Cryptography & Compliance Vault',
+    domainId: DomainId.securityVault,
     tags: ['sign', 'signature', 'digital', 'pdf'],
   );
 
@@ -417,253 +373,30 @@ class ToolRegistry {
     color: AppColors.toolBlue,
     softColor: AppColors.toolBlueSoft,
     category: ToolCategory.security,
+    domainNumber: 2,
+    domainName: 'Security, Cryptography & Compliance Vault',
+    domainId: DomainId.securityVault,
     tags: ['metadata', 'privacy', 'sanitize', 'author', 'pdf'],
   );
 
-  // ── Conversion Tools ──────────────────────────────────────────────────────
-
-  static const ToolItem wordToPdf = ToolItem(
-    id: 'word-to-pdf',
-    label: 'Word to PDF',
-    description: 'Convert DOC/DOCX documents to PDF format',
-    route: '/tools/convert?from=word&to=pdf',
-    icon: LucideIcons.fileText,
-    color: AppColors.toolBlue,
-    softColor: AppColors.toolBlueSoft,
-    category: ToolCategory.convert,
-    tags: ['word', 'docx', 'doc', 'convert', 'pdf'],
-  );
-
-  static const ToolItem pdfToWord = ToolItem(
-    id: 'pdf-to-word',
-    label: 'PDF to Word',
-    description: 'Convert PDF documents to editable DOCX',
-    route: '/tools/convert?from=pdf&to=word',
-    icon: LucideIcons.fileOutput,
-    color: AppColors.toolIndigo,
-    softColor: AppColors.toolIndigoSoft,
-    category: ToolCategory.convert,
-    tags: ['pdf', 'word', 'docx', 'convert', 'edit'],
-  );
-
-  static const ToolItem excelToPdf = ToolItem(
-    id: 'excel-to-pdf',
-    label: 'Excel to PDF',
-    description: 'Convert XLS/XLSX spreadsheets to PDF',
-    route: '/tools/convert?from=excel&to=pdf',
-    icon: LucideIcons.table,
-    color: AppColors.toolGreen,
-    softColor: AppColors.toolGreenSoft,
-    category: ToolCategory.convert,
-    tags: ['excel', 'spreadsheet', 'xlsx', 'convert', 'pdf'],
-  );
-
-  static const ToolItem pdfToExcel = ToolItem(
-    id: 'pdf-to-excel',
-    label: 'PDF to Excel',
-    description: 'Extract tables and data to XLSX format',
-    route: '/tools/convert?from=pdf&to=excel',
-    icon: LucideIcons.fileSpreadsheet,
+  static const ToolItem biometricAppLock = ToolItem(
+    id: 'biometric-app-lock',
+    label: 'Biometric App Lock',
+    description: 'Hardware biometric fingerprint & Face ID vault security',
+    route: '/security/protect',
+    icon: LucideIcons.fingerprint,
     color: AppColors.toolTeal,
     softColor: AppColors.toolTealSoft,
-    category: ToolCategory.convert,
-    tags: ['pdf', 'excel', 'xlsx', 'convert', 'table'],
+    category: ToolCategory.security,
+    domainNumber: 2,
+    domainName: 'Security, Cryptography & Compliance Vault',
+    domainId: DomainId.securityVault,
+    tags: ['biometric', 'fingerprint', 'face id', 'auth', 'security', 'vault'],
   );
 
-  static const ToolItem pptToPdf = ToolItem(
-    id: 'ppt-to-pdf',
-    label: 'PPT to PDF',
-    description: 'Convert PowerPoint slides to PDF',
-    route: '/tools/convert?from=ppt&to=pdf',
-    icon: LucideIcons.presentation,
-    color: AppColors.toolOrange,
-    softColor: AppColors.toolOrangeSoft,
-    category: ToolCategory.convert,
-    tags: ['powerpoint', 'ppt', 'pptx', 'slides', 'convert', 'pdf'],
-  );
-
-  static const ToolItem pdfToPpt = ToolItem(
-    id: 'pdf-to-ppt',
-    label: 'PDF to PPT',
-    description: 'Convert PDF pages into PowerPoint slides',
-    route: '/tools/convert?from=pdf&to=ppt',
-    icon: LucideIcons.fileSliders,
-    color: AppColors.toolPink,
-    softColor: AppColors.toolPinkSoft,
-    category: ToolCategory.convert,
-    tags: ['pdf', 'powerpoint', 'pptx', 'slides', 'convert'],
-  );
-
-  static const ToolItem imageToPdf = ToolItem(
-    id: 'image-to-pdf',
-    label: 'Image to PDF',
-    description: 'Convert JPG, PNG, WEBP images to PDF',
-    route: '/tools/convert?from=image&to=pdf',
-    icon: LucideIcons.image,
-    color: AppColors.toolPurple,
-    softColor: AppColors.toolPurpleSoft,
-    category: ToolCategory.convert,
-    tags: ['image', 'jpg', 'png', 'convert', 'pdf'],
-  );
-
-  static const ToolItem pdfToImage = ToolItem(
-    id: 'pdf-to-image',
-    label: 'PDF to Image',
-    description: 'Render PDF pages as high-resolution images',
-    route: '/tools/convert?from=pdf&to=image',
-    icon: LucideIcons.images,
-    color: AppColors.toolBlue,
-    softColor: AppColors.toolBlueSoft,
-    category: ToolCategory.convert,
-    tags: ['pdf', 'image', 'jpg', 'png', 'convert'],
-  );
-
-  // ── Image Tools ───────────────────────────────────────────────────────────
-
-  static const ToolItem imageConverter = ToolItem(
-    id: 'image-converter',
-    label: 'Image Converter',
-    description: 'Convert between JPG, PNG, WebP, HEIC, BMP',
-    route: '/tools/image-converter',
-    icon: LucideIcons.image,
-    color: AppColors.toolBlue,
-    softColor: AppColors.toolBlueSoft,
-    category: ToolCategory.image,
-    tags: ['image', 'convert', 'jpg', 'png', 'webp', 'heic', 'bmp'],
-  );
-
-  static const ToolItem imageCompressor = ToolItem(
-    id: 'image-compressor',
-    label: 'Image Compressor',
-    description: 'Reduce image file size with quality control',
-    route: '/tools/image-compressor',
-    icon: LucideIcons.minimize2,
-    color: AppColors.toolOrange,
-    softColor: AppColors.toolOrangeSoft,
-    category: ToolCategory.image,
-    tags: ['image', 'compress', 'reduce', 'size'],
-  );
-
-  static const ToolItem imageManipulator = ToolItem(
-    id: 'image-manipulator',
-    label: 'Image Adjust & Manipulator',
-    description: 'Adjust brightness, contrast, saturation & filters',
-    route: '/tools/image-manipulator',
-    icon: LucideIcons.sliders,
-    color: AppColors.toolPink,
-    softColor: AppColors.toolPinkSoft,
-    category: ToolCategory.image,
-    tags: ['image', 'adjust', 'brightness', 'contrast', 'filter'],
-  );
-
-  static const ToolItem imageResizer = ToolItem(
-    id: 'image-resizer',
-    label: 'Image Resizer',
-    description: 'Resize images by dimensions, percentage or presets',
-    route: '/tools/image-resizer',
-    icon: LucideIcons.moveHorizontal,
-    color: AppColors.toolTeal,
-    softColor: AppColors.toolTealSoft,
-    category: ToolCategory.image,
-    isNew: true,
-    tags: ['image', 'resize', 'dimensions', 'scale', 'batch'],
-  );
-
-  static const ToolItem qrGenerator = ToolItem(
-    id: 'qr-generator',
-    label: 'QR Code Generator',
-    description: 'Generate QR codes for URLs, text, email & more',
-    route: '/tools/qr-generator',
-    icon: LucideIcons.qrCode,
-    color: AppColors.toolIndigo,
-    softColor: AppColors.toolIndigoSoft,
-    category: ToolCategory.utilities,
-    isNew: true,
-    tags: ['qr', 'qr code', 'barcode', 'link', 'url'],
-  );
-
-  static const ToolItem barcodeGenerator = ToolItem(
-    id: 'barcode-generator',
-    label: 'Barcode Generator',
-    description: 'Generate Code128, EAN13, QR & other barcodes',
-    route: '/tools/barcode-generator',
-    icon: LucideIcons.barChart,
-    color: AppColors.toolPurple,
-    softColor: AppColors.toolPurpleSoft,
-    category: ToolCategory.utilities,
-    isNew: true,
-    tags: ['barcode', 'code128', 'ean', 'product', 'inventory'],
-  );
-
-  // ── Video Tools ───────────────────────────────────────────────────────────
-
-  static const ToolItem videoConverter = ToolItem(
-    id: 'video-converter',
-    label: 'Video Converter',
-    description: 'Convert between MP4, WebM, MOV & GIF',
-    route: '/tools/video-converter',
-    icon: LucideIcons.video,
-    color: AppColors.toolBlue,
-    softColor: AppColors.toolBlueSoft,
-    category: ToolCategory.video,
-    tags: ['video', 'convert', 'mp4', 'webm', 'mov'],
-  );
-
-  static const ToolItem videoCompressor = ToolItem(
-    id: 'video-compressor',
-    label: 'Video Compressor',
-    description: 'Compress video with quality control',
-    route: '/tools/video-compressor',
-    icon: LucideIcons.minimize2,
-    color: AppColors.toolOrange,
-    softColor: AppColors.toolOrangeSoft,
-    category: ToolCategory.video,
-    tags: ['video', 'compress', 'reduce', 'size'],
-  );
-
-  // ── Audio Tools ───────────────────────────────────────────────────────────
-
-  static const ToolItem audioConverter = ToolItem(
-    id: 'audio-converter',
-    label: 'Audio Converter',
-    description: 'Convert between MP3, WAV, OGG formats',
-    route: '/tools/audio-converter',
-    icon: LucideIcons.music,
-    color: AppColors.toolGreen,
-    softColor: AppColors.toolGreenSoft,
-    category: ToolCategory.audio,
-    tags: ['audio', 'convert', 'mp3', 'wav', 'ogg'],
-  );
-
-  // ── Archive Tools ─────────────────────────────────────────────────────────
-
-  static const ToolItem archiveStudio = ToolItem(
-    id: 'archive-studio',
-    label: 'Archive Studio',
-    description: 'Extract, create & convert ZIP, RAR, TAR, GZ archives',
-    route: '/tools/archive',
-    icon: LucideIcons.archiveRestore,
-    color: AppColors.toolPurple,
-    softColor: AppColors.toolPurpleSoft,
-    category: ToolCategory.archive,
-    tags: ['archive', 'zip', 'rar', 'tar', 'extract', 'compress'],
-  );
-
-  // ── Scanner Tools ─────────────────────────────────────────────────────────
-
-  static const ToolItem scanToPdf = ToolItem(
-    id: 'scan-to-pdf',
-    label: 'Scan to PDF',
-    description: 'Camera scan with edge detection, crop & OCR to searchable PDF',
-    route: '/scanner',
-    icon: LucideIcons.scanLine,
-    color: AppColors.toolBlue,
-    softColor: AppColors.toolBlueSoft,
-    category: ToolCategory.scanner,
-    tags: ['scan', 'camera', 'pdf', 'ocr', 'document', 'searchable'],
-  );
-
-  // ── Academic / Research Tools ─────────────────────────────────────────────
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 3: Academic & Research Intelligence Suite
+  // ──────────────────────────────────────────────────────────────────────────
 
   static const ToolItem researchAnalyzer = ToolItem(
     id: 'research-analyzer',
@@ -674,6 +407,9 @@ class ToolRegistry {
     color: AppColors.toolPurple,
     softColor: AppColors.toolPurpleSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
     isNew: true,
     tags: ['research', 'paper', 'analyze', 'academic', 'abstract', 'methodology'],
@@ -688,6 +424,9 @@ class ToolRegistry {
     color: AppColors.toolIndigo,
     softColor: AppColors.toolIndigoSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
     isNew: true,
     tags: ['literature', 'review', 'research', 'papers', 'academic', 'compare'],
@@ -702,6 +441,9 @@ class ToolRegistry {
     color: AppColors.toolTeal,
     softColor: AppColors.toolTealSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
     isNew: true,
     tags: ['gap', 'research', 'limitation', 'future work', 'academic'],
@@ -716,6 +458,9 @@ class ToolRegistry {
     color: AppColors.toolOrange,
     softColor: AppColors.toolOrangeSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
     isNew: true,
     tags: ['citation', 'reference', 'bibliography', 'doi', 'extract', 'research'],
@@ -730,6 +475,9 @@ class ToolRegistry {
     color: AppColors.toolGreen,
     softColor: AppColors.toolGreenSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
     isNew: true,
     tags: ['citation', 'format', 'apa', 'mla', 'ieee', 'chicago', 'harvard', 'vancouver'],
@@ -744,6 +492,9 @@ class ToolRegistry {
     color: AppColors.toolRed,
     softColor: AppColors.toolRedSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
     isNew: true,
     tags: ['reference', 'citation', 'check', 'missing', 'duplicate', 'research'],
@@ -758,6 +509,9 @@ class ToolRegistry {
     color: AppColors.toolBlue,
     softColor: AppColors.toolBlueSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
     isNew: true,
     tags: ['study', 'notes', 'key concepts', 'revision', 'academic', 'learn'],
@@ -772,6 +526,9 @@ class ToolRegistry {
     color: AppColors.toolTeal,
     softColor: AppColors.toolTealSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
     isNew: true,
     tags: ['quiz', 'test', 'question', 'mcq', 'study', 'academic', 'exam'],
@@ -786,40 +543,395 @@ class ToolRegistry {
     color: AppColors.toolPink,
     softColor: AppColors.toolPinkSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
     isNew: true,
     tags: ['flashcard', 'study', 'memorize', 'term', 'definition', 'review'],
   );
 
-  static const ToolItem mindMap = ToolItem(
-    id: 'mind-map',
-    label: 'Mind Map Generator',
-    description: 'Convert document structure to interactive knowledge graph',
-    route: '/academic/mind-map',
-    icon: LucideIcons.network,
+  static const ToolItem aiSummary = ToolItem(
+    id: 'ai-summary',
+    label: 'AI Summary',
+    description: 'Detailed, short, key points & action items',
+    route: '/ai/summarize',
+    icon: LucideIcons.sparkles,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
+    isAi: true,
+    tags: ['summary', 'summarize', 'overview', 'key points', 'ai'],
+  );
+
+  static const ToolItem aiDocChat = ToolItem(
+    id: 'ai-doc-chat',
+    label: 'AI Document Chat',
+    description: 'Interactive conversational Q&A and research',
+    route: '/ai/ask',
+    icon: LucideIcons.messageSquare,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
+    isAi: true,
+    tags: ['chat', 'ask', 'question', 'conversation', 'ai'],
+  );
+
+  static const ToolItem semanticCompare = ToolItem(
+    id: 'semantic-compare',
+    label: 'Semantic Compare',
+    description: 'Compare meaning & temporal/financial changes',
+    route: '/ai/compare',
+    icon: LucideIcons.gitCompare,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
+    isAi: true,
+    tags: ['compare', 'diff', 'difference', 'semantic', 'ai'],
+  );
+
+  static const ToolItem similarityMatrix = ToolItem(
+    id: 'similarity-matrix',
+    label: 'Similarity Score',
+    description: 'Pairwise similarity & duplicate detection',
+    route: '/ai/similarity',
+    icon: LucideIcons.layoutGrid,
     color: AppColors.toolIndigo,
     softColor: AppColors.toolIndigoSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
-    isNew: true,
-    tags: ['mind map', 'concept', 'graph', 'knowledge', 'visual', 'study'],
+    tags: ['similarity', 'duplicate', 'matrix', 'ai'],
   );
 
-  static const ToolItem presentationGenerator = ToolItem(
-    id: 'presentation-generator',
-    label: 'Presentation Generator',
-    description: 'Generate slide structure & content from documents',
-    route: '/academic/presentation-generator',
-    icon: LucideIcons.presentation,
+  static const ToolItem semanticSearch = ToolItem(
+    id: 'semantic-search',
+    label: 'Semantic Search',
+    description: 'Search document by intent and meaning',
+    route: '/ai/search',
+    icon: LucideIcons.search,
+    color: AppColors.toolTeal,
+    softColor: AppColors.toolTealSoft,
+    category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
+    isAi: true,
+    tags: ['search', 'semantic', 'find', 'intent', 'ai'],
+  );
+
+  static const ToolItem classifyDocument = ToolItem(
+    id: 'classify-document',
+    label: 'Document Classify',
+    description: 'Auto-identify paper, resume, invoice, contract',
+    route: '/ai/classify',
+    icon: LucideIcons.tag,
     color: AppColors.toolOrange,
     softColor: AppColors.toolOrangeSoft,
     category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
     isAi: true,
-    isNew: true,
-    tags: ['presentation', 'slides', 'ppt', 'academic', 'generate'],
+    tags: ['classify', 'category', 'type', 'identify', 'ai'],
   );
 
-  // ── Forms Tools ───────────────────────────────────────────────────────────
+  static const ToolItem extractInfo = ToolItem(
+    id: 'extract-info',
+    label: 'Information Extract',
+    description: 'Structured fields from invoices, CVs & papers',
+    route: '/ai/extract-info',
+    icon: LucideIcons.fileSearch,
+    color: AppColors.toolPink,
+    softColor: AppColors.toolPinkSoft,
+    category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
+    isAi: true,
+    tags: ['extract', 'information', 'fields', 'invoice', 'resume', 'ai'],
+  );
+
+  static const ToolItem writingAssistant = ToolItem(
+    id: 'writing-assistant',
+    label: 'Writing Assistant',
+    description: 'Grammar, paraphrase, formal & tone polish',
+    route: '/ai/writing-assist',
+    icon: LucideIcons.penTool,
+    color: AppColors.toolGreen,
+    softColor: AppColors.toolGreenSoft,
+    category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
+    isAi: true,
+    tags: ['writing', 'grammar', 'paraphrase', 'tone', 'ai'],
+  );
+
+  static const ToolItem qualityChecker = ToolItem(
+    id: 'quality-checker',
+    label: 'Quality Checker',
+    description: 'Audit structure, citations & readability',
+    route: '/ai/quality-checker',
+    icon: LucideIcons.checkCheck,
+    color: AppColors.toolTeal,
+    softColor: AppColors.toolTealSoft,
+    category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
+    isAi: true,
+    tags: ['quality', 'audit', 'check', 'readability', 'ai'],
+  );
+
+  static const ToolItem parseCv = ToolItem(
+    id: 'parse-cv',
+    label: 'Resume AI Scanner',
+    description: 'Extract skills, experience & education',
+    route: '/ai/resume',
+    icon: LucideIcons.fileUser,
+    color: AppColors.toolOrange,
+    softColor: AppColors.toolOrangeSoft,
+    category: ToolCategory.academic,
+    domainNumber: 3,
+    domainName: 'Academic & Research Intelligence Suite',
+    domainId: DomainId.academicIntelligence,
+    isAi: true,
+    tags: ['resume', 'cv', 'skills', 'experience', 'ai'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 4: Optical Scanning & Vision Engine (OCR)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem aiOcr = ToolItem(
+    id: 'ai-ocr',
+    label: 'OCR Text & Layout',
+    description: 'Extract text & tables from scans/images',
+    route: '/ai/ocr',
+    icon: LucideIcons.scanLine,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.scanner,
+    domainNumber: 4,
+    domainName: 'Optical Scanning & Vision Engine (OCR)',
+    domainId: DomainId.opticalVisionOcr,
+    isAi: true,
+    tags: ['ocr', 'scan', 'text', 'extract', 'image', 'scanned'],
+  );
+
+  static const ToolItem scanToPdf = ToolItem(
+    id: 'scan-to-pdf',
+    label: 'Scan to PDF',
+    description: 'Camera scan with edge detection, crop & OCR to searchable PDF',
+    route: '/scanner',
+    icon: LucideIcons.camera,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.scanner,
+    domainNumber: 4,
+    domainName: 'Optical Scanning & Vision Engine (OCR)',
+    domainId: DomainId.opticalVisionOcr,
+    tags: ['scan', 'camera', 'pdf', 'ocr', 'document', 'searchable'],
+  );
+
+  static const ToolItem imageEnhancer = ToolItem(
+    id: 'image-enhancer',
+    label: 'Image Enhancer',
+    description: 'AI upscaling & image quality improvement',
+    route: '/ai/image-enhancer',
+    icon: LucideIcons.imagePlus,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.scanner,
+    domainNumber: 4,
+    domainName: 'Optical Scanning & Vision Engine (OCR)',
+    domainId: DomainId.opticalVisionOcr,
+    isAi: true,
+    tags: ['enhance', 'upscale', 'image', 'quality', 'ai'],
+  );
+
+  static const ToolItem imageConverter = ToolItem(
+    id: 'image-converter',
+    label: 'Image Converter',
+    description: 'Convert between JPG, PNG, WebP, HEIC, BMP',
+    route: '/tools/image-converter',
+    icon: LucideIcons.image,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.image,
+    domainNumber: 4,
+    domainName: 'Optical Scanning & Vision Engine (OCR)',
+    domainId: DomainId.opticalVisionOcr,
+    tags: ['image', 'convert', 'jpg', 'png', 'webp', 'heic', 'bmp'],
+  );
+
+  static const ToolItem imageCompressor = ToolItem(
+    id: 'image-compressor',
+    label: 'Image Compressor',
+    description: 'Reduce image file size with quality control',
+    route: '/tools/image-compressor',
+    icon: LucideIcons.minimize2,
+    color: AppColors.toolOrange,
+    softColor: AppColors.toolOrangeSoft,
+    category: ToolCategory.image,
+    domainNumber: 4,
+    domainName: 'Optical Scanning & Vision Engine (OCR)',
+    domainId: DomainId.opticalVisionOcr,
+    tags: ['image', 'compress', 'reduce', 'size'],
+  );
+
+  static const ToolItem imageManipulator = ToolItem(
+    id: 'image-manipulator',
+    label: 'Image Adjust & Manipulator',
+    description: 'Adjust brightness, contrast, saturation & filters',
+    route: '/tools/image-manipulator',
+    icon: LucideIcons.sliders,
+    color: AppColors.toolPink,
+    softColor: AppColors.toolPinkSoft,
+    category: ToolCategory.image,
+    domainNumber: 4,
+    domainName: 'Optical Scanning & Vision Engine (OCR)',
+    domainId: DomainId.opticalVisionOcr,
+    tags: ['image', 'adjust', 'brightness', 'contrast', 'filter'],
+  );
+
+  static const ToolItem imageResizer = ToolItem(
+    id: 'image-resizer',
+    label: 'Image Resizer',
+    description: 'Resize images by dimensions, percentage or presets',
+    route: '/tools/image-resizer',
+    icon: LucideIcons.moveHorizontal,
+    color: AppColors.toolTeal,
+    softColor: AppColors.toolTealSoft,
+    category: ToolCategory.image,
+    domainNumber: 4,
+    domainName: 'Optical Scanning & Vision Engine (OCR)',
+    domainId: DomainId.opticalVisionOcr,
+    isNew: true,
+    tags: ['image', 'resize', 'dimensions', 'scale', 'batch'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 5: Gamified Cognitive Retention & Active Study Studio
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem cognitiveRetention = ToolItem(
+    id: 'cognitive-retention',
+    label: 'Cognitive Retention Studio',
+    description: 'Active recall blur-to-reveal reading & Leitner study',
+    route: '/cognitive/retention',
+    icon: LucideIcons.brain,
+    color: AppColors.toolOrange,
+    softColor: AppColors.toolOrangeSoft,
+    category: ToolCategory.cognitive,
+    domainNumber: 5,
+    domainName: 'Gamified Cognitive Retention & Active Study Studio',
+    domainId: DomainId.cognitiveRetention,
+    tags: ['active recall', 'flashcard', 'study', 'retention', 'blur', 'wpm'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 6: Multi-Modal Voice & Podcast Audio Studio
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem voicePodcast = ToolItem(
+    id: 'voice-podcast',
+    label: 'Voice & Podcast Studio',
+    description: 'Conversational dialogue podcast script & TTS audio player',
+    route: '/voice/podcast',
+    icon: LucideIcons.mic,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.voice,
+    domainNumber: 6,
+    domainName: 'Multi-Modal Voice & Podcast Audio Studio',
+    domainId: DomainId.voicePodcastStudio,
+    tags: ['podcast', 'voice', 'audio', 'tts', 'dialogue', 'speech'],
+  );
+
+  static const ToolItem audioConverter = ToolItem(
+    id: 'audio-converter',
+    label: 'Audio Converter',
+    description: 'Convert between MP3, WAV, OGG formats',
+    route: '/tools/audio-converter',
+    icon: LucideIcons.music,
+    color: AppColors.toolGreen,
+    softColor: AppColors.toolGreenSoft,
+    category: ToolCategory.audio,
+    domainNumber: 6,
+    domainName: 'Multi-Modal Voice & Podcast Audio Studio',
+    domainId: DomainId.voicePodcastStudio,
+    tags: ['audio', 'convert', 'mp3', 'wav', 'ogg'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 7: Universal Accessibility & Inclusive Reading Studio
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem accessibilityReader = ToolItem(
+    id: 'accessibility-reader',
+    label: 'Accessibility Reader Studio',
+    description: 'Bionic Reading, OpenDyslexic font & high-contrast themes',
+    route: '/accessibility/reader',
+    icon: LucideIcons.eye,
+    color: AppColors.toolTeal,
+    softColor: AppColors.toolTealSoft,
+    category: ToolCategory.accessibility,
+    domainNumber: 7,
+    domainName: 'Universal Accessibility & Inclusive Reading Studio',
+    domainId: DomainId.accessibilityReader,
+    tags: ['bionic', 'dyslexia', 'accessibility', 'contrast', 'reading'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 8: Legal & Forensic Compliance Audit Suite
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem batesStamping = ToolItem(
+    id: 'bates-stamping',
+    label: 'Bates Stamping',
+    description: 'Sequential legal document numbering & discovery codes',
+    route: '/tools/bates',
+    icon: LucideIcons.binary,
+    color: AppColors.toolRed,
+    softColor: AppColors.toolRedSoft,
+    category: ToolCategory.legal,
+    domainNumber: 8,
+    domainName: 'Legal & Forensic Compliance Audit Suite',
+    domainId: DomainId.legalAuditSuite,
+    tags: ['bates', 'numbering', 'legal', 'stamp', 'pdf', 'exhibit'],
+  );
+
+  static const ToolItem legalAudit = ToolItem(
+    id: 'legal-audit',
+    label: 'Legal & Forensic Audit Suite',
+    description: 'SHA-256 chain-of-custody log, clause matrix & Bates codes',
+    route: '/legal/audit',
+    icon: LucideIcons.scale,
+    color: AppColors.toolRed,
+    softColor: AppColors.toolRedSoft,
+    category: ToolCategory.legal,
+    domainNumber: 8,
+    domainName: 'Legal & Forensic Compliance Audit Suite',
+    domainId: DomainId.legalAuditSuite,
+    tags: ['legal', 'forensic', 'sha256', 'hash', 'bates', 'clause', 'contract'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 9: Interactive Form Builder & Auto-Fill Engine
+  // ──────────────────────────────────────────────────────────────────────────
 
   static const ToolItem formFiller = ToolItem(
     id: 'form-filler',
@@ -830,6 +942,9 @@ class ToolRegistry {
     color: AppColors.toolBlue,
     softColor: AppColors.toolBlueSoft,
     category: ToolCategory.forms,
+    domainNumber: 9,
+    domainName: 'Interactive Form Builder & Auto-Fill Engine',
+    domainId: DomainId.formBuilderEngine,
     isNew: true,
     tags: ['form', 'fill', 'pdf', 'field', 'checkbox', 'input'],
   );
@@ -843,31 +958,367 @@ class ToolRegistry {
     color: AppColors.toolTeal,
     softColor: AppColors.toolTealSoft,
     category: ToolCategory.forms,
+    domainNumber: 9,
+    domainName: 'Interactive Form Builder & Auto-Fill Engine',
+    domainId: DomainId.formBuilderEngine,
     isNew: true,
     tags: ['form', 'create', 'build', 'pdf', 'field', 'design'],
   );
 
   // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 10: Visual Mind Mapping & Diagram Studio
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem mindMapDiagram = ToolItem(
+    id: 'diagram-mindmap',
+    label: 'Visual Mind Map Studio',
+    description: 'Outline-to-mindmap node graph & visual canvas',
+    route: '/diagram/mindmap',
+    icon: LucideIcons.gitFork,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.diagram,
+    domainNumber: 10,
+    domainName: 'Visual Mind Mapping & Diagram Studio',
+    domainId: DomainId.mindMappingStudio,
+    tags: ['mindmap', 'diagram', 'visual', 'nodes', 'canvas', 'graph'],
+  );
+
+  static const ToolItem mindMap = ToolItem(
+    id: 'mind-map',
+    label: 'Mind Map Generator',
+    description: 'Convert document structure to interactive knowledge graph',
+    route: '/academic/mind-map',
+    icon: LucideIcons.network,
+    color: AppColors.toolIndigo,
+    softColor: AppColors.toolIndigoSoft,
+    category: ToolCategory.diagram,
+    domainNumber: 10,
+    domainName: 'Visual Mind Mapping & Diagram Studio',
+    domainId: DomainId.mindMappingStudio,
+    isAi: true,
+    isNew: true,
+    tags: ['mind map', 'concept', 'graph', 'knowledge', 'visual', 'study'],
+  );
+
+  static const ToolItem presentationGenerator = ToolItem(
+    id: 'presentation-generator',
+    label: 'Presentation Generator',
+    description: 'Generate slide structure & content from documents',
+    route: '/academic/presentation-generator',
+    icon: LucideIcons.presentation,
+    color: AppColors.toolOrange,
+    softColor: AppColors.toolOrangeSoft,
+    category: ToolCategory.diagram,
+    domainNumber: 10,
+    domainName: 'Visual Mind Mapping & Diagram Studio',
+    domainId: DomainId.mindMappingStudio,
+    isAi: true,
+    isNew: true,
+    tags: ['presentation', 'slides', 'ppt', 'academic', 'generate'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 11: Student Productivity & Dual-Pane Workspace Hub
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem dualPaneWorkspace = ToolItem(
+    id: 'workspace-dualpane',
+    label: 'Dual-Pane Workspace Hub',
+    description: 'Split-screen side-by-side document viewer & markdown notes',
+    route: '/workspace/dualpane',
+    icon: LucideIcons.layoutGrid,
+    color: AppColors.toolIndigo,
+    softColor: AppColors.toolIndigoSoft,
+    category: ToolCategory.workspace,
+    domainNumber: 11,
+    domainName: 'Student Productivity & Dual-Pane Workspace Hub',
+    domainId: DomainId.studentWorkspace,
+    tags: ['dualpane', 'workspace', 'split', 'notes', 'markdown', 'study'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 12: Offline P2P Mesh & Air-Share Workspace
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem p2pMeshShare = ToolItem(
+    id: 'p2p-meshshare',
+    label: 'Offline P2P Air-Share',
+    description: 'Zero-internet QR pairing & direct device-to-device transfer',
+    route: '/p2p/meshshare',
+    icon: LucideIcons.qrCode,
+    color: AppColors.toolGreen,
+    softColor: AppColors.toolGreenSoft,
+    category: ToolCategory.p2p,
+    domainNumber: 12,
+    domainName: 'Offline P2P Mesh & Air-Share Workspace',
+    domainId: DomainId.p2pAirShare,
+    tags: ['p2p', 'airshare', 'mesh', 'qr', 'offline', 'transfer', 'direct'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 13: Data Analytics & Tabular Data Extractor
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem tabularExtractor = ToolItem(
+    id: 'analytics-tables',
+    label: 'Tabular Data Extractor',
+    description: 'Detect table boundaries & export PDF tables to CSV/Excel',
+    route: '/analytics/tables',
+    icon: LucideIcons.table,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.analytics,
+    domainNumber: 13,
+    domainName: 'Data Analytics & Tabular Data Extractor',
+    domainId: DomainId.dataAnalyticsTabular,
+    tags: ['table', 'csv', 'excel', 'extract', 'data', 'tabular'],
+  );
+
+  static const ToolItem extractTables = ToolItem(
+    id: 'extract-tables',
+    label: 'Extract Tables',
+    description: 'Detect & export structured tables with AI engine',
+    route: '/ai/extract-tables',
+    icon: LucideIcons.tableProperties,
+    color: AppColors.toolGreen,
+    softColor: AppColors.toolGreenSoft,
+    category: ToolCategory.analytics,
+    domainNumber: 13,
+    domainName: 'Data Analytics & Tabular Data Extractor',
+    domainId: DomainId.dataAnalyticsTabular,
+    isAi: true,
+    tags: ['table', 'extract', 'csv', 'data', 'ai'],
+  );
+
+  static const ToolItem parseInvoice = ToolItem(
+    id: 'parse-invoice',
+    label: 'Invoice AI Parser',
+    description: 'Extract vendor, date, totals & line items',
+    route: '/ai/invoice',
+    icon: LucideIcons.receipt,
+    color: AppColors.toolGreen,
+    softColor: AppColors.toolGreenSoft,
+    category: ToolCategory.analytics,
+    domainNumber: 13,
+    domainName: 'Data Analytics & Tabular Data Extractor',
+    domainId: DomainId.dataAnalyticsTabular,
+    isAi: true,
+    tags: ['invoice', 'receipt', 'vendor', 'amount', 'parse', 'ai'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 14: Translation & Multi-Lingual Localization Hub
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem translateDoc = ToolItem(
+    id: 'translate-doc',
+    label: 'AI Translation',
+    description: 'Translate into 15+ languages',
+    route: '/ai/translate',
+    icon: LucideIcons.languages,
+    color: AppColors.toolGreen,
+    softColor: AppColors.toolGreenSoft,
+    category: ToolCategory.translation,
+    domainNumber: 14,
+    domainName: 'Translation & Multi-Lingual Localization Hub',
+    domainId: DomainId.translationHub,
+    isAi: true,
+    tags: ['translate', 'language', 'multilingual', 'ai'],
+  );
+
+  static const ToolItem translationHub = ToolItem(
+    id: 'translation-hub',
+    label: 'Translation & Localization Hub',
+    description: 'Side-by-side paragraph translation in Spanish, French, German',
+    route: '/translation/hub',
+    icon: LucideIcons.globe2,
+    color: AppColors.toolPink,
+    softColor: AppColors.toolPinkSoft,
+    category: ToolCategory.translation,
+    domainNumber: 14,
+    domainName: 'Translation & Multi-Lingual Localization Hub',
+    domainId: DomainId.translationHub,
+    tags: ['translate', 'languages', 'spanish', 'french', 'german', 'localization'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 15: Automated Publishing & e-Book Studio
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem publishingStudio = ToolItem(
+    id: 'publishing-studio',
+    label: 'Automated Publishing Studio',
+    description: 'CMYK pre-flight audit checklist & ePub book generator',
+    route: '/publishing/studio',
+    icon: LucideIcons.bookOpenCheck,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.publishing,
+    domainNumber: 15,
+    domainName: 'Automated Publishing & e-Book Studio',
+    domainId: DomainId.publishingStudio,
+    tags: ['publishing', 'epub', 'cmyk', 'preflight', 'book', 'cover'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // GENERAL UTILITIES LAYER (Cross-Domain, Not a 16th Domain)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem qrGenerator = ToolItem(
+    id: 'qr-generator',
+    label: 'QR Code Generator',
+    description: 'Custom QR codes with logos, frames, styles & vector SVG',
+    route: '/tools/qr-generator',
+    icon: LucideIcons.qrCode,
+    color: AppColors.toolIndigo,
+    softColor: AppColors.toolIndigoSoft,
+    category: ToolCategory.utilities,
+    domainNumber: null,
+    domainName: 'General Utilities & Media',
+    domainId: DomainId.utilities,
+    isNew: true,
+    tags: ['qr', 'qr code', 'barcode', 'link', 'generator', 'wifi', 'vcard', 'svg'],
+  );
+
+  static const ToolItem qrScanner = ToolItem(
+    id: 'qr-scanner',
+    label: 'QR Code Scanner',
+    description: 'Live camera & image QR scanner with smart payload actions',
+    route: '/tools/qr-scanner',
+    icon: LucideIcons.scanLine,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.utilities,
+    domainNumber: null,
+    domainName: 'General Utilities & Media',
+    domainId: DomainId.utilities,
+    isNew: true,
+    tags: ['qr', 'scanner', 'scan', 'camera', 'barcode', 'reader', 'decode'],
+  );
+
+  static const ToolItem barcodeGenerator = ToolItem(
+    id: 'barcode-generator',
+    label: 'Barcode Generator',
+    description: 'Generate Code128, EAN13, QR & other barcodes',
+    route: '/tools/barcode-generator',
+    icon: LucideIcons.barChart,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.utilities,
+    domainNumber: null,
+    domainName: 'General Utilities & Media',
+    domainId: DomainId.utilities,
+    isNew: true,
+    tags: ['barcode', 'code128', 'ean', 'product', 'inventory'],
+  );
+
+  static const ToolItem videoConverter = ToolItem(
+    id: 'video-converter',
+    label: 'Video Converter',
+    description: 'Convert between MP4, WebM, MOV & GIF',
+    route: '/tools/video-converter',
+    icon: LucideIcons.video,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.video,
+    domainNumber: null,
+    domainName: 'General Utilities & Media',
+    domainId: DomainId.utilities,
+    tags: ['video', 'convert', 'mp4', 'webm', 'mov'],
+  );
+
+  static const ToolItem videoCompressor = ToolItem(
+    id: 'video-compressor',
+    label: 'Video Compressor',
+    description: 'Compress video with quality control',
+    route: '/tools/video-compressor',
+    icon: LucideIcons.minimize2,
+    color: AppColors.toolOrange,
+    softColor: AppColors.toolOrangeSoft,
+    category: ToolCategory.video,
+    domainNumber: null,
+    domainName: 'General Utilities & Media',
+    domainId: DomainId.utilities,
+    tags: ['video', 'compress', 'reduce', 'size'],
+  );
+
+  static const ToolItem archiveStudio = ToolItem(
+    id: 'archive-studio',
+    label: 'Archive Studio',
+    description: 'Extract, create & convert ZIP, RAR, TAR, GZ archives',
+    route: '/tools/archive',
+    icon: LucideIcons.archiveRestore,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.archive,
+    domainNumber: null,
+    domainName: 'General Utilities & Media',
+    domainId: DomainId.utilities,
+    tags: ['archive', 'zip', 'rar', 'tar', 'extract', 'compress'],
+  );
+
+  static const ToolItem videoToFrames = ToolItem(
+    id: 'video-to-frames',
+    label: 'Video to Frames',
+    description: 'Extract every frame, at FPS or interval into JPG/PNG & ZIP',
+    route: '/tools/video-to-frames',
+    icon: LucideIcons.film,
+    color: AppColors.toolIndigo,
+    softColor: AppColors.toolIndigoSoft,
+    category: ToolCategory.video,
+    domainNumber: null,
+    domainName: 'General Utilities & Media',
+    domainId: DomainId.utilities,
+    isNew: true,
+    tags: ['video', 'frames', 'extract frames', 'fps', 'interval', 'zip', 'jpg', 'png'],
+  );
+
+  static const ToolItem videoEditor = ToolItem(
+    id: 'video-editor',
+    label: 'Video Editor',
+    description: 'Trim, crop, rotate, flip, speed, volume, filters & overlay',
+    route: '/tools/video-editor',
+    icon: LucideIcons.clapperboard,
+    color: AppColors.toolOrange,
+    softColor: AppColors.toolOrangeSoft,
+    category: ToolCategory.video,
+    domainNumber: null,
+    domainName: 'General Utilities & Media',
+    domainId: DomainId.utilities,
+    isNew: true,
+    tags: ['video', 'editor', 'video editor', 'trim', 'trim video', 'crop', 'crop video', 'rotate', 'speed', 'filter', 'text'],
+  );
+
+  static const ToolItem secureShare = ToolItem(
+    id: 'secure-share',
+    label: '10-Minute Secure Share',
+    description: 'Temporary encrypted server file sharing via QR code',
+    route: '/tools/secure-share',
+    icon: LucideIcons.qrCode,
+    color: AppColors.toolTeal,
+    softColor: AppColors.toolTealSoft,
+    category: ToolCategory.utilities,
+    domainNumber: null,
+    domainName: 'General Utilities & Media',
+    domainId: DomainId.utilities,
+    isNew: true,
+    tags: ['temporary share', 'secure share', 'qr share', '10 minute share', 'encrypted', 'password', 'share'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
   // LEGACY ID ALIASES
-  // Maps old IDs (found in callers) → canonical ToolItem
   // ──────────────────────────────────────────────────────────────────────────
 
   static const Map<String, String> _legacyIdMap = {
-    // Old IDs used in history records, getTopToolsForCategory inline items
     'summarize-pdf': 'ai-summary',
     'ask-pdf': 'ai-doc-chat',
-    'ai-ocr': 'ai-ocr', // already canonical
-    'extract-tables': 'extract-tables', // already canonical
     'ocr-document': 'ai-ocr',
     'classify-pdf': 'classify-document',
     'translate-pdf': 'translate-doc',
-    'image-converter': 'image-converter',
-    'video-converter': 'video-converter',
-    'media-downloader': 'archive-studio', // fallback — no dedicated downloader screen
-    'audio-converter': 'audio-converter',
     'digital-signature': 'digital-sign',
     'metadata-cleaner': 'metadata-manager',
-    'convert-pdf': 'word-to-pdf', // generic fallback
+    'convert-pdf': 'word-to-pdf',
     'generate-quiz': 'quiz-generator',
     'archive-extract': 'archive-studio',
     'archive-create-zip': 'archive-studio',
@@ -892,21 +1343,7 @@ class ToolRegistry {
     'webp-to-jpg': 'image-converter',
     'heic-to-jpg': 'image-converter',
     'bmp-to-jpg': 'image-converter',
-    'pdf-nup': 'pdf-nup',
-    'pdf-booklet': 'pdf-booklet',
-    'bates-stamping': 'bates-stamping',
-    'pdf-to-pdfa': 'pdf-to-pdfa',
     'pdf-to-pdfa-convert': 'pdf-to-pdfa',
-    'digital-sign': 'digital-sign',
-    'metadata-manager': 'metadata-manager',
-    'word-to-pdf': 'word-to-pdf',
-    'pdf-to-word': 'pdf-to-word',
-    'excel-to-pdf': 'excel-to-pdf',
-    'pdf-to-excel': 'pdf-to-excel',
-    'ppt-to-pdf': 'ppt-to-pdf',
-    'pdf-to-ppt': 'pdf-to-ppt',
-    'image-to-pdf': 'image-to-pdf',
-    'pdf-to-image': 'pdf-to-image',
   };
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -914,6 +1351,7 @@ class ToolRegistry {
   // ──────────────────────────────────────────────────────────────────────────
 
   static final Map<String, ToolItem> _registry = {
+    // Domain 1
     pdfEditor.id: pdfEditor,
     mergePdf.id: mergePdf,
     splitPdf.id: splitPdf,
@@ -924,28 +1362,7 @@ class ToolRegistry {
     organizePages.id: organizePages,
     nupPdf.id: nupPdf,
     bookletPdf.id: bookletPdf,
-    batesStamping.id: batesStamping,
     headerFooter.id: headerFooter,
-    pdfToPdfa.id: pdfToPdfa,
-    aiOcr.id: aiOcr,
-    aiSummary.id: aiSummary,
-    semanticCompare.id: semanticCompare,
-    similarityMatrix.id: similarityMatrix,
-    aiDocChat.id: aiDocChat,
-    semanticSearch.id: semanticSearch,
-    classifyDocument.id: classifyDocument,
-    extractInfo.id: extractInfo,
-    translateDoc.id: translateDoc,
-    writingAssistant.id: writingAssistant,
-    qualityChecker.id: qualityChecker,
-    extractTables.id: extractTables,
-    imageEnhancer.id: imageEnhancer,
-    parseInvoice.id: parseInvoice,
-    parseCv.id: parseCv,
-    protectPdf.id: protectPdf,
-    smartRedaction.id: smartRedaction,
-    digitalSign.id: digitalSign,
-    metadataManager.id: metadataManager,
     wordToPdf.id: wordToPdf,
     pdfToWord.id: pdfToWord,
     excelToPdf.id: excelToPdf,
@@ -954,17 +1371,16 @@ class ToolRegistry {
     pdfToPpt.id: pdfToPpt,
     imageToPdf.id: imageToPdf,
     pdfToImage.id: pdfToImage,
-    imageConverter.id: imageConverter,
-    imageCompressor.id: imageCompressor,
-    imageManipulator.id: imageManipulator,
-    imageResizer.id: imageResizer,
-    qrGenerator.id: qrGenerator,
-    barcodeGenerator.id: barcodeGenerator,
-    videoConverter.id: videoConverter,
-    videoCompressor.id: videoCompressor,
-    audioConverter.id: audioConverter,
-    archiveStudio.id: archiveStudio,
-    scanToPdf.id: scanToPdf,
+    pdfToPdfa.id: pdfToPdfa,
+
+    // Domain 2
+    protectPdf.id: protectPdf,
+    smartRedaction.id: smartRedaction,
+    digitalSign.id: digitalSign,
+    metadataManager.id: metadataManager,
+    biometricAppLock.id: biometricAppLock,
+
+    // Domain 3
     researchAnalyzer.id: researchAnalyzer,
     literatureReview.id: literatureReview,
     researchGap.id: researchGap,
@@ -974,146 +1390,81 @@ class ToolRegistry {
     studyNotes.id: studyNotes,
     quizGenerator.id: quizGenerator,
     flashcards.id: flashcards,
-    mindMap.id: mindMap,
-    presentationGenerator.id: presentationGenerator,
+    aiSummary.id: aiSummary,
+    aiDocChat.id: aiDocChat,
+    semanticCompare.id: semanticCompare,
+    similarityMatrix.id: similarityMatrix,
+    semanticSearch.id: semanticSearch,
+    classifyDocument.id: classifyDocument,
+    extractInfo.id: extractInfo,
+    writingAssistant.id: writingAssistant,
+    qualityChecker.id: qualityChecker,
+    parseCv.id: parseCv,
+
+    // Domain 4
+    aiOcr.id: aiOcr,
+    scanToPdf.id: scanToPdf,
+    imageEnhancer.id: imageEnhancer,
+    imageConverter.id: imageConverter,
+    imageCompressor.id: imageCompressor,
+    imageManipulator.id: imageManipulator,
+    imageResizer.id: imageResizer,
+
+    // Domain 5
+    cognitiveRetention.id: cognitiveRetention,
+
+    // Domain 6
+    voicePodcast.id: voicePodcast,
+    audioConverter.id: audioConverter,
+
+    // Domain 7
+    accessibilityReader.id: accessibilityReader,
+
+    // Domain 8
+    batesStamping.id: batesStamping,
+    legalAudit.id: legalAudit,
+
+    // Domain 9
     formFiller.id: formFiller,
     formCreator.id: formCreator,
-    cognitiveRetention.id: cognitiveRetention,
-    voicePodcast.id: voicePodcast,
-    accessibilityReader.id: accessibilityReader,
-    legalAudit.id: legalAudit,
+
+    // Domain 10
     mindMapDiagram.id: mindMapDiagram,
+    mindMap.id: mindMap,
+    presentationGenerator.id: presentationGenerator,
+
+    // Domain 11
     dualPaneWorkspace.id: dualPaneWorkspace,
+
+    // Domain 12
     p2pMeshShare.id: p2pMeshShare,
+
+    // Domain 13
     tabularExtractor.id: tabularExtractor,
+    extractTables.id: extractTables,
+    parseInvoice.id: parseInvoice,
+
+    // Domain 14
+    translateDoc.id: translateDoc,
     translationHub.id: translationHub,
+
+    // Domain 15
     publishingStudio.id: publishingStudio,
+
+    // General Utilities
+    qrGenerator.id: qrGenerator,
+    qrScanner.id: qrScanner,
+    barcodeGenerator.id: barcodeGenerator,
+    videoConverter.id: videoConverter,
+    videoCompressor.id: videoCompressor,
+    videoToFrames.id: videoToFrames,
+    videoEditor.id: videoEditor,
+    secureShare.id: secureShare,
+    archiveStudio.id: archiveStudio,
   };
 
-  // ── New 11 Multi-Domain Tools ───────────────────────────────────────────────
-
-  static const ToolItem cognitiveRetention = ToolItem(
-    id: 'cognitive-retention',
-    label: 'Cognitive Retention Studio',
-    description: 'Active recall blur-to-reveal reading & Leitner study',
-    route: '/cognitive/retention',
-    icon: LucideIcons.brain,
-    color: AppColors.toolOrange,
-    softColor: AppColors.toolOrangeSoft,
-    category: ToolCategory.cognitive,
-    tags: ['active recall', 'flashcard', 'study', 'retention', 'blur', 'wpm'],
-  );
-
-  static const ToolItem voicePodcast = ToolItem(
-    id: 'voice-podcast',
-    label: 'Voice & Podcast Studio',
-    description: 'Conversational dialogue podcast script & TTS audio player',
-    route: '/voice/podcast',
-    icon: LucideIcons.mic,
-    color: AppColors.toolPurple,
-    softColor: AppColors.toolPurpleSoft,
-    category: ToolCategory.voice,
-    tags: ['podcast', 'voice', 'audio', 'tts', 'dialogue', 'speech'],
-  );
-
-  static const ToolItem accessibilityReader = ToolItem(
-    id: 'accessibility-reader',
-    label: 'Accessibility Reader Studio',
-    description: 'Bionic Reading, OpenDyslexic font & high-contrast themes',
-    route: '/accessibility/reader',
-    icon: LucideIcons.eye,
-    color: AppColors.toolTeal,
-    softColor: AppColors.toolTealSoft,
-    category: ToolCategory.accessibility,
-    tags: ['bionic', 'dyslexia', 'accessibility', 'contrast', 'reading'],
-  );
-
-  static const ToolItem legalAudit = ToolItem(
-    id: 'legal-audit',
-    label: 'Legal & Forensic Audit Suite',
-    description: 'SHA-256 chain-of-custody log, clause matrix & Bates codes',
-    route: '/legal/audit',
-    icon: LucideIcons.scale,
-    color: AppColors.toolRed,
-    softColor: AppColors.toolRedSoft,
-    category: ToolCategory.legal,
-    tags: ['legal', 'forensic', 'sha256', 'hash', 'bates', 'clause', 'contract'],
-  );
-
-  static const ToolItem mindMapDiagram = ToolItem(
-    id: 'diagram-mindmap',
-    label: 'Visual Mind Map Studio',
-    description: 'Outline-to-mindmap node graph & visual canvas',
-    route: '/diagram/mindmap',
-    icon: LucideIcons.gitFork,
-    color: AppColors.toolBlue,
-    softColor: AppColors.toolBlueSoft,
-    category: ToolCategory.diagram,
-    tags: ['mindmap', 'diagram', 'visual', 'nodes', 'canvas', 'graph'],
-  );
-
-  static const ToolItem dualPaneWorkspace = ToolItem(
-    id: 'workspace-dualpane',
-    label: 'Dual-Pane Workspace Hub',
-    description: 'Split-screen side-by-side document viewer & markdown notes',
-    route: '/workspace/dualpane',
-    icon: LucideIcons.layoutGrid,
-    color: AppColors.toolIndigo,
-    softColor: AppColors.toolIndigoSoft,
-    category: ToolCategory.workspace,
-    tags: ['dualpane', 'workspace', 'split', 'notes', 'markdown', 'study'],
-  );
-
-  static const ToolItem p2pMeshShare = ToolItem(
-    id: 'p2p-meshshare',
-    label: 'Offline P2P Air-Share',
-    description: 'Zero-internet QR share & .paperkit zip project bundler',
-    route: '/p2p/meshshare',
-    icon: LucideIcons.qrCode,
-    color: AppColors.toolGreen,
-    softColor: AppColors.toolGreenSoft,
-    category: ToolCategory.p2p,
-    tags: ['p2p', 'airshare', 'mesh', 'qr', 'bundle', 'offline', 'zip'],
-  );
-
-  static const ToolItem tabularExtractor = ToolItem(
-    id: 'analytics-tables',
-    label: 'Tabular Data Extractor',
-    description: 'Detect table boundaries & export PDF tables to CSV/Excel',
-    route: '/analytics/tables',
-    icon: LucideIcons.table,
-    color: AppColors.toolBlue,
-    softColor: AppColors.toolBlueSoft,
-    category: ToolCategory.analytics,
-    tags: ['table', 'csv', 'excel', 'extract', 'data', 'tabular'],
-  );
-
-  static const ToolItem translationHub = ToolItem(
-    id: 'translation-hub',
-    label: 'Translation & Localization Hub',
-    description: 'Side-by-side paragraph translation in Spanish, French, German',
-    route: '/translation/hub',
-    icon: LucideIcons.languages,
-    color: AppColors.toolPink,
-    softColor: AppColors.toolPinkSoft,
-    category: ToolCategory.translation,
-    tags: ['translate', 'languages', 'spanish', 'french', 'german', 'localization'],
-  );
-
-  static const ToolItem publishingStudio = ToolItem(
-    id: 'publishing-studio',
-    label: 'Automated Publishing Studio',
-    description: 'CMYK pre-flight audit checklist & ePub book generator',
-    route: '/publishing/studio',
-    icon: LucideIcons.bookOpenCheck,
-    color: AppColors.toolPurple,
-    softColor: AppColors.toolPurpleSoft,
-    category: ToolCategory.publishing,
-    tags: ['publishing', 'epub', 'cmyk', 'preflight', 'book', 'cover'],
-  );
-
   // ──────────────────────────────────────────────────────────────────────────
-  // LOOKUP API
+  // LOOKUP & DOMAIN QUERY API
   // ──────────────────────────────────────────────────────────────────────────
 
   /// Returns the canonical ToolItem for [id], resolving legacy aliases.
@@ -1135,11 +1486,36 @@ class ToolRegistry {
     return null;
   }
 
-  /// Returns all tools in a given [category].
+  /// Returns all tools primarily owned by the given domain number (1..15).
+  static List<ToolItem> getByDomainNumber(int domainNumber) {
+    return _registry.values.where((t) => t.domainNumber == domainNumber).toList();
+  }
+
+  /// Returns all tools primarily owned by the given [DomainId].
+  static List<ToolItem> getByDomainId(DomainId domainId) {
+    return _registry.values.where((t) => t.domainId == domainId).toList();
+  }
+
+  /// Returns tools belonging to the general utility layer.
+  static List<ToolItem> get generalUtilities {
+    return _registry.values.where((t) => t.domainNumber == null || t.domainId == DomainId.utilities).toList();
+  }
+
+  /// Returns all cross-domain tools accessible from a given domain's workflow.
+  static List<ToolItem> getCrossDomainTools(int domainNumber) {
+    final domain = DomainRegistry.getByNumber(domainNumber);
+    if (domain == null) return [];
+    return domain.crossDomainToolIds
+        .map((id) => getById(id))
+        .whereType<ToolItem>()
+        .toList();
+  }
+
+  /// Backward-compatible category lookup.
   static List<ToolItem> getByCategory(ToolCategory category) =>
       _registry.values.where((t) => t.category == category).toList();
 
-  /// Searches tools by [query] against id, label, description, and tags.
+  /// Searches tools by [query] against name, domain, description, and tags.
   static List<ToolItem> search(String query) {
     if (query.trim().isEmpty) return allTools;
     final q = query.toLowerCase().trim();
@@ -1147,15 +1523,17 @@ class ToolRegistry {
       return tool.id.toLowerCase().contains(q) ||
           tool.label.toLowerCase().contains(q) ||
           tool.description.toLowerCase().contains(q) ||
+          (tool.domainName != null && tool.domainName!.toLowerCase().contains(q)) ||
+          (tool.domainNumber != null && 'domain ${tool.domainNumber}'.contains(q)) ||
           tool.tags.any((tag) => tag.toLowerCase().contains(q));
     }).toList();
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // CURATED LISTS (references only, no duplication)
+  // CURATED LISTS
   // ──────────────────────────────────────────────────────────────────────────
 
-  /// All canonical tools (no duplicates).
+  /// All canonical tools (deduplicated).
   static List<ToolItem> get allTools => _registry.values.toList();
 
   /// Featured tools shown on the home screen.
@@ -1170,7 +1548,6 @@ class ToolRegistry {
         publishingStudio,
       ];
 
-  /// Quick-access tools (same as featured by default).
   static List<ToolItem> get quickTools => featuredTools;
 
   /// All AI-powered tools.
@@ -1178,66 +1555,21 @@ class ToolRegistry {
       _registry.values.where((t) => t.isAi).toList();
 
   /// Academic & research tools.
-  static List<ToolItem> get academicTools => [
-        researchAnalyzer,
-        literatureReview,
-        researchGap,
-        citationExtractor,
-        citationFormatter,
-        referenceChecker,
-        studyNotes,
-        quizGenerator,
-        flashcards,
-        mindMap,
-        presentationGenerator,
-        cognitiveRetention,
-        dualPaneWorkspace,
-        mindMapDiagram,
-      ];
+  static List<ToolItem> get academicTools => getByDomainNumber(3);
 
   /// Scanner tools.
-  static List<ToolItem> get scannerTools => [
-        scanToPdf,
-        aiOcr,
-      ];
+  static List<ToolItem> get scannerTools => getByDomainNumber(4);
 
   /// Forms tools.
-  static List<ToolItem> get formTools => [formFiller, formCreator];
+  static List<ToolItem> get formTools => getByDomainNumber(9);
 
-  /// Returns the top tools for a given category key (for contextual nav bar).
+  /// Top tools for a given category/domain key (for contextual navigation).
   static List<ToolItem> getTopToolsForCategory(String categoryKey) {
-    final key = categoryKey.toLowerCase().trim();
-
-    switch (key) {
-      case 'ai':
-      case 'intelligence':
-        return [aiDocChat, aiSummary, aiOcr, extractTables];
-      case 'cognitive':
-        return [cognitiveRetention];
-      case 'voice':
-        return [voicePodcast];
-      case 'accessibility':
-        return [accessibilityReader];
-      case 'legal':
-        return [legalAudit];
-      case 'diagram':
-        return [mindMapDiagram];
-      case 'workspace':
-        return [dualPaneWorkspace];
-      case 'p2p':
-        return [p2pMeshShare];
-      case 'analytics':
-        return [tabularExtractor];
-      case 'translation':
-        return [translationHub];
-      case 'publishing':
-        return [publishingStudio];
-      case 'pdf':
-        return [pdfEditor, mergePdf, splitPdf, compressPdf];
-      default:
-        return [cognitiveRetention, legalAudit, p2pMeshShare, publishingStudio];
+    final resolvedDomain = DomainRegistry.resolve(categoryKey);
+    if (resolvedDomain != null) {
+      final tools = getByDomainNumber(resolvedDomain.number);
+      if (tools.isNotEmpty) return tools.take(4).toList();
     }
+    return [pdfEditor, mergePdf, splitPdf, compressPdf];
   }
 }
-
-
