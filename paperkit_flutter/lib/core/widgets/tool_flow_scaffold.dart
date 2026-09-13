@@ -755,6 +755,28 @@ class _ToolFlowScaffoldState extends State<ToolFlowScaffold> with TickerProvider
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              if (_resultFile != null) {
+                context.push('/airshare', extra: _resultFile);
+              }
+            },
+            icon: const Icon(LucideIcons.qrCode, size: 18),
+            label: const Text(
+              'Beam directly via AirShare QR',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF4F46E5),
+              side: const BorderSide(color: Color(0xFF818CF8), width: 1.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -942,6 +964,31 @@ class _ToolFlowScaffoldState extends State<ToolFlowScaffold> with TickerProvider
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 2,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Action 1.5: AirShare P2P via QR
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              if (_resultFile != null) {
+                context.push('/airshare', extra: _resultFile);
+              }
+            },
+            icon: const Icon(LucideIcons.qrCode, size: 18),
+            label: const Text(
+              'AirShare Beam via QR',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4F46E5), // Electric Indigo
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               elevation: 2,

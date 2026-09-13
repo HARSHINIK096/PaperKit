@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
@@ -137,6 +139,8 @@ class FileListItem extends StatelessWidget {
               onSelected: (value) async {
                 if (value == 'open') {
                   await OpenFilex.open(file.path);
+                } else if (value == 'airshare') {
+                  context.push('/airshare', extra: File(file.path));
                 } else if (value == 'share') {
                   await Share.shareXFiles([XFile(file.path)]);
                 } else if (value == 'delete' && onDelete != null) {
@@ -151,6 +155,19 @@ class FileListItem extends StatelessWidget {
                       Icon(LucideIcons.externalLink, size: 16),
                       SizedBox(width: 10),
                       Text('Open'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'airshare',
+                  child: Row(
+                    children: [
+                      Icon(LucideIcons.qrCode, size: 16, color: Color(0xFF4F46E5)),
+                      SizedBox(width: 10),
+                      Text(
+                        'AirShare via QR',
+                        style: TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ),

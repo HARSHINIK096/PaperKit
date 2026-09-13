@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:go_router/go_router.dart';
 
 import '../../features/welcome/splash_screen.dart';
@@ -310,7 +311,20 @@ class AppRouter {
       GoRoute(path: '/legal/audit', builder: (context, state) => const LegalAuditScreen()),
       GoRoute(path: '/diagram/mindmap', builder: (context, state) => const MindMapDiagramScreen()),
       GoRoute(path: '/workspace/dualpane', builder: (context, state) => const DualPaneWorkspaceScreen()),
-      GoRoute(path: '/p2p/meshshare', builder: (context, state) => const P2PMeshShareScreen()),
+      GoRoute(
+        path: '/p2p/meshshare',
+        pageBuilder: (context, state) => CloudTransitionPage(
+          child: P2PMeshShareScreen(initialFile: state.extra as File?),
+          key: state.pageKey,
+        ),
+      ),
+      GoRoute(
+        path: '/airshare',
+        pageBuilder: (context, state) => CloudTransitionPage(
+          child: P2PMeshShareScreen(initialFile: state.extra as File?),
+          key: state.pageKey,
+        ),
+      ),
       GoRoute(path: '/analytics/tables', builder: (context, state) => const TabularExtractorScreen()),
       GoRoute(path: '/translation/hub', builder: (context, state) => const TranslationHubScreen()),
       GoRoute(path: '/publishing/studio', builder: (context, state) => const PublishingStudioScreen()),

@@ -12,7 +12,9 @@ import '../../core/widgets/particle_background.dart';
 import 'p2p_mesh_service.dart';
 
 class P2PMeshShareScreen extends StatefulWidget {
-  const P2PMeshShareScreen({super.key});
+  final File? initialFile;
+
+  const P2PMeshShareScreen({super.key, this.initialFile});
 
   @override
   State<P2PMeshShareScreen> createState() => _P2PMeshShareScreenState();
@@ -49,6 +51,12 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    if (widget.initialFile != null) {
+      _hostSelectedFile = widget.initialFile;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startHostSession();
+      });
+    }
   }
 
   @override
