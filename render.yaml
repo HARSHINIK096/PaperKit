@@ -33,7 +33,7 @@ services:
 
   - type: staticSite
     name: maskerv-web
-    rootDir: paper-kit
+    rootDir: maskerv-web
     buildCommand: npm install && npm run build
     publishDir: dist
     routes:

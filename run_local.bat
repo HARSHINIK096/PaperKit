@@ -11,7 +11,7 @@ start "MASKERV Backend" cmd /k "cd Services && .venv\Scripts\python -m uvicorn m
 
 :: Start the React frontend service
 echo [2/2] Launching Frontend (Vite Dev Server)...
-start "MASKERV Frontend" cmd /k "cd paper-kit && npm run dev"
+start "MASKERV Frontend" cmd /k "cd maskerv-web && npm run dev"
 
 echo.
 echo ===================================================

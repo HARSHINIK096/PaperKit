@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.maskerv.app"
+    namespace = "com.theoriongd.paperkit"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.maskerv.app"
+        applicationId "com.theoriongd.paperkit"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 210
