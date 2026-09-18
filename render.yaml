@@ -23,17 +23,17 @@ services:
       - key: GROQ_TEXT_MODEL
         value: llama-3.3-70b-versatile
       - key: GROQ_VISION_MODEL
-        value: llama-3.2-11b-vision-preview
+        value: openai/gpt-oss-20b
       - key: FRONTEND_URL
-        value: https://maskerv-web.onrender.com
+        value: https://paperkit-web.onrender.com
       - key: ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "10080"
 
   - type: staticSite
-    name: maskerv-web
-    rootDir: maskerv-web
+    name: paperkit-web
+    rootDir: paperkit-web
     buildCommand: npm install && npm run build
     publishDir: dist
     routes:

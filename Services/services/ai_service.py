@@ -139,9 +139,9 @@ async def ocr_image(image_bytes: bytes, mime_type: str = "image/jpeg", prompt: O
     current_settings = get_settings()
     if groq_clients:
         vision_models = [
-            current_settings.groq_vision_model or "llama-3.2-11b-vision-preview",
-            "llama-3.2-11b-vision-preview",
-            "llama-3.2-90b-vision-preview",
+            current_settings.groq_vision_model or "openai/gpt-oss-20b",
+            "openai/gpt-oss-20b",
+            "openai/gpt-oss-120b",
         ]
         base64_img = base64.b64encode(image_bytes).decode("utf-8")
         data_url = f"data:{mime_type};base64,{base64_img}"
@@ -176,7 +176,7 @@ async def ocr_image(image_bytes: bytes, mime_type: str = "image/jpeg", prompt: O
             try:
                 model = _get_gemini_model(api_key=key)
                 pil_image = Image.open(io.BytesIO(image_bytes))
-                response = model.generate_content([task_prompt, pil_image], request_options={"timeout": 15})
+                response = model.generate_content([task_prompt, pil_image], request_options={"timeout": 60})
                 if response.text and response.text.strip():
                     return response.text.strip()
             except Exception as e:
