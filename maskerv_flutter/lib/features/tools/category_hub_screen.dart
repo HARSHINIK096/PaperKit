@@ -373,9 +373,9 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: filteredPrimary.length,
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          childAspectRatio: 0.76,
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 115,
+                          mainAxisExtent: 105,
                           crossAxisSpacing: 8,
                           mainAxisSpacing: 12,
                         ),
@@ -431,9 +431,9 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: filteredCross.length,
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          childAspectRatio: 0.76,
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 115,
+                          mainAxisExtent: 105,
                           crossAxisSpacing: 8,
                           mainAxisSpacing: 12,
                         ),

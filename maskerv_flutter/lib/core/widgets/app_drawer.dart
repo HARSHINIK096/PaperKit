@@ -320,15 +320,16 @@ class AppDrawer extends StatelessWidget {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+      child: Material(
         color: isDark ? AppColors.surfaceDark : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : const Color(0xFFF1F5F9),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isDark ? AppColors.borderDark : const Color(0xFFF1F5F9),
+          ),
         ),
-      ),
-      child: Material(
-        color: Colors.transparent,
         child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         dense: true,

@@ -13,6 +13,7 @@ class LanguageSelectorSheet extends StatelessWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => const LanguageSelectorSheet(),
     );
@@ -101,7 +102,14 @@ class LanguageSelectorSheet extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(LucideIcons.x, size: 20),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () {
+                      final nav = Navigator.of(context, rootNavigator: true);
+                      if (nav.canPop()) {
+                        nav.pop();
+                      } else {
+                        Navigator.of(context).pop();
+                      }
+                    },
                     style: IconButton.styleFrom(
                       backgroundColor: isDark
                           ? const Color(0xFF1E293B)
@@ -129,20 +137,24 @@ class LanguageSelectorSheet extends StatelessWidget {
                       child: InkWell(
                         onTap: () async {
                           HapticFeedback.mediumImpact();
-                          await i18n.setLanguage(lang.code);
-                          if (context.mounted) {
+                          final messenger = ScaffoldMessenger.of(context);
+                          final rootNav = Navigator.of(context, rootNavigator: true);
+                          if (rootNav.canPop()) {
+                            rootNav.pop();
+                          } else if (Navigator.of(context).canPop()) {
                             Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Language set to ${lang.nativeName} (${lang.name}) ${lang.flag}',
-                                ),
-                                duration: const Duration(seconds: 2),
-                                behavior: SnackBarBehavior.floating,
-                                backgroundColor: AppColors.primary,
-                              ),
-                            );
                           }
+                          await i18n.setLanguage(lang.code);
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Language set to ${lang.nativeName} (${lang.name}) ${lang.flag}',
+                              ),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: AppColors.primary,
+                            ),
+                          );
                         },
                         borderRadius: BorderRadius.circular(14),
                         child: AnimatedContainer(

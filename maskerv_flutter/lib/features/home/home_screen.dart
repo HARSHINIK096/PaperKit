@@ -7,7 +7,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_tools.dart';
-import '../../core/models/tool_item.dart';
 import '../../core/providers/backend_provider.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/services/storage_service.dart';
@@ -190,90 +189,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildScannerBanner(context, isDark),
           const SizedBox(height: 20),
 
-          // ── Categories Horizontal Filter Pills ───────────────────
-          _buildCategoryPills(context, isDark),
-          const SizedBox(height: 24),
-
-          // ── 1. Featured Quick Launch Grid ───────────────────────
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Featured Tools',
-            categoryId: '1',
-            tools: AppTools.featuredTools,
-            customRoute: '/tools',
-            viewAllLabel: 'See All 15 Domains',
-          ),
-          const SizedBox(height: 26),
-
-          // ── 2. Domain 1: File Manipulation & Document Tools ──────
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Domain 1: File Manipulation & Document Tools',
-            categoryId: '1',
-            tools: AppTools.fileManipulationTools,
-          ),
-          const SizedBox(height: 26),
-
-          // ── 3. Domain 2: Security, Cryptography & Compliance ─────
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Domain 2: Security, Cryptography & Compliance',
-            categoryId: '2',
-            tools: AppTools.securityTools,
-          ),
-          const SizedBox(height: 26),
-
-          // ── 4. Domain 3: Academic & Research Intelligence Suite ──
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Domain 3: Academic & Research Intelligence Suite',
-            categoryId: '3',
-            tools: AppTools.academicTools,
-          ),
-          const SizedBox(height: 26),
-
-          // ── 5. Domain 4: Optical Scanning & Vision Engine (OCR) ──
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Domain 4: Optical Scanning & Vision Engine (OCR)',
-            categoryId: '4',
-            tools: AppTools.scannerTools,
-          ),
-          const SizedBox(height: 26),
-
-          // ── 6. Domain 8: Legal & Forensic Compliance Audit Suite ─
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Domain 8: Legal & Forensic Compliance Audit Suite',
-            categoryId: '8',
-            tools: AppTools.legalTools,
-          ),
-          const SizedBox(height: 26),
-
-          // ── 7. Domain 13: Data Analytics & Tabular Data Extractor 
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Domain 13: Data Analytics & Tabular Data Extractor',
-            categoryId: '13',
-            tools: AppTools.analyticsTools,
-          ),
-          const SizedBox(height: 26),
-
-          // ── 8. Domain 14: Translation & Localization Hub ─────────
-          _buildCategorySection(
-            context,
-            isDark: isDark,
-            title: 'Domain 14: Translation & Localization Hub',
-            categoryId: '14',
-            tools: AppTools.translationTools,
-          ),
+          // ── Top 10 Essential Tools Grid Section ─────────────────
+          _buildTop10Section(context, isDark: isDark),
           const SizedBox(height: 26),
 
           // ── Recent Documents Section ─────────────────────────────
@@ -602,72 +519,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategorySection(
-    BuildContext context, {
-    required bool isDark,
-    required String title,
-    required String categoryId,
-    required List<ToolItem> tools,
-    String? customRoute,
-    String viewAllLabel = 'View All',
-  }) {
-    if (tools.isEmpty) return const SizedBox.shrink();
-    final displayTools = tools.take(4).toList();
-    final totalCount = tools.length;
-    final labelText = viewAllLabel == 'View All' ? 'View All ($totalCount)' : viewAllLabel;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 17.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                  color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            TextButton(
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                if (customRoute != null) {
-                  context.push(customRoute);
-                } else {
-                  context.push('/category/$categoryId');
-                }
-              },
-              child: Text(labelText, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: displayTools.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            childAspectRatio: 0.76,
-            crossAxisSpacing: 6,
-            mainAxisSpacing: 12,
-          ),
-          itemBuilder: (context, index) {
-            return ToolCard(tool: displayTools[index], compact: true);
-          },
-        ),
-      ],
-    );
-  }
-
   Widget _buildScannerBanner(BuildContext context, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -773,50 +624,90 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoryPills(BuildContext context, bool isDark) {
-    final domains = DomainRegistry.domains;
+  Widget _buildTop10Section(BuildContext context, {required bool isDark}) {
+    final top10Tools = [
+      ToolRegistry.mergePdf,
+      ToolRegistry.compressPdf,
+      ToolRegistry.aiDocChat,
+      ToolRegistry.aiOcr,
+      ToolRegistry.smartRedaction,
+      ToolRegistry.digitalSign,
+      ToolRegistry.imageConverter,
+      ToolRegistry.videoToFrames,
+      ToolRegistry.researchAnalyzer,
+      ToolRegistry.protectPdf,
+    ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: domains.map((d) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: InkWell(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                context.push(d.route);
-              },
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Top 10 Essential Tools',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(d.icon, size: 16, color: d.color),
-                    const SizedBox(width: 8),
-                    Text(
-                      'D${d.number} • ${d.shortName}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 2),
+                Text(
+                  'Most popular document, AI & media utilities',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
+                  ),
                 ),
-              ),
+              ],
             ),
-          );
-        }).toList(),
-      ),
+            TextButton(
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                context.push('/tools');
+              },
+              child: const Text('View All 50+ Tools', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: top10Tools.length,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 115,
+            mainAxisExtent: 105,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 12,
+          ),
+          itemBuilder: (context, index) {
+            return ToolCard(tool: top10Tools[index], compact: true);
+          },
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/tools');
+            },
+            icon: const Icon(LucideIcons.grid, size: 16),
+            label: const Text('Browse All 15 Domain Suites (50+ Tools)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

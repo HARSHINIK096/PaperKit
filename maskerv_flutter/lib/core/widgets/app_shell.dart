@@ -110,6 +110,7 @@ class AppShell extends StatelessWidget {
     final selectedIndex = _calculateSelectedIndex(context);
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       drawer: const AppDrawer(),
       appBar: showAppBar
           ? AppBar(

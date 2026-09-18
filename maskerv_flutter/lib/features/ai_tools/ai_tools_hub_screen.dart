@@ -13,9 +13,9 @@ class AIToolsHubScreen extends StatelessWidget {
       child: GridView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: AppTools.aiTools.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 1.3,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 115,
+          mainAxisExtent: 105,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
         ),

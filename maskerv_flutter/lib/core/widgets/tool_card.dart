@@ -22,7 +22,7 @@ class ToolCard extends StatelessWidget {
     final badgeSize = compact ? 44.0 : 48.0;
     final iconSize = compact ? 21.0 : 23.0;
     final radius = compact ? 13.0 : 15.0;
-    final fontSize = compact ? 11.0 : 11.5;
+    final fontSize = compact ? 11.5 : 12.5;
 
     return Material(
       color: Colors.transparent,

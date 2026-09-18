@@ -413,10 +413,10 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: tools.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              childAspectRatio: 0.76,
-              crossAxisSpacing: 6,
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 115,
+              mainAxisExtent: 105,
+              crossAxisSpacing: 8,
               mainAxisSpacing: 12,
             ),
             itemBuilder: (context, index) {

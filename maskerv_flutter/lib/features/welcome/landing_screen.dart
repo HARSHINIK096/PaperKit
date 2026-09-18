@@ -25,11 +25,51 @@ class _LandingScreenState extends State<LandingScreen> {
       backgroundColor: isDark ? const Color(0xFF0B1120) : const Color(0xFFF1F5F9),
       body: Stack(
         children: [
-          // Background particle layer
+          // Dynamic Glowing Particle Background Layer
           const ParticleBackground(
-            numberOfParticles: 20,
+            numberOfParticles: 32,
             particleColor: Color(0xFF3B82F6),
-            maxSpeed: 0.4,
+            maxSpeed: 0.5,
+          ),
+
+          // Ambient Glow Orbs
+          Positioned(
+            top: -80,
+            right: -60,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF3B82F6).withValues(alpha: isDark ? 0.15 : 0.08),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF3B82F6).withValues(alpha: 0.25),
+                    blurRadius: 100,
+                    spreadRadius: 30,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 120,
+            left: -80,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.12 : 0.06),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.20),
+                    blurRadius: 90,
+                    spreadRadius: 20,
+                  ),
+                ],
+              ),
+            ),
           ),
 
           SafeArea(
@@ -59,6 +99,7 @@ class _LandingScreenState extends State<LandingScreen> {
                           ],
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(6),
@@ -81,50 +122,57 @@ class _LandingScreenState extends State<LandingScreen> {
                           ],
                         ),
                       ),
+                      const SizedBox(width: 8),
 
                       // Interactive Language Dropdown Pill
-                      InkWell(
-                        onTap: () => LanguageSelectorSheet.show(context),
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      Flexible(
+                        child: InkWell(
+                          onTap: () => LanguageSelectorSheet.show(context),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Text(
-                                context.watch<I18nProvider>().currentAppLanguage.flag,
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                context.watch<I18nProvider>().currentAppLanguage.nativeName,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  context.watch<I18nProvider>().currentAppLanguage.flag,
+                                  style: const TextStyle(fontSize: 13),
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.keyboard_arrow_down, size: 14, color: Color(0xFF64748B)),
-                              const SizedBox(width: 2),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                                  borderRadius: BorderRadius.circular(4),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    context.watch<I18nProvider>().currentAppLanguage.nativeName,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    ),
+                                  ),
                                 ),
-                                child: Text(
-                                  context.watch<I18nProvider>().currentAppLanguage.countryCode,
-                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.keyboard_arrow_down, size: 14, color: Color(0xFF64748B)),
+                                const SizedBox(width: 2),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    context.watch<I18nProvider>().currentAppLanguage.countryCode,
+                                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -137,7 +185,7 @@ class _LandingScreenState extends State<LandingScreen> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     children: [
-                      // ── TOP HERO CARD ────────────────────────────────
+                      // ── SECTION 1: TOP HERO CARD ───────────────────────
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
@@ -157,17 +205,17 @@ class _LandingScreenState extends State<LandingScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Tag
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
+                            // Tag & Status Pill
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
                                     context.t('open_source_tag'),
                                     style: TextStyle(
                                       fontSize: 11,
@@ -175,18 +223,41 @@ class _LandingScreenState extends State<LandingScreen> {
                                       color: isDark ? Colors.white70 : const Color(0xFF334155),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.circle, size: 6, color: Color(0xFF10B981)),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'Engine Ready',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFF10B981),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 12),
 
-                            // Hero Graphic with Play Button
+                            // Hero Graphic with Animated Glow & Play Button
                             Container(
                               width: double.infinity,
                               height: 130,
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6), Color(0xFFEC4899)],
+                                  colors: [Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFFEC4899)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
@@ -207,26 +278,33 @@ class _LandingScreenState extends State<LandingScreen> {
                                       ),
                                     ),
                                   ),
-                                  // Play Button Circle
+                                  // Interactive Action Badge
                                   Positioned(
                                     right: 18,
                                     top: 36,
-                                    child: Container(
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.85),
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.15),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: const Center(
-                                        child: Icon(Icons.play_arrow_rounded, color: Color(0xFF0F172A), size: 30),
+                                    child: InkWell(
+                                      onTap: () {
+                                        HapticFeedback.lightImpact();
+                                        context.go('/');
+                                      },
+                                      borderRadius: BorderRadius.circular(30),
+                                      child: Container(
+                                        width: 48,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.90),
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.18),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Center(
+                                          child: Icon(Icons.arrow_forward_rounded, color: Color(0xFF0F172A), size: 26),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -262,7 +340,7 @@ class _LandingScreenState extends State<LandingScreen> {
                       ),
                       const SizedBox(height: 14),
 
-                      // ── DISCOVER CARD ────────────────────────────────
+                      // ── SECTION 2: CORE ARCHITECTURE PILLARS CARD ────
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
@@ -282,41 +360,174 @@ class _LandingScreenState extends State<LandingScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Search bar with user avatar
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(LucideIcons.search, size: 16, color: Color(0xFF64748B)),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: TextField(
-                                      decoration: InputDecoration(
-                                        hintText: context.t('find_tool_ph'),
-                                        hintStyle: TextStyle(
-                                          fontSize: 12.5,
-                                          color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                                        ),
-                                        border: InputBorder.none,
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.zero,
-                                      ),
-                                    ),
+                            Row(
+                              children: [
+                                const Icon(LucideIcons.cpu, size: 20, color: Color(0xFF3B82F6)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Core Architecture Pillars',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
                                   ),
-                                  const Icon(LucideIcons.user, size: 16, color: Color(0xFF64748B)),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 14),
+                            GridView(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisExtent: 95,
+                                mainAxisSpacing: 10,
+                                crossAxisSpacing: 10,
+                              ),
+                              children: [
+                                _buildPillarTile(
+                                  icon: LucideIcons.zap,
+                                  title: 'WASM Hardware Speed',
+                                  desc: 'Instant on-device execution',
+                                  color: const Color(0xFF3B82F6),
+                                  isDark: isDark,
+                                ),
+                                _buildPillarTile(
+                                  icon: LucideIcons.shieldCheck,
+                                  title: 'Zero Upload Leaks',
+                                  desc: 'Local browser sandbox',
+                                  color: const Color(0xFF10B981),
+                                  isDark: isDark,
+                                ),
+                                _buildPillarTile(
+                                  icon: LucideIcons.brain,
+                                  title: 'AI Document RAG',
+                                  desc: 'Deep document intelligence',
+                                  color: const Color(0xFF8B5CF6),
+                                  isDark: isDark,
+                                ),
+                                _buildPillarTile(
+                                  icon: LucideIcons.qrCode,
+                                  title: 'AirShare P2P Sync',
+                                  desc: 'QR encrypted file share',
+                                  color: const Color(0xFFF59E0B),
+                                  isDark: isDark,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
 
-                            // Header + Filter Button
+                      // ── SECTION 3: 6 SPECIALIZED STUDIOS CARD ────────
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(LucideIcons.layoutGrid, size: 20, color: Color(0xFF8B5CF6)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '6 Specialized Tool Studios',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            Column(
+                              children: [
+                                _buildStudioRow(
+                                  title: 'PDF & Document Engine',
+                                  sub: 'Merge, Split, Compress, Rotate & PDF/A',
+                                  icon: LucideIcons.fileText,
+                                  color: const Color(0xFF2563EB),
+                                  route: '/tools',
+                                  isDark: isDark,
+                                ),
+                                const SizedBox(height: 8),
+                                _buildStudioRow(
+                                  title: 'AI Intelligence Suite',
+                                  sub: 'Ask PDF, Summarize, OCR & Semantic Diff',
+                                  icon: LucideIcons.sparkles,
+                                  color: const Color(0xFF7C3AED),
+                                  route: '/ai',
+                                  isDark: isDark,
+                                ),
+                                const SizedBox(height: 8),
+                                _buildStudioRow(
+                                  title: 'Security & Compliance Studio',
+                                  sub: 'Regex PII Redaction, e-Sign & Biometric Lock',
+                                  icon: LucideIcons.lock,
+                                  color: const Color(0xFFEF4444),
+                                  route: '/security/protect',
+                                  isDark: isDark,
+                                ),
+                                const SizedBox(height: 8),
+                                _buildStudioRow(
+                                  title: 'Academic & Research Hub',
+                                  sub: 'Literature Review, Research Gap & Citations',
+                                  icon: LucideIcons.graduationCap,
+                                  color: const Color(0xFFD97706),
+                                  route: '/academic/research-analyzer',
+                                  isDark: isDark,
+                                ),
+                                const SizedBox(height: 8),
+                                _buildStudioRow(
+                                  title: 'Media & Frames Studio',
+                                  sub: 'Video Frame Extract, Audio Convert & Archives',
+                                  icon: LucideIcons.film,
+                                  color: const Color(0xFF06B6D4),
+                                  route: '/tools/video-to-frames',
+                                  isDark: isDark,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // ── SECTION 4: DISCOVER QUICK TOOLS CARD ──────────
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -356,7 +567,7 @@ class _LandingScreenState extends State<LandingScreen> {
                             ),
                             const SizedBox(height: 12),
 
-                            // Category Chips (All, PDF, AI Intelligence)
+                            // Category Chips (All, PDF, AI)
                             Row(
                               children: [
                                 _buildCategoryPill(context.t('tab_all'), isDark),
@@ -368,53 +579,108 @@ class _LandingScreenState extends State<LandingScreen> {
                             ),
                             const SizedBox(height: 14),
 
-                            // 2x2 Grid Cards
-                            GridView.count(
-                              crossAxisCount: 2,
+                            GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              mainAxisSpacing: 10,
-                              crossAxisSpacing: 10,
-                              childAspectRatio: 1.5,
-                              children: [
-                                _buildFeatureCard(
-                                  title: context.t('tool_merge_name'),
-                                  subtitle: context.t('tool_merge_desc'),
-                                  icon: LucideIcons.fileText,
-                                  iconColor: const Color(0xFF2563EB),
-                                  isDark: isDark,
-                                  onTap: () => context.push('/tools/merge'),
-                                ),
-                                _buildFeatureCard(
-                                  title: context.t('tool_compress_name'),
-                                  subtitle: context.t('tool_compress_desc'),
-                                  icon: LucideIcons.fileText,
-                                  iconColor: const Color(0xFF2563EB),
-                                  isDark: isDark,
-                                  onTap: () => context.push('/tools/compress'),
-                                ),
-                                _buildFeatureCard(
-                                  title: context.t('tool_ai_ask_name'),
-                                  subtitle: context.t('tool_ai_ask_desc'),
-                                  icon: LucideIcons.sparkles,
-                                  iconColor: const Color(0xFF8B5CF6),
-                                  isDark: isDark,
-                                  onTap: () => context.push('/ai/ask'),
-                                ),
-                                _buildFeatureCard(
-                                  title: context.t('tool_split_name'),
-                                  subtitle: context.t('tool_split_desc'),
-                                  icon: LucideIcons.fileText,
-                                  iconColor: const Color(0xFF2563EB),
-                                  isDark: isDark,
-                                  onTap: () => context.push('/tools/split'),
-                                ),
-                              ],
+                              itemCount: 4,
+                              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 180,
+                                mainAxisExtent: 110,
+                                mainAxisSpacing: 10,
+                                crossAxisSpacing: 10,
+                              ),
+                              itemBuilder: (context, index) {
+                                final cards = [
+                                  _buildFeatureCard(
+                                    title: context.t('tool_merge_name'),
+                                    subtitle: context.t('tool_merge_desc'),
+                                    icon: LucideIcons.fileText,
+                                    iconColor: const Color(0xFF2563EB),
+                                    isDark: isDark,
+                                    onTap: () => context.push('/tools/merge'),
+                                  ),
+                                  _buildFeatureCard(
+                                    title: context.t('tool_compress_name'),
+                                    subtitle: context.t('tool_compress_desc'),
+                                    icon: LucideIcons.fileText,
+                                    iconColor: const Color(0xFF2563EB),
+                                    isDark: isDark,
+                                    onTap: () => context.push('/tools/compress'),
+                                  ),
+                                  _buildFeatureCard(
+                                    title: context.t('tool_ai_ask_name'),
+                                    subtitle: context.t('tool_ai_ask_desc'),
+                                    icon: LucideIcons.sparkles,
+                                    iconColor: const Color(0xFF8B5CF6),
+                                    isDark: isDark,
+                                    onTap: () => context.push('/ai/ask'),
+                                  ),
+                                  _buildFeatureCard(
+                                    title: context.t('tool_split_name'),
+                                    subtitle: context.t('tool_split_desc'),
+                                    icon: LucideIcons.fileText,
+                                    iconColor: const Color(0xFF2563EB),
+                                    isDark: isDark,
+                                    onTap: () => context.push('/tools/split'),
+                                  ),
+                                ];
+                                return cards[index];
+                              },
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 14),
+
+                      // ── SECTION 5: PRIVACY & GUARANTEE CARD ──────────
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withValues(alpha: isDark ? 0.15 : 0.08),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF059669).withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF059669).withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(LucideIcons.shieldCheck, size: 22, color: Color(0xFF10B981)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '100% Confidential & On-Device',
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark ? Colors.white : const Color(0xFF065F46),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Files never leave your local engine. Zero storage on servers.',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF047857),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -485,6 +751,120 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
+  Widget _buildPillarTile({
+    required IconData icon,
+    required String title,
+    required String desc,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            desc,
+            style: TextStyle(
+              fontSize: 10,
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudioRow({
+    required String title,
+    required String sub,
+    required IconData icon,
+    required Color color,
+    required String route,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        context.push(route);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 17, color: color),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    sub,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(LucideIcons.chevronRight, size: 15, color: Color(0xFF94A3B8)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFeatureCard({
     required String title,
     required String subtitle,
@@ -500,7 +880,7 @@ class _LandingScreenState extends State<LandingScreen> {
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(16),
