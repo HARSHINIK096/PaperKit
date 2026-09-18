@@ -1,9 +1,11 @@
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
@@ -24,21 +26,22 @@ class SmartRedactionScreen extends StatefulWidget {
 
 class _SmartRedactionScreenState extends State<SmartRedactionScreen> {
   File? _selectedFile;
-  final TextEditingController _keywordsController = TextEditingController(text: 'SSN, password, confidential, secret');
+  final TextEditingController _keywordsController = TextEditingController(
+    text: 'SSN, password, confidential, secret',
+  );
   bool _redactEmails = true;
   bool _redactPhones = true;
   bool _isProcessing = false;
   File? _redactedResult;
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
-      withData: true,
     );
 
-    if (result != null && result.files.isNotEmpty && result.files.single.hasValidFile) {
-      final pf = result.files.single;
+    if (result.isNotEmpty && result.single.hasValidFile) {
+      final pf = result.single;
       setState(() {
         _selectedFile = pf.asFile ?? File(pf.name);
         _redactedResult = null;
@@ -77,16 +80,16 @@ class _SmartRedactionScreenState extends State<SmartRedactionScreen> {
       if (mounted) {
         await context.read<FilesProvider>().addFile(doc);
         await context.read<HistoryProvider>().addRecord(
-              HistoryItem(
-                id: 'hist_$timestamp',
-                toolId: 'smart-redaction',
-                toolName: 'Redact Data',
-                fileName: doc.name,
-                outputPath: outputFile.path,
-                fileSize: await outputFile.length(),
-                timestamp: DateTime.now(),
-              ),
-            );
+          HistoryItem(
+            id: 'hist_$timestamp',
+            toolId: 'smart-redaction',
+            toolName: 'Redact Data',
+            fileName: doc.name,
+            outputPath: outputFile.path,
+            fileSize: await outputFile.length(),
+            timestamp: DateTime.now(),
+          ),
+        );
 
         setState(() {
           _redactedResult = outputFile;
@@ -100,9 +103,8 @@ class _SmartRedactionScreenState extends State<SmartRedactionScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Redaction failed: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Redaction failed: $e')));
       }
     }
   }
@@ -149,18 +151,28 @@ class _SmartRedactionScreenState extends State<SmartRedactionScreen> {
                           color: AppColors.toolOrange.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(LucideIcons.eyeOff, color: AppColors.toolOrange, size: 24),
+                        child: const Icon(
+                          LucideIcons.eyeOff,
+                          color: AppColors.toolOrange,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Text(
                           _selectedFile!.uri.pathSegments.last,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.5,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      TextButton(onPressed: _pickFile, child: const Text('Change')),
+                      TextButton(
+                        onPressed: _pickFile,
+                        child: const Text('Change'),
+                      ),
                     ],
                   ),
                 ],
@@ -175,7 +187,9 @@ class _SmartRedactionScreenState extends State<SmartRedactionScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight,
               ),
             ),
             const SizedBox(height: 10),
@@ -191,12 +205,18 @@ class _SmartRedactionScreenState extends State<SmartRedactionScreen> {
             const SizedBox(height: 12),
 
             CheckboxListTile(
-              title: const Text('Auto-detect Email Addresses', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              title: const Text(
+                'Auto-detect Email Addresses',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
               value: _redactEmails,
               onChanged: (val) => setState(() => _redactEmails = val!),
             ),
             CheckboxListTile(
-              title: const Text('Auto-detect Phone & Identity Numbers', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              title: const Text(
+                'Auto-detect Phone & Identity Numbers',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
               value: _redactPhones,
               onChanged: (val) => setState(() => _redactPhones = val!),
             ),

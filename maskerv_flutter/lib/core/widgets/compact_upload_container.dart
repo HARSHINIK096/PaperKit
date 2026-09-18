@@ -1,8 +1,10 @@
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../theme/app_colors.dart';
 import '../utils/platform_file_ext.dart';
 
@@ -40,15 +42,13 @@ class CompactUploadContainer extends StatelessWidget {
     if (!enabled) return;
     HapticFeedback.selectionClick();
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: allowedExtensions.isEmpty ? FileType.any : FileType.custom,
         allowedExtensions: allowedExtensions.isEmpty ? null : allowedExtensions,
-        allowMultiple: allowMultiple,
-        withData: true,
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        final selected = result.files
+      if (result.isNotEmpty) {
+        final selected = result
             .where((f) => f.hasValidFile)
             .map((f) => f.asFile ?? File(f.name))
             .toList();
@@ -120,7 +120,9 @@ class CompactUploadContainer extends StatelessWidget {
           onTap: enabled ? (onTap ?? () => _pickFiles(context)) : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: hasFiles ? _buildSelectedFilesView(context, isDark) : _buildEmptyDropzone(isDark),
+            child: hasFiles
+                ? _buildSelectedFilesView(context, isDark)
+                : _buildEmptyDropzone(isDark),
           ),
         ),
       ),
@@ -158,7 +160,9 @@ class CompactUploadContainer extends StatelessWidget {
                   fontSize: 14.5,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
-                  color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                  color: isDark
+                      ? AppColors.textPrimaryDark
+                      : const Color(0xFF0F172A),
                 ),
               ),
               const SizedBox(height: 3),
@@ -166,7 +170,9 @@ class CompactUploadContainer extends StatelessWidget {
                 subtitle,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isDark ? AppColors.textMutedDark : const Color(0xFF64748B),
+                  color: isDark
+                      ? AppColors.textMutedDark
+                      : const Color(0xFF64748B),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -177,7 +183,10 @@ class CompactUploadContainer extends StatelessWidget {
                   spacing: 5,
                   children: allowedExtensions.take(4).map((ext) {
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(5),
@@ -244,9 +253,15 @@ class CompactUploadContainer extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(11),
-                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                ),
               ),
-              child: const Icon(LucideIcons.fileCheck2, size: 20, color: Color(0xFF10B981)),
+              child: const Icon(
+                LucideIcons.fileCheck2,
+                size: 20,
+                color: Color(0xFF10B981),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -259,7 +274,9 @@ class CompactUploadContainer extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : const Color(0xFF0F172A),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -269,13 +286,19 @@ class CompactUploadContainer extends StatelessWidget {
                     future: firstFile.length(),
                     builder: (context, snapshot) {
                       final sizeStr = _formatBytes(snapshot.data ?? 0);
-                      final countStr = files.length > 1 ? ' • +${files.length - 1} more file(s)' : '';
+                      final countStr = files.length > 1
+                          ? ' • +${files.length - 1} more file(s)'
+                          : '';
                       return Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                              color: const Color(0xFF10B981)
+                                  .withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
@@ -293,7 +316,9 @@ class CompactUploadContainer extends StatelessWidget {
                             '$sizeStr$countStr',
                             style: TextStyle(
                               fontSize: 11,
-                              color: isDark ? AppColors.textMutedDark : const Color(0xFF64748B),
+                              color: isDark
+                                  ? AppColors.textMutedDark
+                                  : const Color(0xFF64748B),
                             ),
                           ),
                         ],
@@ -308,7 +333,10 @@ class CompactUploadContainer extends StatelessWidget {
             TextButton.icon(
               onPressed: enabled ? (onTap ?? () => _pickFiles(context)) : null,
               icon: const Icon(LucideIcons.refreshCw, size: 12),
-              label: const Text('Change', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+              label: const Text(
+                'Change',
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+              ),
               style: TextButton.styleFrom(
                 foregroundColor: primaryColor,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -319,7 +347,11 @@ class CompactUploadContainer extends StatelessWidget {
             if (onClear != null) ...[
               const SizedBox(width: 4),
               IconButton(
-                icon: const Icon(LucideIcons.x, size: 16, color: Color(0xFFEF4444)),
+                icon: const Icon(
+                  LucideIcons.x,
+                  size: 16,
+                  color: Color(0xFFEF4444),
+                ),
                 onPressed: onClear,
                 tooltip: 'Clear selection',
                 padding: EdgeInsets.zero,

@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/models/history_item.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/widgets/app_shell.dart';
@@ -27,7 +29,8 @@ class QrScannerScreen extends StatefulWidget {
   State<QrScannerScreen> createState() => _QrScannerScreenState();
 }
 
-class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingObserver {
+class _QrScannerScreenState extends State<QrScannerScreen>
+    with WidgetsBindingObserver {
   late MobileScannerController _cameraController;
   bool _isCameraSupported = true;
   bool _hasCameraPermission = false;
@@ -96,7 +99,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
     if (!_isCameraSupported || !_hasCameraPermission) return;
     if (state == AppLifecycleState.resumed) {
       _cameraController.start();
-    } else if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
       _cameraController.stop();
     }
   }
@@ -145,17 +149,17 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
     // Log to global MaskerV History
     if (mounted) {
       await context.read<HistoryProvider>().addRecord(
-            HistoryItem(
-              id: 'qr_scan_${DateTime.now().millisecondsSinceEpoch}',
-              toolId: 'qr-scanner',
-              toolName: 'QR Code Scanner',
-              fileName: payload.title,
-              fileSize: raw.length,
-              timestamp: DateTime.now(),
-              success: true,
-              details: '${payload.type.displayName} • Decoded',
-            ),
-          );
+        HistoryItem(
+          id: 'qr_scan_${DateTime.now().millisecondsSinceEpoch}',
+          toolId: 'qr-scanner',
+          toolName: 'QR Code Scanner',
+          fileName: payload.title,
+          fileSize: raw.length,
+          timestamp: DateTime.now(),
+          success: true,
+          details: '${payload.type.displayName} • Decoded',
+        ),
+      );
       _loadScanHistory();
     }
 
@@ -193,12 +197,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
 
   Future<void> _pickImageFromGallery() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-      );
+      final result = await FilePicker.pickFiles(type: FileType.image);
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
+      if (result.isNotEmpty && result.single.path != null) {
+        final file = File(result.single.path!);
         final payload = await QrImageDecoder.decodeFile(file);
 
         if (payload != null) {
@@ -207,7 +209,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('No decodable QR code detected in the selected image.'),
+                content: Text(
+                  'No decodable QR code detected in the selected image.',
+                ),
                 backgroundColor: Color(0xFFE11D48),
               ),
             );
@@ -216,9 +220,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error picking image: $e')));
       }
     }
   }
@@ -234,7 +237,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
     try {
       await _cameraController.switchCamera();
       setState(() {
-        _facing = _facing == CameraFacing.back ? CameraFacing.front : CameraFacing.back;
+        _facing = _facing == CameraFacing.back
+            ? CameraFacing.front
+            : CameraFacing.back;
       });
     } catch (_) {}
   }
@@ -251,7 +256,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
           children: [
             CircularProgressIndicator(color: Color(0xFF2563EB)),
             SizedBox(height: 16),
-            Text('Checking camera permissions...', style: TextStyle(color: Colors.grey)),
+            Text(
+              'Checking camera permissions...',
+              style: TextStyle(color: Colors.grey),
+            ),
           ],
         ),
       );
@@ -308,7 +316,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                 color: const Color(0xFFEF4444).withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.cameraOff, size: 48, color: Color(0xFFEF4444)),
+              child: const Icon(
+                LucideIcons.cameraOff,
+                size: 48,
+                color: Color(0xFFEF4444),
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -336,8 +348,13 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -411,7 +428,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: IconButton(
-                  icon: const Icon(LucideIcons.switchCamera, color: Colors.white, size: 20),
+                  icon: const Icon(
+                    LucideIcons.switchCamera,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   tooltip: 'Switch Camera',
                   onPressed: _switchCamera,
                 ),
@@ -428,14 +449,21 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Text(
                   'Point camera at QR code to scan instantly',
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -446,8 +474,13 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: const Color(0xFF0F172A),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 4,
                 ),
               ),
@@ -472,7 +505,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                 color: const Color(0xFF2563EB).withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.scanLine, size: 40, color: Color(0xFF2563EB)),
+              child: const Icon(
+                LucideIcons.scanLine,
+                size: 40,
+                color: Color(0xFF2563EB),
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -493,8 +530,13 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ],
@@ -510,7 +552,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(LucideIcons.cameraOff, size: 48, color: Color(0xFFE11D48)),
+            const Icon(
+              LucideIcons.cameraOff,
+              size: 48,
+              color: Color(0xFFE11D48),
+            ),
             const SizedBox(height: 16),
             const Text(
               'Camera Access Unavailable',
@@ -546,7 +592,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
           builder: (context, setSheetState) {
             return Container(
               padding: const EdgeInsets.all(20),
-              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.75,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -555,7 +603,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                     children: [
                       const Text(
                         'Scan History',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       if (_scanHistory.isNotEmpty)
                         TextButton.icon(
@@ -565,7 +616,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                             setState(() => _scanHistory.clear());
                           },
                           icon: const Icon(LucideIcons.trash2, size: 14),
-                          label: const Text('Clear All', style: TextStyle(color: Color(0xFFE11D48))),
+                          label: const Text(
+                            'Clear All',
+                            style: TextStyle(color: Color(0xFFE11D48)),
+                          ),
                         ),
                     ],
                   ),
@@ -573,35 +627,66 @@ class _QrScannerScreenState extends State<QrScannerScreen> with WidgetsBindingOb
                   if (_scanHistory.isEmpty)
                     const Expanded(
                       child: Center(
-                        child: Text('No QR scan history recorded yet.', style: TextStyle(color: Colors.grey)),
+                        child: Text(
+                          'No QR scan history recorded yet.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ),
                     )
                   else
                     Expanded(
                       child: ListView.separated(
                         itemCount: _scanHistory.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final item = _scanHistory[index];
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: CircleAvatar(
-                              backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.12),
-                              child: const Icon(LucideIcons.scanLine, size: 18, color: Color(0xFF2563EB)),
+                              backgroundColor: const Color(0xFF2563EB)
+                                  .withValues(alpha: 0.12),
+                              child: const Icon(
+                                LucideIcons.scanLine,
+                                size: 18,
+                                color: Color(0xFF2563EB),
+                              ),
                             ),
-                            title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
-                            subtitle: Text('${item.type.displayName} • ${item.timestamp.toLocal().toString().substring(0, 16)}', style: const TextStyle(fontSize: 11)),
+                            title: Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${item.type.displayName} • ${item.timestamp.toLocal().toString().substring(0, 16)}',
+                              style: const TextStyle(fontSize: 11),
+                            ),
                             trailing: IconButton(
-                              icon: const Icon(LucideIcons.trash2, size: 16, color: Colors.grey),
+                              icon: const Icon(
+                                LucideIcons.trash2,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
                               onPressed: () async {
                                 await QrScanHistoryService.deleteItem(item.id);
-                                setSheetState(() => _scanHistory.removeAt(index));
-                                setState(() => _scanHistory.removeWhere((h) => h.id == item.id));
+                                setSheetState(
+                                  () => _scanHistory.removeAt(index),
+                                );
+                                setState(
+                                  () => _scanHistory.removeWhere(
+                                    (h) => h.id == item.id,
+                                  ),
+                                );
                               },
                             ),
                             onTap: () {
                               Navigator.of(ctx).pop();
-                              final payload = QrPayloadParser.parse(item.rawData);
+                              final payload = QrPayloadParser.parse(
+                                item.rawData,
+                              );
                               _showResultBottomSheet(payload);
                             },
                           );

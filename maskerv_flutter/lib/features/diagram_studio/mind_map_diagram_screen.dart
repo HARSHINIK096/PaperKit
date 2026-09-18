@@ -36,13 +36,13 @@ class _MindMapDiagramScreenState extends State<MindMapDiagramScreen> with Single
 
   Future<void> _pickDocument() async {
     setState(() => _isLoading = true);
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    if (result.isNotEmpty && result.single.path != null) {
+      final file = File(result.single.path!);
       final mindMap = await _service.generateMindMapFromDocument(file);
       final deck = await _service.generatePresentationFromDocument(file);
 

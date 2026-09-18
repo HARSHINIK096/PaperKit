@@ -25,13 +25,13 @@ class _CompressPDFScreenState extends State<CompressPDFScreen> {
 
   Future<void> _pickFile() async {
     HapticFeedback.lightImpact();
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    if (result.isNotEmpty && result.single.path != null) {
+      final file = File(result.single.path!);
       final len = await file.length();
       setState(() {
         _selectedFile = file;

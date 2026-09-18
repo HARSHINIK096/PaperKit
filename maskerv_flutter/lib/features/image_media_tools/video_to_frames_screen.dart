@@ -64,13 +64,13 @@ class _VideoToFramesScreenState extends State<VideoToFramesScreen> {
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: _allowedExtensions,
     );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    if (result.isNotEmpty && result.single.path != null) {
+      final file = File(result.single.path!);
       setState(() {
         _selectedFile = file;
         _videoInfo = null;

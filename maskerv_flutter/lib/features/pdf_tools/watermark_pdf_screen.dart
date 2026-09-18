@@ -1,9 +1,11 @@
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
@@ -21,7 +23,9 @@ class WatermarkPDFScreen extends StatefulWidget {
 
 class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
   File? _selectedFile;
-  final TextEditingController _watermarkController = TextEditingController(text: 'CONFIDENTIAL');
+  final TextEditingController _watermarkController = TextEditingController(
+    text: 'CONFIDENTIAL',
+  );
   double _opacity = 0.3;
   double _fontSize = 40;
   double _angle = -45;
@@ -34,14 +38,13 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
 
   Future<void> _pickFile() async {
     HapticFeedback.lightImpact();
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
-      withData: true,
     );
 
-    if (result != null && result.files.isNotEmpty && result.files.single.hasValidFile) {
-      final pf = result.files.single;
+    if (result.isNotEmpty && result.single.hasValidFile) {
+      final pf = result.single;
       setState(() {
         _selectedFile = pf.asFile ?? File(pf.name);
       });
@@ -78,16 +81,16 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
     if (mounted) {
       await context.read<FilesProvider>().addFile(doc);
       await context.read<HistoryProvider>().addRecord(
-            HistoryItem(
-              id: 'hist_$timestamp',
-              toolId: 'watermark',
-              toolName: 'Watermark PDF',
-              fileName: fileName,
-              outputPath: outputFile.path,
-              fileSize: fileSize,
-              timestamp: DateTime.now(),
-            ),
-          );
+        HistoryItem(
+          id: 'hist_$timestamp',
+          toolId: 'watermark',
+          toolName: 'Watermark PDF',
+          fileName: fileName,
+          outputPath: outputFile.path,
+          fileSize: fileSize,
+          timestamp: DateTime.now(),
+        ),
+      );
     }
 
     return outputFile;
@@ -131,12 +134,20 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
                 color: Color(0xFFF0FDFA),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.stamp, size: 36, color: primaryColor),
+              child: const Icon(
+                LucideIcons.stamp,
+                size: 36,
+                color: primaryColor,
+              ),
             ),
             const SizedBox(height: 14),
             const Text(
               'Select PDF to Watermark',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+              ),
             ),
             const SizedBox(height: 6),
             const Text(
@@ -150,13 +161,17 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
               onPressed: _pickFile,
               icon: const Icon(LucideIcons.filePlus, size: 18),
               label: Text(
-                _selectedFile == null ? 'Choose PDF File' : 'Change Selected PDF',
+                _selectedFile == null
+                    ? 'Choose PDF File'
+                    : 'Change Selected PDF',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
 
@@ -171,12 +186,19 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(LucideIcons.fileCheck, color: primaryColor, size: 22),
+                    const Icon(
+                      LucideIcons.fileCheck,
+                      color: primaryColor,
+                      size: 22,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         _selectedFile!.uri.pathSegments.last,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -195,7 +217,11 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
         children: [
           const Text(
             'Configure Watermark Stamp',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+            ),
           ),
           const SizedBox(height: 14),
 
@@ -207,7 +233,9 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
               filled: true,
               fillColor: Colors.white,
               prefixIcon: const Icon(LucideIcons.type, size: 18),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           const SizedBox(height: 18),
@@ -256,7 +284,11 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFE2E8F0)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
               ],
             ),
             child: Stack(
@@ -269,10 +301,38 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Container(height: 6, width: 80, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(3))),
-                      Container(height: 4, width: 220, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(2))),
-                      Container(height: 4, width: 180, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(2))),
-                      Container(height: 4, width: 140, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(2))),
+                      Container(
+                        height: 6,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      Container(
+                        height: 4,
+                        width: 220,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Container(
+                        height: 4,
+                        width: 180,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      Container(
+                        height: 4,
+                        width: 140,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -280,7 +340,9 @@ class _WatermarkPDFScreenState extends State<WatermarkPDFScreen> {
                 Transform.rotate(
                   angle: _angle * (3.14159265359 / 180),
                   child: Text(
-                    _watermarkController.text.trim().isEmpty ? 'WATERMARK' : _watermarkController.text.trim(),
+                    _watermarkController.text.trim().isEmpty
+                        ? 'WATERMARK'
+                        : _watermarkController.text.trim(),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

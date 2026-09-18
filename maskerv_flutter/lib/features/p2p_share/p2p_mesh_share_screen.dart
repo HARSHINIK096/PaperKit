@@ -394,11 +394,11 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
 
   Future<void> _pickQrImageFromGallery() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.image,
       );
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
+      if (result.isNotEmpty && result.single.path != null) {
+        final file = File(result.single.path!);
         final payload = await QrImageDecoder.decodeFile(file);
         if (payload != null && payload.rawData.isNotEmpty) {
           _qrPayloadController.text = payload.rawData;

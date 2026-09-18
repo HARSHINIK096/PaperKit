@@ -58,8 +58,9 @@ def _get_gemini_model(model_name: Optional[str] = None, api_key: Optional[str] =
     import google.generativeai as genai
     candidate_models = [
         "gemini-3.6-flash",
-        "gemini-2.5-flash",
         "gemini-flash-latest",
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash",
         "gemini-3.5-flash",
         "gemini-3.7-flash",
     ]
@@ -70,7 +71,7 @@ def _get_gemini_model(model_name: Optional[str] = None, api_key: Optional[str] =
             return genai.GenerativeModel(m)
         except Exception:
             continue
-    return genai.GenerativeModel("gemini-2.5-flash")
+    return genai.GenerativeModel("gemini-3.6-flash")
 
 async def generate_text(prompt: str, system_prompt: Optional[str] = None) -> str:
     """Generate text completion using Groq (priority) or Gemini (fallback), trying all configured keys."""
@@ -80,11 +81,12 @@ async def generate_text(prompt: str, system_prompt: Optional[str] = None) -> str
     # 1. Try Groq across all clients
     if groq_clients:
         models_to_try = [
-            current_settings.groq_text_model or "openai/gpt-oss-120b",
-            "openai/gpt-oss-120b",
-            "openai/gpt-oss-20b",
-            "qwen/qwen3.8-27b",
-            "groq/compound-mini",
+            current_settings.groq_text_model or "llama-3.3-70b-versatile",
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it",
+            "deepseek-r1-distill-llama-70b",
         ]
         seen = set()
         dedup_models = [m for m in models_to_try if not (m in seen or seen.add(m))]
@@ -137,9 +139,9 @@ async def ocr_image(image_bytes: bytes, mime_type: str = "image/jpeg", prompt: O
     current_settings = get_settings()
     if groq_clients:
         vision_models = [
-            current_settings.groq_vision_model or "openai/gpt-oss-20b",
-            "openai/gpt-oss-20b",
-            "openai/gpt-oss-120b",
+            current_settings.groq_vision_model or "llama-3.2-11b-vision-preview",
+            "llama-3.2-11b-vision-preview",
+            "llama-3.2-90b-vision-preview",
         ]
         base64_img = base64.b64encode(image_bytes).decode("utf-8")
         data_url = f"data:{mime_type};base64,{base64_img}"

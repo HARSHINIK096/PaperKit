@@ -22,14 +22,14 @@ class _InvoiceParserScreenState extends State<InvoiceParserScreen> {
   Map<String, dynamic>? _invoiceData;
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result.isNotEmpty && result.single.path != null) {
       setState(() {
-        _selectedFile = File(result.files.single.path!);
+        _selectedFile = File(result.single.path!);
         _invoiceData = null;
       });
     }

@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     groq_api_key: str = ""
     hf_api_key: str = ""
-    groq_text_model: str = "openai/gpt-oss-120b"
-    groq_vision_model: str = "openai/gpt-oss-20b"
+    groq_text_model: str = "llama-3.3-70b-versatile"
+    groq_vision_model: str = "llama-3.2-11b-vision-preview"
 
     # Frontend & Backend URLs on Render
     frontend_url: str = "https://paperkit-web.onrender.com"

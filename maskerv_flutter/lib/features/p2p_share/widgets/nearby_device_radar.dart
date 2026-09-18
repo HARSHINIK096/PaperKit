@@ -1,7 +1,9 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../../core/models/p2p_share_model.dart';
 
 class NearbyDeviceRadar extends StatefulWidget {
@@ -149,21 +151,28 @@ class _NearbyDeviceRadarState extends State<NearbyDeviceRadar>
                         // Interactive Discovered Device Nodes plotted on Radar
                         ...widget.devices.map((device) {
                           // Normalize distance against current max radius
-                          final normalizedDist = (device.distanceMeters / widget.currentMaxRadius)
-                              .clamp(0.18, 0.88);
+                          final normalizedDist =
+                              (device.distanceMeters / widget.currentMaxRadius)
+                                  .clamp(0.18, 0.88);
                           final radarRadius = 135.0 * normalizedDist;
 
                           // Compute cartesian coordinates relative to center (135, 135)
-                          final x = 135.0 + radarRadius * math.cos(device.angleRadians);
-                          final y = 135.0 + radarRadius * math.sin(device.angleRadians);
+                          final x =
+                              135.0 +
+                              radarRadius * math.cos(device.angleRadians);
+                          final y =
+                              135.0 +
+                              radarRadius * math.sin(device.angleRadians);
 
-                          final isSelected = widget.selectedDevice?.id == device.id;
+                          final isSelected =
+                              widget.selectedDevice?.id == device.id;
 
                           return Positioned(
                             left: x - 18,
                             top: y - 18,
                             child: Tooltip(
-                              message: '${device.deviceName} (${device.distanceMeters.toStringAsFixed(1)}m)',
+                              message:
+                                  '${device.deviceName} (${device.distanceMeters.toStringAsFixed(1)}m)',
                               child: GestureDetector(
                                 onTap: () {
                                   HapticFeedback.selectionClick();
@@ -177,7 +186,9 @@ class _NearbyDeviceRadarState extends State<NearbyDeviceRadar>
                                     shape: BoxShape.circle,
                                     color: isSelected
                                         ? const Color(0xFF10B981)
-                                        : (isDark ? const Color(0xFF1E293B) : Colors.white),
+                                        : (isDark
+                                              ? const Color(0xFF1E293B)
+                                              : Colors.white),
                                     border: Border.all(
                                       color: isSelected
                                           ? Colors.white
@@ -186,10 +197,11 @@ class _NearbyDeviceRadarState extends State<NearbyDeviceRadar>
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: (isSelected
-                                                ? const Color(0xFF10B981)
-                                                : const Color(0xFF2563EB))
-                                            .withValues(alpha: 0.4),
+                                        color:
+                                            (isSelected
+                                                    ? const Color(0xFF10B981)
+                                                    : const Color(0xFF2563EB))
+                                                .withValues(alpha: 0.4),
                                         blurRadius: 8,
                                         spreadRadius: 1,
                                       ),
@@ -253,7 +265,9 @@ class _NearbyDeviceRadarState extends State<NearbyDeviceRadar>
               color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
               ),
             ),
             child: Column(
@@ -262,7 +276,10 @@ class _NearbyDeviceRadarState extends State<NearbyDeviceRadar>
                 const SizedBox(height: 8),
                 Text(
                   'No devices detected within ${widget.currentMaxRadius.toInt()}m.',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
@@ -278,7 +295,7 @@ class _NearbyDeviceRadarState extends State<NearbyDeviceRadar>
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: widget.devices.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final device = widget.devices[index];
               final isSelected = widget.selectedDevice?.id == device.id;
@@ -290,19 +307,26 @@ class _NearbyDeviceRadarState extends State<NearbyDeviceRadar>
                   side: BorderSide(
                     color: isSelected
                         ? const Color(0xFF10B981)
-                        : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                        : (isDark
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFE2E8F0)),
                     width: isSelected ? 2 : 1,
                   ),
                 ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 4,
+                  ),
                   leading: CircleAvatar(
                     backgroundColor: isSelected
                         ? const Color(0xFF10B981).withValues(alpha: 0.15)
                         : const Color(0xFF2563EB).withValues(alpha: 0.15),
                     child: Icon(
                       _getDeviceIcon(device.deviceType),
-                      color: isSelected ? const Color(0xFF10B981) : const Color(0xFF2563EB),
+                      color: isSelected
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFF2563EB),
                       size: 20,
                     ),
                   ),
@@ -311,13 +335,19 @@ class _NearbyDeviceRadarState extends State<NearbyDeviceRadar>
                       Flexible(
                         child: Text(
                           device.deviceName,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
@@ -337,16 +367,27 @@ class _NearbyDeviceRadarState extends State<NearbyDeviceRadar>
                     children: [
                       Text(
                         device.deviceModel,
-                        style: TextStyle(fontSize: 11, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        ),
                       ),
                       const SizedBox(width: 8),
                       const Text('•', style: TextStyle(color: Colors.grey)),
                       const SizedBox(width: 8),
-                      Icon(LucideIcons.wifi, size: 12, color: Colors.green[600]),
+                      Icon(
+                        LucideIcons.wifi,
+                        size: 12,
+                        color: Colors.green[600],
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '${(device.signalStrength * 100).toInt()}%',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green[600]),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[600],
+                        ),
                       ),
                     ],
                   ),
@@ -365,8 +406,13 @@ class _NearbyDeviceRadarState extends State<NearbyDeviceRadar>
                           ? const Color(0xFF10B981)
                           : const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),

@@ -28,13 +28,13 @@ class _OrganizePagesScreenState extends State<OrganizePagesScreen> {
   File? _organizedResult;
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    if (result.isNotEmpty && result.single.path != null) {
+      final file = File(result.single.path!);
       final bytes = await file.readAsBytes();
       final doc = PdfDocument(inputBytes: bytes);
       final count = doc.pages.count;

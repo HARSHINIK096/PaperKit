@@ -41,14 +41,14 @@ class _VideoConverterScreenState extends State<VideoConverterScreen> {
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['mp4', 'mov', 'webm', 'avi', 'mkv', 'flv', 'wmv', 'm4v', '3gp', 'ogv', 'ts', 'mts', 'm2ts'],
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result.isNotEmpty && result.single.path != null) {
       setState(() {
-        _selectedFile = File(result.files.single.path!);
+        _selectedFile = File(result.single.path!);
         _convertedResult = null;
       });
     }

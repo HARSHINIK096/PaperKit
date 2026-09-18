@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../core/constants/tool_registry.dart';
 import '../../core/models/tool_item.dart';
 import '../../core/theme/app_colors.dart';
@@ -118,7 +119,7 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: DomainRegistry.domains.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final d = DomainRegistry.domains[index];
                 final isSelected = domain?.number == d.number;
@@ -128,21 +129,29 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                     'D${d.number} • ${d.shortName}',
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       color: isSelected
                           ? Colors.white
-                          : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+                          : (isDark
+                                ? AppColors.textPrimaryDark
+                                : AppColors.textPrimaryLight),
                     ),
                   ),
                   selected: isSelected,
                   selectedColor: d.color,
-                  backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+                  backgroundColor: isDark
+                      ? AppColors.surfaceDark
+                      : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
                       color: isSelected
                           ? d.color
-                          : (isDark ? AppColors.borderDark : const Color(0xFFE2E8F0)),
+                          : (isDark
+                                ? AppColors.borderDark
+                                : const Color(0xFFE2E8F0)),
                       width: 1.2,
                     ),
                   ),
@@ -171,9 +180,15 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                     : 'Search tools in this hub...',
                 hintStyle: TextStyle(
                   fontSize: 13.5,
-                  color: isDark ? AppColors.textMutedDark : const Color(0xFF94A3B8),
+                  color: isDark
+                      ? AppColors.textMutedDark
+                      : const Color(0xFF94A3B8),
                 ),
-                prefixIcon: const Icon(LucideIcons.search, size: 18, color: Color(0xFF64748B)),
+                prefixIcon: const Icon(
+                  LucideIcons.search,
+                  size: 18,
+                  color: Color(0xFF64748B),
+                ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear, size: 16),
@@ -182,17 +197,24 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                     : null,
                 filled: true,
                 fillColor: isDark ? AppColors.surfaceDark : Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 16,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(
-                    color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? AppColors.borderDark
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(
-                    color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? AppColors.borderDark
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -215,12 +237,16 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                     color: isDark ? AppColors.surfaceDark : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0),
+                      color: isDark
+                          ? AppColors.borderDark
+                          : const Color(0xFFE2E8F0),
                       width: 1.2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: primaryColor.withValues(alpha: isDark ? 0.2 : 0.06),
+                        color: primaryColor.withValues(
+                          alpha: isDark ? 0.2 : 0.06,
+                        ),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
@@ -235,9 +261,15 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                         decoration: BoxDecoration(
                           color: softColor,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: primaryColor.withValues(alpha: 0.25)),
+                          border: Border.all(
+                            color: primaryColor.withValues(alpha: 0.25),
+                          ),
                         ),
-                        child: Icon(domain?.icon ?? LucideIcons.layers, size: 24, color: primaryColor),
+                        child: Icon(
+                          domain?.icon ?? LucideIcons.layers,
+                          size: 24,
+                          color: primaryColor,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -246,7 +278,10 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                           children: [
                             if (domain != null)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
                                 margin: const EdgeInsets.only(bottom: 6),
                                 decoration: BoxDecoration(
                                   color: primaryColor.withValues(alpha: 0.12),
@@ -268,7 +303,9 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -0.3,
-                                color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                                color: isDark
+                                    ? AppColors.textPrimaryDark
+                                    : const Color(0xFF0F172A),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -277,7 +314,9 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                               style: TextStyle(
                                 fontSize: 12.5,
                                 height: 1.4,
-                                color: isDark ? AppColors.textMutedDark : const Color(0xFF64748B),
+                                color: isDark
+                                    ? AppColors.textMutedDark
+                                    : const Color(0xFF64748B),
                               ),
                             ),
                           ],
@@ -297,7 +336,9 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : const Color(0xFF0F172A),
                       ),
                     ),
                     if (domain != null)
@@ -320,7 +361,9 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                     child: Text(
                       'No tools match "$_searchQuery"',
                       style: TextStyle(
-                        color: isDark ? AppColors.textMutedDark : const Color(0xFF94A3B8),
+                        color: isDark
+                            ? AppColors.textMutedDark
+                            : const Color(0xFF94A3B8),
                       ),
                     ),
                   )
@@ -329,14 +372,18 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: filteredPrimary.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      childAspectRatio: 0.76,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 12,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          childAspectRatio: 0.76,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 12,
+                        ),
                     itemBuilder: (context, index) {
-                      return ToolCard(tool: filteredPrimary[index], compact: true);
+                      return ToolCard(
+                        tool: filteredPrimary[index],
+                        compact: true,
+                      );
                     },
                   ),
 
@@ -351,18 +398,29 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                          color: isDark
+                              ? AppColors.textPrimaryDark
+                              : const Color(0xFF0F172A),
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.surfaceElevatedDark : const Color(0xFFF1F5F9),
+                          color: isDark
+                              ? AppColors.surfaceElevatedDark
+                              : const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
                           'Linked Workflows',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
                         ),
                       ),
                     ],
@@ -372,14 +430,18 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: filteredCross.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      childAspectRatio: 0.76,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 12,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          childAspectRatio: 0.76,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 12,
+                        ),
                     itemBuilder: (context, index) {
-                      return ToolCard(tool: filteredCross[index], compact: true);
+                      return ToolCard(
+                        tool: filteredCross[index],
+                        compact: true,
+                      );
                     },
                   ),
                 ],

@@ -28,9 +28,9 @@ class _ImageResizerScreenState extends State<ImageResizerScreen> {
   File? _outputFile;
 
   Future<void> _pickImage() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    final result = await FilePicker.pickFiles(type: FileType.image);
+    if (result.isNotEmpty && result.single.path != null) {
+      final file = File(result.single.path!);
       final bytes = await file.readAsBytes();
       final decoded = img.decodeImage(bytes);
 

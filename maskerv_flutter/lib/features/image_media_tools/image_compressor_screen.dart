@@ -36,13 +36,13 @@ class _ImageCompressorScreenState extends State<ImageCompressorScreen> {
 
   Future<void> _pickFile() async {
     HapticFeedback.lightImpact();
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'],
     );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    if (result.isNotEmpty && result.single.path != null) {
+      final file = File(result.single.path!);
       final len = await file.length();
       setState(() {
         _selectedFile = file;

@@ -66,13 +66,13 @@ class _VoicePodcastScreenState extends State<VoicePodcastScreen> with SingleTick
     });
 
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'txt'],
       );
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
+      if (result.isNotEmpty && result.single.path != null) {
+        final file = File(result.single.path!);
         final script = await _service.generatePodcastScript(file);
         final notes = await _service.loadVoiceAnnotationsForDocument(file.path);
 

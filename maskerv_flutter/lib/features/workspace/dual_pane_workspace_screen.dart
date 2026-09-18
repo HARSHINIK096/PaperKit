@@ -94,9 +94,9 @@ class _DualPaneWorkspaceScreenState extends State<DualPaneWorkspaceScreen> with 
   }
 
   Future<void> _pickPaneA() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'txt']);
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'txt']);
+    if (result.isNotEmpty && result.single.path != null) {
+      final file = File(result.single.path!);
       final text = file.path.endsWith('.pdf') ? await PdfEngine.extractTextFromPdf(file) : await file.readAsString();
       final notes = await _service.loadNotesForDocument(file.path);
       setState(() {
@@ -108,9 +108,9 @@ class _DualPaneWorkspaceScreenState extends State<DualPaneWorkspaceScreen> with 
   }
 
   Future<void> _pickPaneB() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'txt']);
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'txt']);
+    if (result.isNotEmpty && result.single.path != null) {
+      final file = File(result.single.path!);
       final text = file.path.endsWith('.pdf') ? await PdfEngine.extractTextFromPdf(file) : await file.readAsString();
       setState(() {
         _paneBFile = file;

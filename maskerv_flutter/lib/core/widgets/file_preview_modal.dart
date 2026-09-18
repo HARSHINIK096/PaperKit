@@ -1,8 +1,10 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
+
 import '../models/document_file.dart';
 import '../services/pdf_engine.dart';
 import '../theme/app_colors.dart';
@@ -56,7 +58,20 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
       } catch (e) {
         setState(() => _isLoading = false);
       }
-    } else if (['txt', 'md', 'json', 'csv', 'log', 'yaml', 'yml', 'xml', 'html', 'js', 'py', 'dart'].contains(ext)) {
+    } else if ([
+      'txt',
+      'md',
+      'json',
+      'csv',
+      'log',
+      'yaml',
+      'yml',
+      'xml',
+      'html',
+      'js',
+      'py',
+      'dart',
+    ].contains(ext)) {
       setState(() => _isLoading = true);
       try {
         final file = File(path);
@@ -111,13 +126,18 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
                         widget.file.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
                       ),
                       Text(
                         widget.file.formattedSize,
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textMutedDark
+                              : AppColors.textSecondaryLight,
                         ),
                       ),
                     ],
@@ -149,66 +169,86 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
           // Preview Area
           Expanded(
             child: Container(
-              color: isDark ? AppColors.backgroundDark : const Color(0xFFF1F5F9),
+              color: isDark
+                  ? AppColors.backgroundDark
+                  : const Color(0xFFF1F5F9),
               child: Center(
                 child: _isLoading
                     ? const CircularProgressIndicator()
                     : isImage
-                        ? InteractiveViewer(
-                            child: Image.file(
-                              File(widget.file.path),
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const Text('Could not render image preview'),
+                    ? InteractiveViewer(
+                        child: Image.file(
+                          File(widget.file.path),
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) =>
+                              const Text('Could not render image preview'),
+                        ),
+                      )
+                    : _textContent != null
+                    ? SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: MarkdownViewer(
+                          markdown: _textContent!,
+                          title: widget.file.name,
+                          showHeader: false,
+                        ),
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
                             ),
-                          )
-                        : _textContent != null
-                            ? SingleChildScrollView(
-                                padding: const EdgeInsets.all(16),
-                                child: MarkdownViewer(
-                                  markdown: _textContent!,
-                                  title: widget.file.name,
-                                  showHeader: false,
-                                ),
-                              )
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(20),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(LucideIcons.fileText, size: 48, color: AppColors.primary),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    widget.file.name,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '${widget.file.formattedSize} • Tap below to open in native viewer',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  ElevatedButton.icon(
-                                    onPressed: () => OpenFilex.open(widget.file.path),
-                                    icon: const Icon(LucideIcons.externalLink, size: 16),
-                                    label: const Text('Open in Native Viewer'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  ),
-                                ],
+                            child: const Icon(
+                              LucideIcons.fileText,
+                              size: 48,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            widget.file.name,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '${widget.file.formattedSize} • Tap below to open in native viewer',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark
+                                  ? AppColors.textMutedDark
+                                  : AppColors.textSecondaryLight,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton.icon(
+                            onPressed: () => OpenFilex.open(widget.file.path),
+                            icon: const Icon(
+                              LucideIcons.externalLink,
+                              size: 16,
+                            ),
+                            label: const Text('Open in Native Viewer'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
                               ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
           ),

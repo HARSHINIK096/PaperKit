@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/i18n_provider.dart';
 import '../theme/app_colors.dart';
 
@@ -48,7 +49,9 @@ class LanguageSelectorSheet extends StatelessWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFCBD5E1),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -62,7 +65,11 @@ class LanguageSelectorSheet extends StatelessWidget {
                       color: AppColors.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(LucideIcons.globe, color: AppColors.primary, size: 22),
+                    child: const Icon(
+                      LucideIcons.globe,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -74,7 +81,9 @@ class LanguageSelectorSheet extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -82,7 +91,9 @@ class LanguageSelectorSheet extends StatelessWidget {
                           'Choose your preferred interface language',
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                            color: isDark
+                                ? Colors.grey[400]
+                                : const Color(0xFF64748B),
                           ),
                         ),
                       ],
@@ -92,7 +103,9 @@ class LanguageSelectorSheet extends StatelessWidget {
                     icon: const Icon(LucideIcons.x, size: 20),
                     onPressed: () => Navigator.of(context).pop(),
                     style: IconButton.styleFrom(
-                      backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      backgroundColor: isDark
+                          ? const Color(0xFF1E293B)
+                          : const Color(0xFFF1F5F9),
                     ),
                   ),
                 ],
@@ -106,7 +119,7 @@ class LanguageSelectorSheet extends StatelessWidget {
                   shrinkWrap: true,
                   physics: const BouncingScrollPhysics(),
                   itemCount: i18n.supportedLanguages.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final lang = i18n.supportedLanguages[index];
                     final isSelected = lang.code == currentCode;
@@ -121,7 +134,9 @@ class LanguageSelectorSheet extends StatelessWidget {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Language set to ${lang.nativeName} (${lang.name}) ${lang.flag}'),
+                                content: Text(
+                                  'Language set to ${lang.nativeName} (${lang.name}) ${lang.flag}',
+                                ),
                                 duration: const Duration(seconds: 2),
                                 behavior: SnackBarBehavior.floating,
                                 backgroundColor: AppColors.primary,
@@ -132,16 +147,26 @@ class LanguageSelectorSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.08)
-                                : (isDark ? const Color(0xFF1E293B).withValues(alpha: 0.5) : const Color(0xFFF8FAFC)),
+                                ? AppColors.primary.withValues(
+                                    alpha: isDark ? 0.2 : 0.08,
+                                  )
+                                : (isDark
+                                      ? const Color(0xFF1E293B)
+                                            .withValues(alpha: 0.5)
+                                      : const Color(0xFFF8FAFC)),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isSelected
                                   ? AppColors.primary
-                                  : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                                  : (isDark
+                                        ? const Color(0xFF334155)
+                                        : const Color(0xFFE2E8F0)),
                               width: isSelected ? 1.5 : 1,
                             ),
                           ),
@@ -152,17 +177,24 @@ class LanguageSelectorSheet extends StatelessWidget {
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                                  color: isDark
+                                      ? const Color(0xFF0F172A)
+                                      : Colors.white,
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.05),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.05,
+                                      ),
                                       blurRadius: 4,
                                     ),
                                   ],
                                 ),
                                 alignment: Alignment.center,
-                                child: Text(lang.flag, style: const TextStyle(fontSize: 18)),
+                                child: Text(
+                                  lang.flag,
+                                  style: const TextStyle(fontSize: 18),
+                                ),
                               ),
                               const SizedBox(width: 14),
                               // Language Names
@@ -177,7 +209,9 @@ class LanguageSelectorSheet extends StatelessWidget {
                                         fontWeight: FontWeight.w700,
                                         color: isSelected
                                             ? AppColors.primary
-                                            : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                                            : (isDark
+                                                  ? Colors.white
+                                                  : const Color(0xFF0F172A)),
                                       ),
                                     ),
                                     const SizedBox(height: 2),
@@ -185,7 +219,9 @@ class LanguageSelectorSheet extends StatelessWidget {
                                       lang.name,
                                       style: TextStyle(
                                         fontSize: 11.5,
-                                        color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                                        color: isDark
+                                            ? Colors.grey[400]
+                                            : const Color(0xFF64748B),
                                       ),
                                     ),
                                   ],
@@ -193,9 +229,14 @@ class LanguageSelectorSheet extends StatelessWidget {
                               ),
                               // Country code badge
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                                  color: isDark
+                                      ? const Color(0xFF334155)
+                                      : const Color(0xFFE2E8F0),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -203,16 +244,24 @@ class LanguageSelectorSheet extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
-                                    color: isDark ? Colors.grey[300] : const Color(0xFF475569),
+                                    color: isDark
+                                        ? Colors.grey[300]
+                                        : const Color(0xFF475569),
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 10),
                               // Selection Checkmark
                               Icon(
-                                isSelected ? LucideIcons.checkCircle2 : LucideIcons.circle,
+                                isSelected
+                                    ? LucideIcons.checkCircle2
+                                    : LucideIcons.circle,
                                 size: 20,
-                                color: isSelected ? AppColors.primary : (isDark ? Colors.grey[600] : Colors.grey[400]),
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : (isDark
+                                          ? Colors.grey[600]
+                                          : Colors.grey[400]),
                               ),
                             ],
                           ),

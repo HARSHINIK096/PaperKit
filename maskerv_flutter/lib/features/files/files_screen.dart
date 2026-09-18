@@ -38,10 +38,10 @@ class _FilesScreenState extends State<FilesScreen> with SingleTickerProviderStat
 
   Future<void> _importFiles() async {
     HapticFeedback.lightImpact();
-    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
-    if (result != null && result.files.isNotEmpty) {
+    final result = await FilePicker.pickFiles();
+    if (result.isNotEmpty) {
       final filesProv = context.read<FilesProvider>();
-      for (final platformFile in result.files) {
+      for (final platformFile in result) {
         if (platformFile.path != null) {
           final file = File(platformFile.path!);
           final name = platformFile.name;
@@ -50,7 +50,7 @@ class _FilesScreenState extends State<FilesScreen> with SingleTickerProviderStat
             id: 'imp_${DateTime.now().millisecondsSinceEpoch}_${name.hashCode}',
             name: name,
             path: file.path,
-            size: platformFile.size,
+            size: platformFile.lengthSync() ?? 0,
             modifiedAt: DateTime.now(),
             type: DocumentFile.getTypeFromExtension(ext),
           );
@@ -60,7 +60,7 @@ class _FilesScreenState extends State<FilesScreen> with SingleTickerProviderStat
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Imported ${result.files.length} file(s) into workspace'),
+            content: Text('Imported ${result.length} file(s) into workspace'),
             backgroundColor: AppColors.primary,
           ),
         );

@@ -44,14 +44,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _pickDropzoneFile() async {
     HapticFeedback.lightImpact();
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.any,
-      allowMultiple: false,
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result.isNotEmpty && result.single.path != null) {
       setState(() {
-        _droppedFile = File(result.files.single.path!);
+        _droppedFile = File(result.single.path!);
       });
     }
   }

@@ -55,14 +55,14 @@ class _ConvertDocumentScreenState extends State<ConvertDocumentScreen> {
     if (_fromFormat == 'txt') allowed = ['txt'];
     if (_fromFormat == 'html') allowed = ['html', 'htm'];
 
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: allowed,
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result.isNotEmpty && result.single.path != null) {
       setState(() {
-        _selectedFile = File(result.files.single.path!);
+        _selectedFile = File(result.single.path!);
         _convertedResult = null;
       });
     }

@@ -21,17 +21,17 @@ class _SemanticCompareScreenState extends State<SemanticCompareScreen> {
   Map<String, dynamic>? _compareResult;
 
   Future<void> _pickFile(bool isFileA) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'docx', 'txt'],
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result.isNotEmpty && result.single.path != null) {
       setState(() {
         if (isFileA) {
-          _fileA = File(result.files.single.path!);
+          _fileA = File(result.single.path!);
         } else {
-          _fileB = File(result.files.single.path!);
+          _fileB = File(result.single.path!);
         }
         _compareResult = null;
       });

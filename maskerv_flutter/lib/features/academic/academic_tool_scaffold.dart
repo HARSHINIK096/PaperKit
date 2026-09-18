@@ -1,9 +1,11 @@
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+
 import '../../core/models/history_item.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -62,7 +64,8 @@ class AcademicToolScaffold<T> extends StatefulWidget {
   });
 
   @override
-  State<AcademicToolScaffold<T>> createState() => _AcademicToolScaffoldState<T>();
+  State<AcademicToolScaffold<T>> createState() =>
+      _AcademicToolScaffoldState<T>();
 }
 
 class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
@@ -72,15 +75,13 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
   String? _errorMessage;
 
   Future<void> _pickFiles() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: widget.allowedExtensions,
-      allowMultiple: widget.allowMultiple,
-      withData: true,
     );
-    if (result != null && result.files.isNotEmpty) {
+    if (result.isNotEmpty) {
       setState(() {
-        _files = result.files
+        _files = result
             .where((f) => f.hasValidFile)
             .map((f) => f.asFile ?? File(f.name))
             .toList();
@@ -102,15 +103,15 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
       if (mounted) {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         await context.read<HistoryProvider>().addRecord(
-              HistoryItem(
-                id: 'hist_$timestamp',
-                toolId: widget.toolId,
-                toolName: widget.toolName,
-                fileName: _files.first.uri.pathSegments.last,
-                fileSize: await _files.first.length(),
-                timestamp: DateTime.now(),
-              ),
-            );
+          HistoryItem(
+            id: 'hist_$timestamp',
+            toolId: widget.toolId,
+            toolName: widget.toolName,
+            fileName: _files.first.uri.pathSegments.last,
+            fileSize: await _files.first.length(),
+            timestamp: DateTime.now(),
+          ),
+        );
         setState(() {
           _result = result;
           _isProcessing = false;
@@ -193,7 +194,9 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
           ),
 
           // ── Configuration ─────────────────────────────────────────────
-          if (_files.isNotEmpty && _result == null && widget.configWidget != null) ...[
+          if (_files.isNotEmpty &&
+              _result == null &&
+              widget.configWidget != null) ...[
             const SizedBox(height: 20),
             widget.configWidget!(mounted),
           ],
@@ -212,7 +215,11 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
           // ── Error State ───────────────────────────────────────────────
           if (_errorMessage != null) ...[
             const SizedBox(height: 20),
-            _ErrorCard(message: _errorMessage!, onRetry: _runProcess, isDark: isDark),
+            _ErrorCard(
+              message: _errorMessage!,
+              onRetry: _runProcess,
+              isDark: isDark,
+            ),
           ],
 
           // ── Result ────────────────────────────────────────────────────
@@ -225,7 +232,9 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
               decoration: BoxDecoration(
                 color: isDark ? AppColors.surfaceDark : Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFF10B981).withValues(alpha: 0.08),
@@ -241,10 +250,15 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                          color: const Color(0xFF10B981)
+                              .withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(LucideIcons.checkCircle2, color: Color(0xFF10B981), size: 20),
+                        child: const Icon(
+                          LucideIcons.checkCircle2,
+                          color: Color(0xFF10B981),
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       const Expanded(
@@ -253,12 +267,18 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
                           children: [
                             Text(
                               'Document Intelligence Ready',
-                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
                             ),
                             SizedBox(height: 2),
                             Text(
                               'Auto-saved to history • Download or share formatted results.',
-                              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF64748B),
+                              ),
                             ),
                           ],
                         ),
@@ -272,11 +292,16 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
                       child: ElevatedButton.icon(
                         onPressed: _share,
                         icon: const Icon(LucideIcons.download, size: 16),
-                        label: const Text('Export & Download Results', style: TextStyle(fontWeight: FontWeight.w700)),
+                        label: const Text(
+                          'Export & Download Results',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: widget.toolColor,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
@@ -314,7 +339,11 @@ class _ErrorCard extends StatelessWidget {
   final VoidCallback onRetry;
   final bool isDark;
 
-  const _ErrorCard({required this.message, required this.onRetry, required this.isDark});
+  const _ErrorCard({
+    required this.message,
+    required this.onRetry,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -330,7 +359,11 @@ class _ErrorCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.alertCircle, color: AppColors.error, size: 18),
+              const Icon(
+                LucideIcons.alertCircle,
+                color: AppColors.error,
+                size: 18,
+              ),
               const SizedBox(width: 10),
               const Text(
                 'Processing failed',
@@ -341,10 +374,7 @@ class _ErrorCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              TextButton(
-                onPressed: onRetry,
-                child: const Text('Retry'),
-              ),
+              TextButton(onPressed: onRetry, child: const Text('Retry')),
             ],
           ),
           const SizedBox(height: 8),
@@ -431,14 +461,18 @@ class _AcademicResultSectionState extends State<AcademicResultSection> {
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 14.5,
-                        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimaryLight,
                       ),
                     ),
                   ),
                   Icon(
                     _expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
                     size: 18,
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                   ),
                 ],
               ),
@@ -566,7 +600,10 @@ class BulletList extends StatelessWidget {
                 child: Container(
                   width: 6,
                   height: 6,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -575,7 +612,9 @@ class BulletList extends StatelessWidget {
                   item,
                   style: TextStyle(
                     fontSize: fontSize,
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                     height: 1.5,
                   ),
                 ),

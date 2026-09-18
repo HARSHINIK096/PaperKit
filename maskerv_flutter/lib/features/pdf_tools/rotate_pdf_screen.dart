@@ -24,14 +24,14 @@ class _RotatePDFScreenState extends State<RotatePDFScreen> {
 
   Future<void> _pickFile() async {
     HapticFeedback.lightImpact();
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result.isNotEmpty && result.single.path != null) {
       setState(() {
-        _selectedFile = File(result.files.single.path!);
+        _selectedFile = File(result.single.path!);
       });
     }
   }

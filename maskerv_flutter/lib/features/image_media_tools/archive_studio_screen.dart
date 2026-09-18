@@ -51,11 +51,11 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
   }
 
   Future<void> _pickFilesToZip() async {
-    final result = await FilePicker.platform.pickFiles(allowMultiple: true);
-    if (result != null) {
+    final result = await FilePicker.pickFiles();
+    if (result.isNotEmpty) {
       setState(() {
-        for (final p in result.paths) {
-          if (p != null) _filesToZip.add(File(p));
+        for (final pf in result) {
+          if (pf.path != null) _filesToZip.add(File(pf.path!));
         }
       });
     }
@@ -122,14 +122,14 @@ class _ArchiveStudioScreenState extends State<ArchiveStudioScreen> with SingleTi
   }
 
   Future<void> _pickArchiveToExtract() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['zip', 'tar', 'gz', 'rar', '7z', 'bz2', 'tgz', 'tbz', 'xz', 'zst'],
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result.isNotEmpty && result.single.path != null) {
       setState(() {
-        _archiveToExtract = File(result.files.single.path!);
+        _archiveToExtract = File(result.single.path!);
         _extractedFiles.clear();
       });
     }

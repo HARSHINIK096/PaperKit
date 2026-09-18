@@ -248,9 +248,9 @@ class _AirShareFileSelectorSheetState extends State<AirShareFileSelectorSheet>
   Future<void> _pickDirectlyFromPhoneStorage() async {
     HapticFeedback.lightImpact();
     try {
-      final result = await FilePicker.platform.pickFiles();
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
+      final result = await FilePicker.pickFiles();
+      if (result.isNotEmpty && result.single.path != null) {
+        final file = File(result.single.path!);
         if (widget.onFileSelected != null) {
           widget.onFileSelected!(file);
         } else if (mounted) {

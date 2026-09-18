@@ -21,16 +21,15 @@ class _SimilarityMatrixScreenState extends State<SimilarityMatrixScreen> {
   List<List<double>>? _matrix;
 
   Future<void> _pickFiles() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'docx', 'txt'],
-      allowMultiple: true,
     );
 
-    if (result != null) {
+    if (result.isNotEmpty) {
       setState(() {
-        for (final p in result.paths) {
-          if (p != null) _files.add(File(p));
+        for (final pf in result) {
+          if (pf.path != null) _files.add(File(pf.path!));
         }
         _matrix = null;
       });

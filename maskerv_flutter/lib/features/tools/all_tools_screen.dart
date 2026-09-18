@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../core/constants/tool_registry.dart';
 import '../../core/models/tool_item.dart';
 import '../../core/theme/app_colors.dart';
@@ -57,9 +58,15 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                     hintText: 'Search 50+ tools across 15 domains (e.g. Bates, citation, table, QR)...',
                     hintStyle: TextStyle(
                       fontSize: 13.5,
-                      color: isDark ? AppColors.textMutedDark : const Color(0xFF94A3B8),
+                      color: isDark
+                          ? AppColors.textMutedDark
+                          : const Color(0xFF94A3B8),
                     ),
-                    prefixIcon: const Icon(LucideIcons.search, size: 19, color: Color(0xFF64748B)),
+                    prefixIcon: const Icon(
+                      LucideIcons.search,
+                      size: 19,
+                      color: Color(0xFF64748B),
+                    ),
                     suffixIcon: isSearching
                         ? IconButton(
                             icon: const Icon(Icons.clear, size: 18),
@@ -68,17 +75,24 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                         : null,
                     filled: true,
                     fillColor: isDark ? AppColors.surfaceDark : Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 0,
+                      horizontal: 16,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0),
+                        color: isDark
+                            ? AppColors.borderDark
+                            : const Color(0xFFE2E8F0),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0),
+                        color: isDark
+                            ? AppColors.borderDark
+                            : const Color(0xFFE2E8F0),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -101,7 +115,9 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                         children: [
                           // ── 15 Authoritative Functional Domains ─────────────────────
                           ...domains.map((domain) {
-                            final domainTools = ToolRegistry.getByDomainNumber(domain.number);
+                            final domainTools = ToolRegistry.getByDomainNumber(
+                              domain.number,
+                            );
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 18),
                               child: _buildDomainCard(
@@ -140,14 +156,20 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.searchX, size: 48, color: isDark ? AppColors.textMutedDark : const Color(0xFF94A3B8)),
+            Icon(
+              LucideIcons.searchX,
+              size: 48,
+              color: isDark ? AppColors.textMutedDark : const Color(0xFF94A3B8),
+            ),
             const SizedBox(height: 12),
             Text(
               'No tools match "$_searchQuery"',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: isDark ? AppColors.textSecondaryDark : const Color(0xFF64748B),
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : const Color(0xFF64748B),
               ),
             ),
           ],
@@ -158,7 +180,7 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       itemCount: results.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final tool = results[index];
         final domainColor = tool.color;
@@ -194,7 +216,9 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                   decoration: BoxDecoration(
                     color: tool.softColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: tool.color.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: tool.color.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Center(
                     child: Icon(tool.icon, size: 22, color: tool.color),
@@ -215,12 +239,17 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                                color: isDark
+                                    ? AppColors.textPrimaryDark
+                                    : const Color(0xFF0F172A),
                               ),
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: domainColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(6),
@@ -244,14 +273,20 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                         style: TextStyle(
                           fontSize: 12.5,
                           height: 1.35,
-                          color: isDark ? AppColors.textMutedDark : const Color(0xFF64748B),
+                          color: isDark
+                              ? AppColors.textMutedDark
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(LucideIcons.chevronRight, size: 16, color: Color(0xFF94A3B8)),
+                const Icon(
+                  LucideIcons.chevronRight,
+                  size: 16,
+                  color: Color(0xFF94A3B8),
+                ),
               ],
             ),
           ),
@@ -297,7 +332,9 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                 decoration: BoxDecoration(
                   color: domain.softColor,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: domain.color.withValues(alpha: 0.25)),
+                  border: Border.all(
+                    color: domain.color.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Center(
                   child: Icon(domain.icon, size: 19, color: domain.color),
@@ -326,7 +363,9 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.2,
                         height: 1.22,
-                        color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : const Color(0xFF0F172A),
                       ),
                     ),
                   ],
@@ -340,7 +379,10 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                 },
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -353,7 +395,11 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                         ),
                       ),
                       const SizedBox(width: 2),
-                      Icon(LucideIcons.chevronRight, size: 14, color: domain.color),
+                      Icon(
+                        LucideIcons.chevronRight,
+                        size: 14,
+                        color: domain.color,
+                      ),
                     ],
                   ),
                 ),
@@ -416,10 +462,16 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.toolPurpleSoft,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.toolPurple.withValues(alpha: 0.25)),
+                  border: Border.all(
+                    color: AppColors.toolPurple.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: const Center(
-                  child: Icon(LucideIcons.boxes, size: 19, color: AppColors.toolPurple),
+                  child: Icon(
+                    LucideIcons.boxes,
+                    size: 19,
+                    color: AppColors.toolPurple,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -444,7 +496,9 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                         fontSize: 15.5,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.2,
-                        color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : const Color(0xFF0F172A),
                       ),
                     ),
                   ],
@@ -470,7 +524,11 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                         ),
                       ),
                       SizedBox(width: 2),
-                      Icon(LucideIcons.chevronRight, size: 14, color: AppColors.toolPurple),
+                      Icon(
+                        LucideIcons.chevronRight,
+                        size: 14,
+                        color: AppColors.toolPurple,
+                      ),
                     ],
                   ),
                 ),

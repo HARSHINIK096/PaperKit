@@ -6,9 +6,9 @@ extension PlatformFileExt on PlatformFile {
   /// Safely checks if the file has valid picked content without throwing on Flutter Web.
   bool get hasValidFile {
     if (kIsWeb) {
-      return bytes != null && bytes!.isNotEmpty;
+      return name.isNotEmpty || uri.toString().isNotEmpty;
     }
-    return (path != null && path!.isNotEmpty) || (bytes != null && bytes!.isNotEmpty);
+    return (path != null && path!.isNotEmpty) || name.isNotEmpty;
   }
 
   /// Safely gets the file path on non-web platforms, returning null on Web without accessing .path.
@@ -25,3 +25,4 @@ extension PlatformFileExt on PlatformFile {
     return File(p);
   }
 }
+

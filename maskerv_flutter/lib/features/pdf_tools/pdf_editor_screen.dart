@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+
 import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
@@ -75,18 +77,16 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
 
   Future<void> _pickPdfFile() async {
     HapticFeedback.lightImpact();
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
-      withData: true,
     );
 
-    if (result != null && result.files.isNotEmpty && result.files.single.hasValidFile) {
-      final pf = result.files.single;
+    if (result.isNotEmpty && result.single.hasValidFile) {
+      final pf = result.single;
       final file = pf.asFile;
       try {
-        final bytes = pf.bytes ?? (file != null ? await file.readAsBytes() : null);
-        if (bytes == null) return;
+        final bytes = await pf.readAsBytes();
         final doc = PdfDocument(inputBytes: bytes);
         final count = doc.pages.count;
         _pageSizes.clear();
@@ -122,10 +122,7 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
   }
 
   Future<void> _loadPageData(int pageIndex) async {
-    await Future.wait([
-      _loadPageSpans(pageIndex),
-      _loadPageRender(pageIndex),
-    ]);
+    await Future.wait([_loadPageSpans(pageIndex), _loadPageRender(pageIndex)]);
   }
 
   Future<void> _loadPageRender(int pageIndex) async {
@@ -227,14 +224,21 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(LucideIcons.fileEdit, size: 20, color: AppColors.primary),
+                      const Icon(
+                        LucideIcons.fileEdit,
+                        size: 20,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 8),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             'Edit PDF Text Object',
-                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                            ),
                           ),
                           Text(
                             'Detected Font: ${span.fontFamilyDisplayName}',
@@ -274,22 +278,32 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  const Text('Font Size: ', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Font Size: ',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   Expanded(
                     child: Slider(
                       value: curFontSize.clamp(6.0, 48.0),
                       min: 6,
                       max: 48,
                       label: '${curFontSize.toStringAsFixed(1)} pt',
-                      onChanged: (val) => setSheetState(() => curFontSize = val),
+                      onChanged: (val) =>
+                          setSheetState(() => curFontSize = val),
                     ),
                   ),
-                  Text('${curFontSize.toStringAsFixed(1)} pt', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(
+                    '${curFontSize.toStringAsFixed(1)} pt',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ],
               ),
               Row(
                 children: [
-                  const Text('Style: ', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Style: ',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(width: 6),
                   FilterChip(
                     label: const Text('Bold'),
@@ -321,7 +335,11 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                     value: curFamily,
                     underline: const SizedBox(),
                     isDense: true,
-                    style: const TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
                     items: const [
                       DropdownMenuItem(
                         value: PdfFontFamily.timesRoman,
@@ -345,24 +363,31 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  const Text('Color: ', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Color: ',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(width: 8),
-                  ..._paletteColors.map((c) => GestureDetector(
-                        onTap: () => setSheetState(() => curColor = c),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: curColor == c ? AppColors.primary : Colors.transparent,
-                              width: 2.5,
-                            ),
+                  ..._paletteColors.map(
+                    (c) => GestureDetector(
+                      onTap: () => setSheetState(() => curColor = c),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: c,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: curColor == c
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            width: 2.5,
                           ),
                         ),
-                      )),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -382,8 +407,13 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                       label: const Text('Revert'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -412,7 +442,9 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -435,7 +467,10 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Insert Text to PDF', style: TextStyle(fontWeight: FontWeight.w800)),
+          title: const Text(
+            'Insert Text to PDF',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,7 +487,10 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
               const SizedBox(height: 14),
               Row(
                 children: [
-                  const Text('Size: ', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Size: ',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   Expanded(
                     child: Slider(
                       value: currentFontSize,
@@ -460,32 +498,43 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                       max: 32,
                       divisions: 11,
                       label: '${currentFontSize.round()} pt',
-                      onChanged: (val) => setDialogState(() => currentFontSize = val),
+                      onChanged: (val) =>
+                          setDialogState(() => currentFontSize = val),
                     ),
                   ),
-                  Text('${currentFontSize.round()} pt', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(
+                    '${currentFontSize.round()} pt',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ],
               ),
               Row(
                 children: [
-                  const Text('Color: ', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Color: ',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(width: 8),
-                  ..._paletteColors.map((c) => GestureDetector(
-                        onTap: () => setDialogState(() => textColor = c),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: textColor == c ? AppColors.primary : Colors.transparent,
-                              width: 2,
-                            ),
+                  ..._paletteColors.map(
+                    (c) => GestureDetector(
+                      onTap: () => setDialogState(() => textColor = c),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: c,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: textColor == c
+                                ? AppColors.primary
+                                : Colors.transparent,
+                            width: 2,
                           ),
                         ),
-                      )),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -499,7 +548,9 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
               onPressed: () {
                 if (textController.text.trim().isNotEmpty) {
                   setState(() {
-                    _textEditsByPage.putIfAbsent(_currentPageIndex, () => []).add(
+                    _textEditsByPage
+                        .putIfAbsent(_currentPageIndex, () => [])
+                        .add(
                           PdfTextEdit(
                             text: textController.text.trim(),
                             normalizedPosition: tapPosition,
@@ -582,17 +633,17 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
       if (mounted) {
         await context.read<FilesProvider>().addFile(doc);
         await context.read<HistoryProvider>().addRecord(
-              HistoryItem(
-                id: 'hist_$timestamp',
-                toolId: 'pdf-editor',
-                toolName: 'PDF Editor',
-                fileName: outName,
-                outputPath: outputFile.path,
-                fileSize: await outputFile.length(),
-                timestamp: DateTime.now(),
-                success: true,
-              ),
-            );
+          HistoryItem(
+            id: 'hist_$timestamp',
+            toolId: 'pdf-editor',
+            toolName: 'PDF Editor',
+            fileName: outName,
+            outputPath: outputFile.path,
+            fileSize: await outputFile.length(),
+            timestamp: DateTime.now(),
+            success: true,
+          ),
+        );
 
         setState(() {
           _isSaving = false;
@@ -604,7 +655,10 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving PDF: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Error saving PDF: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
@@ -628,7 +682,11 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                   color: AppColors.success.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(LucideIcons.checkCircle2, color: AppColors.success, size: 40),
+                child: const Icon(
+                  LucideIcons.checkCircle2,
+                  color: AppColors.success,
+                  size: 40,
+                ),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -653,7 +711,9 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                       label: const Text('View PDF'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -670,7 +730,9 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
@@ -714,9 +776,7 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                 _buildToolPalette(isDark),
 
                 // Interactive Document Canvas
-                Expanded(
-                  child: _buildInteractiveCanvas(isDark),
-                ),
+                Expanded(child: _buildInteractiveCanvas(isDark)),
               ],
             ),
     );
@@ -735,68 +795,79 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
             onTap: _pickPdfFile,
             borderRadius: BorderRadius.circular(20),
             child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppColors.primary.withOpacity(0.3),
-                style: BorderStyle.solid,
-                width: 1.5,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.3),
+                  style: BorderStyle.solid,
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 16,
+                  ),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 16,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    shape: BoxShape.circle,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.fileEdit,
+                      size: 42,
+                      color: AppColors.primary,
+                    ),
                   ),
-                  child: const Icon(LucideIcons.fileEdit, size: 42, color: AppColors.primary),
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Select a PDF Document to Edit',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Select & edit existing text in-place, insert annotations, draw with pen, and highlight content.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Select a PDF Document to Edit',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
                   ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: _pickPdfFile,
-                  icon: const Icon(LucideIcons.uploadCloud, size: 18),
-                  label: const Text('Browse Files'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Select & edit existing text in-place, insert annotations, draw with pen, and highlight content.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark
+                          ? AppColors.textMutedDark
+                          : AppColors.textSecondaryLight,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: _pickPdfFile,
+                    icon: const Icon(LucideIcons.uploadCloud, size: 18),
+                    label: const Text('Browse Files'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _buildPageNavigator(bool isDark) {
     return Container(
@@ -804,7 +875,9 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : Colors.white,
         border: Border(
-          bottom: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+          bottom: BorderSide(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          ),
         ),
       ),
       child: Row(
@@ -812,7 +885,11 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.fileText, size: 16, color: AppColors.primary),
+              const Icon(
+                LucideIcons.fileText,
+                size: 16,
+                color: AppColors.primary,
+              ),
               const SizedBox(width: 8),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 160),
@@ -820,7 +897,10 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                   _selectedFile!.uri.pathSegments.last,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
@@ -829,11 +909,16 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
             children: [
               IconButton(
                 icon: const Icon(LucideIcons.chevronLeft, size: 18),
-                onPressed: _currentPageIndex > 0 ? () => _onPageChanged(_currentPageIndex - 1) : null,
+                onPressed: _currentPageIndex > 0
+                    ? () => _onPageChanged(_currentPageIndex - 1)
+                    : null,
                 tooltip: 'Previous Page',
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -849,7 +934,9 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
               ),
               IconButton(
                 icon: const Icon(LucideIcons.chevronRight, size: 18),
-                onPressed: _currentPageIndex < _totalPages - 1 ? () => _onPageChanged(_currentPageIndex + 1) : null,
+                onPressed: _currentPageIndex < _totalPages - 1
+                    ? () => _onPageChanged(_currentPageIndex + 1)
+                    : null,
                 tooltip: 'Next Page',
               ),
             ],
@@ -865,7 +952,9 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : const Color(0xFFF8FAFC),
         border: Border(
-          bottom: BorderSide(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+          bottom: BorderSide(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          ),
         ),
       ),
       child: SingleChildScrollView(
@@ -877,7 +966,8 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
               icon: LucideIcons.mousePointer,
               label: 'Select Text',
               isSelected: _activeTool == EditorActiveTool.select,
-              onTap: () => setState(() => _activeTool = EditorActiveTool.select),
+              onTap: () =>
+                  setState(() => _activeTool = EditorActiveTool.select),
             ),
             const SizedBox(width: 8),
             _buildToolChip(
@@ -898,37 +988,50 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
               icon: LucideIcons.highlighter,
               label: 'Highlight',
               isSelected: _activeTool == EditorActiveTool.highlight,
-              onTap: () => setState(() => _activeTool = EditorActiveTool.highlight),
+              onTap: () =>
+                  setState(() => _activeTool = EditorActiveTool.highlight),
             ),
 
             const SizedBox(width: 14),
-            Container(width: 1, height: 24, color: Colors.grey.withOpacity(0.3)),
+            Container(
+              width: 1,
+              height: 24,
+              color: Colors.grey.withOpacity(0.3),
+            ),
             const SizedBox(width: 14),
 
             // Color Palette
-            ..._paletteColors.map((c) => GestureDetector(
-                  onTap: () => setState(() => _selectedColor = c),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: c,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _selectedColor == c ? AppColors.primary : Colors.transparent,
-                        width: 2.2,
-                      ),
-                      boxShadow: [
-                        if (_selectedColor == c)
-                          BoxShadow(color: c.withOpacity(0.4), blurRadius: 4),
-                      ],
+            ..._paletteColors.map(
+              (c) => GestureDetector(
+                onTap: () => setState(() => _selectedColor = c),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: c,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: _selectedColor == c
+                          ? AppColors.primary
+                          : Colors.transparent,
+                      width: 2.2,
                     ),
+                    boxShadow: [
+                      if (_selectedColor == c)
+                        BoxShadow(color: c.withOpacity(0.4), blurRadius: 4),
+                    ],
                   ),
-                )),
+                ),
+              ),
+            ),
 
             const SizedBox(width: 10),
-            Container(width: 1, height: 24, color: Colors.grey.withOpacity(0.3)),
+            Container(
+              width: 1,
+              height: 24,
+              color: Colors.grey.withOpacity(0.3),
+            ),
             const SizedBox(width: 10),
 
             // Undo & Clear
@@ -938,7 +1041,11 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
               tooltip: 'Undo',
             ),
             IconButton(
-              icon: const Icon(LucideIcons.trash2, size: 18, color: AppColors.error),
+              icon: const Icon(
+                LucideIcons.trash2,
+                size: 18,
+                color: AppColors.error,
+              ),
               onPressed: _clearCurrentPage,
               tooltip: 'Clear Page Edits',
             ),
@@ -955,7 +1062,11 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
     required VoidCallback onTap,
   }) {
     return FilterChip(
-      avatar: Icon(icon, size: 14, color: isSelected ? Colors.white : AppColors.primary),
+      avatar: Icon(
+        icon,
+        size: 14,
+        color: isSelected ? Colors.white : AppColors.primary,
+      ),
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onTap(),
@@ -979,9 +1090,14 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final spans = _pageTextSpans[_currentPageIndex] ?? [];
-              final docPageSize = _pageSizes[_currentPageIndex] ??
-                  (spans.isNotEmpty ? spans.first.originalPageSize : const Size(595.28, 841.89));
-              final pageAspect = docPageSize.height / (docPageSize.width > 0 ? docPageSize.width : 595.28);
+              final docPageSize =
+                  _pageSizes[_currentPageIndex] ??
+                  (spans.isNotEmpty
+                      ? spans.first.originalPageSize
+                      : const Size(595.28, 841.89));
+              final pageAspect =
+                  docPageSize.height /
+                  (docPageSize.width > 0 ? docPageSize.width : 595.28);
 
               final maxW = constraints.maxWidth;
               final maxH = constraints.maxHeight;
@@ -1000,7 +1116,11 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: const [
-                    BoxShadow(color: Colors.black26, blurRadius: 14, offset: Offset(0, 4)),
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 14,
+                      offset: Offset(0, 4),
+                    ),
                   ],
                 ),
                 child: Stack(
@@ -1049,25 +1169,35 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                       },
                       onPanUpdate: (details) {
                         if (_activeTool == EditorActiveTool.draw) {
-                          final normX = (details.localPosition.dx / canvasW).clamp(0.0, 1.0);
-                          final normY = (details.localPosition.dy / canvasH).clamp(0.0, 1.0);
+                          final normX = (details.localPosition.dx / canvasW)
+                              .clamp(0.0, 1.0);
+                          final normY = (details.localPosition.dy / canvasH)
+                              .clamp(0.0, 1.0);
                           setState(() {
                             _currentDrawingPoints.add(Offset(normX, normY));
                           });
-                        } else if (_activeTool == EditorActiveTool.highlight && _highlightStart != null) {
-                          final normX = (details.localPosition.dx / canvasW).clamp(0.0, 1.0);
-                          final normY = (details.localPosition.dy / canvasH).clamp(0.0, 1.0);
+                        } else if (_activeTool == EditorActiveTool.highlight &&
+                            _highlightStart != null) {
+                          final normX = (details.localPosition.dx / canvasW)
+                              .clamp(0.0, 1.0);
+                          final normY = (details.localPosition.dy / canvasH)
+                              .clamp(0.0, 1.0);
                           setState(() {
                             _highlightEnd = Offset(normX, normY);
                           });
                         }
                       },
                       onPanEnd: (_) {
-                        if (_activeTool == EditorActiveTool.draw && _currentDrawingPoints.length > 1) {
+                        if (_activeTool == EditorActiveTool.draw &&
+                            _currentDrawingPoints.length > 1) {
                           setState(() {
-                            _drawPathsByPage.putIfAbsent(_currentPageIndex, () => []).add(
+                            _drawPathsByPage
+                                .putIfAbsent(_currentPageIndex, () => [])
+                                .add(
                                   PdfDrawPath(
-                                    normalizedPoints: List.from(_currentDrawingPoints),
+                                    normalizedPoints: List.from(
+                                      _currentDrawingPoints,
+                                    ),
                                     color: _selectedColor,
                                     strokeWidth: _strokeWidth,
                                   ),
@@ -1077,16 +1207,31 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                         } else if (_activeTool == EditorActiveTool.highlight &&
                             _highlightStart != null &&
                             _highlightEnd != null) {
-                          final left = _highlightStart!.dx < _highlightEnd!.dx ? _highlightStart!.dx : _highlightEnd!.dx;
-                          final top = _highlightStart!.dy < _highlightEnd!.dy ? _highlightStart!.dy : _highlightEnd!.dy;
-                          final right = _highlightStart!.dx > _highlightEnd!.dx ? _highlightStart!.dx : _highlightEnd!.dx;
-                          final bottom = _highlightStart!.dy > _highlightEnd!.dy ? _highlightStart!.dy : _highlightEnd!.dy;
+                          final left = _highlightStart!.dx < _highlightEnd!.dx
+                              ? _highlightStart!.dx
+                              : _highlightEnd!.dx;
+                          final top = _highlightStart!.dy < _highlightEnd!.dy
+                              ? _highlightStart!.dy
+                              : _highlightEnd!.dy;
+                          final right = _highlightStart!.dx > _highlightEnd!.dx
+                              ? _highlightStart!.dx
+                              : _highlightEnd!.dx;
+                          final bottom = _highlightStart!.dy > _highlightEnd!.dy
+                              ? _highlightStart!.dy
+                              : _highlightEnd!.dy;
 
                           if ((right - left) > 0.02 && (bottom - top) > 0.01) {
                             setState(() {
-                              _highlightsByPage.putIfAbsent(_currentPageIndex, () => []).add(
+                              _highlightsByPage
+                                  .putIfAbsent(_currentPageIndex, () => [])
+                                  .add(
                                     PdfHighlightBox(
-                                      normalizedRect: Rect.fromLTRB(left, top, right, bottom),
+                                      normalizedRect: Rect.fromLTRB(
+                                        left,
+                                        top,
+                                        right,
+                                        bottom,
+                                      ),
                                       color: _selectedColor,
                                       opacity: 0.35,
                                     ),
@@ -1107,16 +1252,20 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                             pageNumber: _currentPageIndex + 1,
                             docPageSize: docPageSize,
                             existingSpans: spans,
-                            drawPaths: _drawPathsByPage[_currentPageIndex] ?? [],
-                            textEdits: _textEditsByPage[_currentPageIndex] ?? [],
-                            highlights: _highlightsByPage[_currentPageIndex] ?? [],
+                            drawPaths:
+                                _drawPathsByPage[_currentPageIndex] ?? [],
+                            textEdits:
+                                _textEditsByPage[_currentPageIndex] ?? [],
+                            highlights:
+                                _highlightsByPage[_currentPageIndex] ?? [],
                             activePoints: _currentDrawingPoints,
                             activeColor: _selectedColor,
                             activeStrokeWidth: _strokeWidth,
                             highlightStart: _highlightStart,
                             highlightEnd: _highlightEnd,
                             selectedSpan: _activeSelectedSpan,
-                            isSelectTool: _activeTool == EditorActiveTool.select,
+                            isSelectTool:
+                                _activeTool == EditorActiveTool.select,
                           ),
                           child: Container(),
                         ),
@@ -1129,7 +1278,10 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                         top: 12,
                         right: 12,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.black87,
                             borderRadius: BorderRadius.circular(8),
@@ -1140,12 +1292,19 @@ class _PDFEditorScreenState extends State<PDFEditorScreen> {
                               SizedBox(
                                 width: 12,
                                 height: 12,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               ),
                               SizedBox(width: 8),
                               Text(
                                 'Detecting Text...',
-                                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
@@ -1201,13 +1360,21 @@ class _PdfPageCanvasPainter extends CustomPainter {
     if (bgImage != null) {
       canvas.drawImageRect(
         bgImage!,
-        Rect.fromLTWH(0, 0, bgImage!.width.toDouble(), bgImage!.height.toDouble()),
+        Rect.fromLTWH(
+          0,
+          0,
+          bgImage!.width.toDouble(),
+          bgImage!.height.toDouble(),
+        ),
         Rect.fromLTWH(0, 0, size.width, size.height),
         Paint()..filterQuality = FilterQuality.high,
       );
     } else {
       final pageBgPaint = Paint()..color = Colors.white;
-      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), pageBgPaint);
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        pageBgPaint,
+      );
     }
 
     // Calculate viewport font scale relative to true document page width
@@ -1243,8 +1410,13 @@ class _PdfPageCanvasPainter extends CustomPainter {
       if (span.isModified) {
         final coverPaint = Paint()..color = Colors.white;
         final coverW = tp.width > rect.width ? tp.width + 6 : rect.width + 4;
-        final coverH = tp.height > rect.height ? tp.height + 4 : rect.height + 2;
-        canvas.drawRect(Rect.fromLTWH(rect.left - 2.0, rect.top - 1.0, coverW, coverH), coverPaint);
+        final coverH = tp.height > rect.height
+            ? tp.height + 4
+            : rect.height + 2;
+        canvas.drawRect(
+          Rect.fromLTWH(rect.left - 2.0, rect.top - 1.0, coverW, coverH),
+          coverPaint,
+        );
         tp.paint(canvas, rect.topLeft);
       } else if (bgImage == null) {
         // Only paint text over fallback white canvas if background image is not loaded
@@ -1263,10 +1435,21 @@ class _PdfPageCanvasPainter extends CustomPainter {
 
         final effectiveW = tp.width > rect.width ? tp.width : rect.width;
         final effectiveH = tp.height > rect.height ? tp.height : rect.height;
-        final selRect = Rect.fromLTWH(rect.left - 2, rect.top - 1, effectiveW + 4, effectiveH + 2);
+        final selRect = Rect.fromLTWH(
+          rect.left - 2,
+          rect.top - 1,
+          effectiveW + 4,
+          effectiveH + 2,
+        );
 
-        canvas.drawRRect(RRect.fromRectAndRadius(selRect, const Radius.circular(3)), selFill);
-        canvas.drawRRect(RRect.fromRectAndRadius(selRect, const Radius.circular(3)), selPaint);
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(selRect, const Radius.circular(3)),
+          selFill,
+        );
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(selRect, const Radius.circular(3)),
+          selPaint,
+        );
 
         // Corner handles
         final handlePaint = Paint()..color = AppColors.primary;
@@ -1296,17 +1479,30 @@ class _PdfPageCanvasPainter extends CustomPainter {
 
     // Active Highlight In-Progress
     if (highlightStart != null && highlightEnd != null) {
-      final left = highlightStart!.dx < highlightEnd!.dx ? highlightStart!.dx : highlightEnd!.dx;
-      final top = highlightStart!.dy < highlightEnd!.dy ? highlightStart!.dy : highlightEnd!.dy;
-      final right = highlightStart!.dx > highlightEnd!.dx ? highlightStart!.dx : highlightEnd!.dx;
-      final bottom = highlightStart!.dy > highlightEnd!.dy ? highlightStart!.dy : highlightEnd!.dy;
+      final left = highlightStart!.dx < highlightEnd!.dx
+          ? highlightStart!.dx
+          : highlightEnd!.dx;
+      final top = highlightStart!.dy < highlightEnd!.dy
+          ? highlightStart!.dy
+          : highlightEnd!.dy;
+      final right = highlightStart!.dx > highlightEnd!.dx
+          ? highlightStart!.dx
+          : highlightEnd!.dx;
+      final bottom = highlightStart!.dy > highlightEnd!.dy
+          ? highlightStart!.dy
+          : highlightEnd!.dy;
 
       final previewPaint = Paint()
         ..color = activeColor.withOpacity(0.35)
         ..style = PaintingStyle.fill;
 
       canvas.drawRect(
-        Rect.fromLTRB(left * size.width, top * size.height, right * size.width, bottom * size.height),
+        Rect.fromLTRB(
+          left * size.width,
+          top * size.height,
+          right * size.width,
+          bottom * size.height,
+        ),
         previewPaint,
       );
     }
@@ -1345,26 +1541,38 @@ class _PdfPageCanvasPainter extends CustomPainter {
         ..style = PaintingStyle.stroke;
 
       final p = Path();
-      p.moveTo(activePoints.first.dx * size.width, activePoints.first.dy * size.height);
+      p.moveTo(
+        activePoints.first.dx * size.width,
+        activePoints.first.dy * size.height,
+      );
       for (int i = 1; i < activePoints.length; i++) {
-        p.lineTo(activePoints[i].dx * size.width, activePoints[i].dy * size.height);
+        p.lineTo(
+          activePoints[i].dx * size.width,
+          activePoints[i].dy * size.height,
+        );
       }
       canvas.drawPath(p, activePaint);
     }
 
     // 5. Render Text Annotations
     for (final textItem in textEdits) {
-      final tp = TextPainter(
-        text: TextSpan(
-          text: textItem.text,
-          style: TextStyle(
-            color: textItem.color,
-            fontSize: textItem.fontSize,
-            fontWeight: textItem.isBold ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout(maxWidth: size.width - (textItem.normalizedPosition.dx * size.width));
+      final tp =
+          TextPainter(
+            text: TextSpan(
+              text: textItem.text,
+              style: TextStyle(
+                color: textItem.color,
+                fontSize: textItem.fontSize,
+                fontWeight: textItem.isBold
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+            textDirection: TextDirection.ltr,
+          )..layout(
+            maxWidth:
+                size.width - (textItem.normalizedPosition.dx * size.width),
+          );
 
       tp.paint(
         canvas,

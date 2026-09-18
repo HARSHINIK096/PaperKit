@@ -24,13 +24,13 @@ class _AccessibilityReaderScreenState extends State<AccessibilityReaderScreen> {
   File? _selectedFile;
 
   Future<void> _pickDocument() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'txt'],
     );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    if (result.isNotEmpty && result.single.path != null) {
+      final file = File(result.single.path!);
       String text = '';
       if (file.path.endsWith('.pdf')) {
         text = await PdfEngine.extractTextFromPdf(file);

@@ -25,16 +25,15 @@ class _MergePDFScreenState extends State<MergePDFScreen> {
 
   Future<void> _pickFiles() async {
     HapticFeedback.lightImpact();
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
-      allowMultiple: true,
     );
 
-    if (result != null) {
+    if (result.isNotEmpty) {
       setState(() {
-        for (final p in result.paths) {
-          if (p != null) _selectedFiles.add(File(p));
+        for (final pf in result) {
+          if (pf.path != null) _selectedFiles.add(File(pf.path!));
         }
       });
     }

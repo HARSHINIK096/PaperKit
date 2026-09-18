@@ -48,10 +48,10 @@ class _SecureShareScreenState extends State<SecureShareScreen> {
   }
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles();
-    if (result != null && result.files.single.path != null) {
+    final result = await FilePicker.pickFiles();
+    if (result.isNotEmpty && result.single.path != null) {
       setState(() {
-        _selectedFile = File(result.files.single.path!);
+        _selectedFile = File(result.single.path!);
         _shareResult = null;
         _isRevoked = false;
       });

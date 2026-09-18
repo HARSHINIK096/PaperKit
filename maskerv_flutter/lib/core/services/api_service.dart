@@ -161,7 +161,7 @@ class ApiService {
         'file_id': fileId,
         'from_format': fromFormat,
         'to_format': toFormat,
-        if (options != null) ...options,
+        ...?options,
       };
       res = await dio.post('/tools/convert', data: payload);
     } else {
@@ -173,7 +173,7 @@ class ApiService {
         ),
         'from_format': fromFormat,
         'to_format': toFormat,
-        if (options != null) ...options,
+        ...?options,
       });
       res = await dio.post(
         '/tools/convert',

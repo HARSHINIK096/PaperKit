@@ -67,13 +67,13 @@ class _PublishingStudioScreenState extends State<PublishingStudioScreen> with Si
   Future<void> _pickDocument() async {
     setState(() => _isLoading = true);
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
       );
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
+      if (result.isNotEmpty && result.single.path != null) {
+        final file = File(result.single.path!);
         final report = await _service.runPrintPreflight(file);
 
         setState(() {
