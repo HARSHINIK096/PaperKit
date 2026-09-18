@@ -8,78 +8,119 @@ from config import get_settings
 
 settings = get_settings()
 
-# Initialize Google Generative AI if key is present
-_gemini_configured = False
-if settings.gemini_api_key:
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.gemini_api_key)
-        _gemini_configured = True
-    except Exception:
-        _gemini_configured = False
-
-# Initialize Groq client if key is present
-_groq_client = None
-
-
-def get_groq_client():
-    global _groq_client
+def get_gemini_keys() -> list[str]:
     current_settings = get_settings()
-    if _groq_client is None and current_settings.groq_api_key:
+    raw = current_settings.gemini_api_key or ""
+    return [k.strip() for k in raw.split(",") if k.strip()]
+
+def get_groq_keys() -> list[str]:
+    current_settings = get_settings()
+    raw = current_settings.groq_api_key or ""
+    return [k.strip() for k in raw.split(",") if k.strip()]
+
+def _ensure_gemini_configured(api_key: Optional[str] = None) -> bool:
+    keys = get_gemini_keys()
+    key_to_use = api_key or (keys[0] if keys else None)
+    if key_to_use:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=key_to_use)
+            return True
+        except Exception as e:
+            print(f"[AI Service] Gemini configure error: {e}")
+            return False
+    return False
+
+# Initial Gemini setup check
+_ensure_gemini_configured()
+
+def get_groq_clients() -> list:
+    keys = get_groq_keys()
+    clients = []
+    if keys:
         try:
             from groq import Groq
-            _groq_client = Groq(api_key=current_settings.groq_api_key)
-        except Exception:
-            _groq_client = None
-    return _groq_client
+            for k in keys:
+                clients.append(Groq(api_key=k))
+        except Exception as e:
+            print(f"[AI Service] Groq client creation error: {e}")
+    return clients
 
+def get_groq_client():
+    clients = get_groq_clients()
+    return clients[0] if clients else None
 
-def _get_gemini_model(model_name: str = "gemini-3.6-flash"):
-    current_settings = get_settings()
-    if not current_settings.gemini_api_key:
+def _get_gemini_model(model_name: Optional[str] = None, api_key: Optional[str] = None):
+    keys = get_gemini_keys()
+    if not keys:
         raise RuntimeError("GEMINI_API_KEY is not configured")
+    _ensure_gemini_configured(api_key=api_key)
     import google.generativeai as genai
-    candidate_models = ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.8-flash", "gemini-3.5-flash"]
+    candidate_models = [
+        "gemini-3.6-flash",
+        "gemini-2.5-flash",
+        "gemini-flash-latest",
+        "gemini-3.5-flash",
+        "gemini-3.7-flash",
+    ]
+    if model_name:
+        candidate_models.insert(0, model_name)
     for m in candidate_models:
         try:
             return genai.GenerativeModel(m)
         except Exception:
             continue
-    return genai.GenerativeModel("gemini-3.6-flash")
-
+    return genai.GenerativeModel("gemini-2.5-flash")
 
 async def generate_text(prompt: str, system_prompt: Optional[str] = None) -> str:
-    """Generate text completion using Groq (priority) or Gemini (fallback)."""
+    """Generate text completion using Groq (priority) or Gemini (fallback), trying all configured keys."""
     current_settings = get_settings()
-    groq_client = get_groq_client()
+    groq_clients = get_groq_clients()
     
-    # 1. Try Groq
-    if groq_client:
-        try:
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": prompt})
+    # 1. Try Groq across all clients
+    if groq_clients:
+        models_to_try = [
+            current_settings.groq_text_model or "openai/gpt-oss-120b",
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.8-27b",
+            "groq/compound-mini",
+        ]
+        seen = set()
+        dedup_models = [m for m in models_to_try if not (m in seen or seen.add(m))]
+        for groq_client in groq_clients:
+            for model in dedup_models:
+                try:
+                    messages = []
+                    if system_prompt:
+                        messages.append({"role": "system", "content": system_prompt})
+                    messages.append({"role": "user", "content": prompt})
 
-            model = current_settings.groq_text_model or "openai/gpt-oss-120b"
-            completion = groq_client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0.3,
-            )
-            return completion.choices[0].message.content or ""
-        except Exception as e:
-            # Fall through to Gemini if Groq fails
-            print(f"[AI Service] Groq generation failed: {e}. Falling back to Gemini...")
+                    completion = groq_client.chat.completions.create(
+                        model=model,
+                        messages=messages,
+                        temperature=0.3,
+                    )
+                    res = completion.choices[0].message.content or ""
+                    if res.strip():
+                        return res.strip()
+                except Exception as e:
+                    print(f"[AI Service] Groq text generation with '{model}' failed: {e}. Trying fallback...")
 
-    # 2. Try Gemini
-    if settings.gemini_api_key:
-        model = _get_gemini_model()
-        full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-        response = model.generate_content(full_prompt)
-        return response.text or ""
+    # 2. Try Gemini across all keys
+    gemini_keys = get_gemini_keys()
+    if gemini_keys:
+        for key in gemini_keys:
+            try:
+                model = _get_gemini_model(api_key=key)
+                full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+                response = model.generate_content(full_prompt)
+                if response.text and response.text.strip():
+                    return response.text.strip()
+            except Exception as e:
+                print(f"[AI Service] Gemini generation failed with key: {e}")
 
-    raise RuntimeError("No AI provider available. Please configure GROQ_API_KEY or GEMINI_API_KEY.")
+    raise RuntimeError("No AI provider available. Please configure valid GROQ_API_KEY or GEMINI_API_KEY.")
 
 
 async def ocr_image(image_bytes: bytes, mime_type: str = "image/jpeg", prompt: Optional[str] = None) -> str:
@@ -92,42 +133,52 @@ async def ocr_image(image_bytes: bytes, mime_type: str = "image/jpeg", prompt: O
     task_prompt = prompt or default_prompt
 
     # 1. Try Groq Vision
-    groq_client = get_groq_client()
-    if groq_client and settings.groq_vision_model:
-        try:
-            base64_img = base64.b64encode(image_bytes).decode("utf-8")
-            data_url = f"data:{mime_type};base64,{base64_img}"
-            
-            completion = groq_client.chat.completions.create(
-                model=settings.groq_vision_model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": task_prompt},
-                            {"type": "image_url", "image_url": {"url": data_url}},
+    groq_clients = get_groq_clients()
+    current_settings = get_settings()
+    if groq_clients:
+        vision_models = [
+            current_settings.groq_vision_model or "openai/gpt-oss-20b",
+            "openai/gpt-oss-20b",
+            "openai/gpt-oss-120b",
+        ]
+        base64_img = base64.b64encode(image_bytes).decode("utf-8")
+        data_url = f"data:{mime_type};base64,{base64_img}"
+        seen_vm = set()
+        dedup_vm = [m for m in vision_models if not (m in seen_vm or seen_vm.add(m))]
+        for groq_client in groq_clients:
+            for vm in dedup_vm:
+                try:
+                    completion = groq_client.chat.completions.create(
+                        model=vm,
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": task_prompt},
+                                    {"type": "image_url", "image_url": {"url": data_url}},
+                                ],
+                            }
                         ],
-                    }
-                ],
-                temperature=0.1,
-            )
-            text = completion.choices[0].message.content
-            if text and text.strip():
-                return text.strip()
-        except Exception as e:
-            print(f"[AI Service] Groq Vision OCR failed: {e}. Falling back to Gemini Vision...")
+                        temperature=0.1,
+                    )
+                    text = completion.choices[0].message.content
+                    if text and text.strip():
+                        return text.strip()
+                except Exception as e:
+                    print(f"[AI Service] Groq Vision OCR with '{vm}' failed: {e}")
 
     # 2. Try Gemini Vision
-    current_settings = get_settings()
-    if current_settings.gemini_api_key:
-        try:
-            model = _get_gemini_model()
-            pil_image = Image.open(io.BytesIO(image_bytes))
-            response = model.generate_content([task_prompt, pil_image], request_options={"timeout": 10})
-            if response.text and response.text.strip():
-                return response.text.strip()
-        except Exception as e:
-            print(f"[AI Service] Gemini Vision OCR failed: {e}")
+    gemini_keys = get_gemini_keys()
+    if gemini_keys:
+        for key in gemini_keys:
+            try:
+                model = _get_gemini_model(api_key=key)
+                pil_image = Image.open(io.BytesIO(image_bytes))
+                response = model.generate_content([task_prompt, pil_image], request_options={"timeout": 15})
+                if response.text and response.text.strip():
+                    return response.text.strip()
+            except Exception as e:
+                print(f"[AI Service] Gemini Vision OCR failed: {e}")
 
     # 3. Fallback: Try PyMuPDF / Image text fallback formatted with Groq
     try:
@@ -149,7 +200,7 @@ async def ocr_image(image_bytes: bytes, mime_type: str = "image/jpeg", prompt: O
     )
 
 
-async def ocr_pdf(pdf_bytes: bytes, max_pages: int = 15) -> str:
+async def ocr_pdf(pdf_bytes: bytes, max_pages: int = 15, force_ocr: bool = False) -> str:
     """Convert PDF pages to images and run Multimodal AI OCR on each page."""
     doc = fitz.open("pdf", pdf_bytes)
     total_pages = min(doc.page_count, max_pages)
@@ -157,13 +208,15 @@ async def ocr_pdf(pdf_bytes: bytes, max_pages: int = 15) -> str:
 
     for i in range(total_pages):
         page = doc[i]
-        # If the page already has a digital text layer, format it with markdown structure
         raw_page_text = page.get_text().strip()
-        if raw_page_text:
+        images = page.get_images()
+
+        # If page has clean digital text and no scanned images, and force_ocr is False
+        if raw_page_text and len(raw_page_text) > 40 and not force_ocr and not images:
             extracted_pages.append(f"## Page {i+1}\n\n{raw_page_text}")
             continue
 
-        # Render at 2x resolution (144 DPI) for crisp OCR
+        # Render at 2x resolution (144 DPI) for crisp AI Vision OCR
         pix = page.get_pixmap(dpi=144)
         img_bytes = pix.tobytes("jpeg")
         
@@ -174,7 +227,8 @@ async def ocr_pdf(pdf_bytes: bytes, max_pages: int = 15) -> str:
                 prompt=f"Accurately transcribe all content on page {i+1} as clean Markdown.",
             )
         except Exception:
-            page_text = f"Page {i+1} scanned content processed."
+            page_text = raw_page_text if raw_page_text else f"Page {i+1} content processed."
+
         extracted_pages.append(f"## Page {i+1}\n\n{page_text}")
 
     doc.close()
@@ -1286,5 +1340,36 @@ Contract Text:
     return data
 
 
+async def transcribe_audio(audio_bytes: bytes, filename: str = "audio.wav", language: Optional[str] = "en") -> str:
+    """Transcribe audio using Groq Whisper model with Gemini fallback."""
+    current_settings = get_settings()
+    groq_client = get_groq_client()
+    if groq_client:
+        try:
+            audio_file = (filename, audio_bytes)
+            kwargs = {"file": audio_file, "model": "whisper-large-v3"}
+            if language:
+                kwargs["language"] = language
+            transcription = groq_client.audio.transcriptions.create(**kwargs)
+            if transcription.text and transcription.text.strip():
+                return transcription.text.strip()
+        except Exception as e:
+            print(f"[AI Service] Groq Whisper transcription failed: {e}")
 
+    # Fallback to Gemini audio understanding
+    if current_settings.gemini_api_key:
+        try:
+            _ensure_gemini_configured()
+            import google.generativeai as genai
+            model = _get_gemini_model()
+            ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "wav"
+            mime_map = {"wav": "audio/wav", "mp3": "audio/mp3", "m4a": "audio/m4a", "ogg": "audio/ogg", "webm": "audio/webm"}
+            mime = mime_map.get(ext, "audio/wav")
+            audio_part = {"mime_type": mime, "data": audio_bytes}
+            response = model.generate_content(["Accurately transcribe this audio into plain text.", audio_part])
+            if response.text and response.text.strip():
+                return response.text.strip()
+        except Exception as e:
+            print(f"[AI Service] Gemini audio transcription failed: {e}")
 
+    return "Audio transcription could not be completed. Please check your AI API keys."

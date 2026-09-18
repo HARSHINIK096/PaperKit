@@ -940,7 +940,9 @@ class ApiService {
       data: formData,
       options: Options(contentType: 'multipart/form-data'),
     );
-    return FrameExtractionResult.fromJson(response.data as Map<String, dynamic>);
+    return FrameExtractionResult.fromJson(
+      response.data as Map<String, dynamic>,
+    );
   }
 
   // Download all extracted frames as ZIP archive
@@ -1004,7 +1006,11 @@ class ApiService {
   }
 
   // Download individual frame
-  Future<File> downloadSingleFrame(String jobId, int frameNumber, String ext) async {
+  Future<File> downloadSingleFrame(
+    String jobId,
+    int frameNumber,
+    String ext,
+  ) async {
     final response = await dio.get<List<int>>(
       '/api/media/video-frames/$jobId/frame/$frameNumber',
       options: Options(responseType: ResponseType.bytes),
@@ -1013,7 +1019,9 @@ class ApiService {
       throw Exception('Failed to download frame image.');
     }
     final outputDir = await getApplicationDocumentsDirectory();
-    final outputFile = File('${outputDir.path}/frame_${frameNumber.toString().padLeft(6, '0')}.$ext');
+    final outputFile = File(
+      '${outputDir.path}/frame_${frameNumber.toString().padLeft(6, '0')}.$ext',
+    );
     await outputFile.writeAsBytes(response.data!);
     return outputFile;
   }
@@ -1101,15 +1109,22 @@ class ApiService {
       data: formData,
       options: Options(contentType: 'multipart/form-data'),
     );
-    return TemporaryShareCreationResult.fromJson(response.data as Map<String, dynamic>);
+    return TemporaryShareCreationResult.fromJson(
+      response.data as Map<String, dynamic>,
+    );
   }
 
   Future<TemporaryShareMetadata> getTemporaryShareInfo(String shareId) async {
     final response = await dio.get('/api/temporary-shares/$shareId');
-    return TemporaryShareMetadata.fromJson(response.data as Map<String, dynamic>);
+    return TemporaryShareMetadata.fromJson(
+      response.data as Map<String, dynamic>,
+    );
   }
 
-  Future<bool> verifyTemporarySharePassword(String shareId, String password) async {
+  Future<bool> verifyTemporarySharePassword(
+    String shareId,
+    String password,
+  ) async {
     final response = await dio.post(
       '/api/temporary-shares/$shareId/verify',
       data: {'password': password},
@@ -1117,7 +1132,10 @@ class ApiService {
     return (response.data as Map<String, dynamic>)['success'] == true;
   }
 
-  Future<File> downloadTemporaryShareFile(String shareId, String password) async {
+  Future<File> downloadTemporaryShareFile(
+    String shareId,
+    String password,
+  ) async {
     final formData = FormData.fromMap({'password': password});
     final response = await dio.post<List<int>>(
       '/api/temporary-shares/$shareId/download',
@@ -1133,9 +1151,14 @@ class ApiService {
     String filename = 'downloaded_file';
     final disposition = response.headers.value('content-disposition');
     if (disposition != null && disposition.contains('filename=')) {
-      final match = RegExp(r'filename[^;=\n]*=(([\x27\x22]).*?\2|[^;\n]*)').firstMatch(disposition);
+      final match = RegExp(r'filename[^;=\n]*=(([\x27\x22]).*?\2|[^;\n]*)')
+          .firstMatch(disposition);
       if (match != null && match.group(1) != null) {
-        filename = match.group(1)!.replaceAll('"', '').replaceAll("'", '').trim();
+        filename = match
+            .group(1)!
+            .replaceAll('"', '')
+            .replaceAll("'", '')
+            .trim();
       }
     }
     final outputDir = await getApplicationDocumentsDirectory();
@@ -1292,25 +1315,41 @@ class ApiService {
         ),
       });
       final response = await dio.post('/api/ai/parse-invoice', data: formData);
-      if (response.statusCode == 200 && response.data != null && response.data is Map) {
+      if (response.statusCode == 200 &&
+          response.data != null &&
+          response.data is Map) {
         return Map<String, dynamic>.from(response.data);
       }
     } catch (_) {}
 
     // Genuine local PDF text extraction & structured Regex entity parsing
     final text = await PdfEngine.extractTextFromPdf(file);
-    final lines = text.split(RegExp(r'\r?\n')).map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+    final lines = text
+        .split(RegExp(r'\r?\n'))
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
 
-    String vendor = file.uri.pathSegments.last.replaceAll(RegExp(r'\.[^.]+$'), '');
-    String invoiceNumber = 'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    String vendor = file.uri.pathSegments.last.replaceAll(
+      RegExp(r'\.[^.]+$'),
+      '',
+    );
+    String invoiceNumber =
+        'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
     String invoiceDate = DateTime.now().toString().substring(0, 10);
     String totalAmount = '\$0.00';
     String subtotal = '\$0.00';
     String tax = '\$0.00';
     List<Map<String, String>> lineItems = [];
 
-    final dateRegex = RegExp(r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2},? \d{4}\b', caseSensitive: false);
-    final invNumRegex = RegExp(r'(?:Invoice|INV|Ref|Bill)[\s\#\:\-]*([A-Z0-9\-]{4,})', caseSensitive: false);
+    final dateRegex = RegExp(
+      r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{1,2},? \d{4}\b',
+      caseSensitive: false,
+    );
+    final invNumRegex = RegExp(
+      r'(?:Invoice|INV|Ref|Bill)[\s\#\:\-]*([A-Z0-9\-]{4,})',
+      caseSensitive: false,
+    );
     final amountRegex = RegExp(r'\$\s*[\d,]+\.\d{2}');
 
     for (final line in lines) {
@@ -1320,33 +1359,34 @@ class ApiService {
           invoiceNumber = m.group(1) ?? invoiceNumber;
         }
       }
-      if (dateRegex.hasMatch(line) && invoiceDate == DateTime.now().toString().substring(0, 10)) {
+      if (dateRegex.hasMatch(line) &&
+          invoiceDate == DateTime.now().toString().substring(0, 10)) {
         final m = dateRegex.firstMatch(line);
         if (m != null) invoiceDate = m.group(0) ?? invoiceDate;
       }
       if (line.toLowerCase().contains('total') && amountRegex.hasMatch(line)) {
         final m = amountRegex.firstMatch(line);
         if (m != null) totalAmount = m.group(0) ?? totalAmount;
-      } else if (line.toLowerCase().contains('subtotal') && amountRegex.hasMatch(line)) {
+      } else if (line.toLowerCase().contains('subtotal') &&
+          amountRegex.hasMatch(line)) {
         final m = amountRegex.firstMatch(line);
         if (m != null) subtotal = m.group(0) ?? subtotal;
-      } else if (line.toLowerCase().contains('tax') && amountRegex.hasMatch(line)) {
+      } else if (line.toLowerCase().contains('tax') &&
+          amountRegex.hasMatch(line)) {
         final m = amountRegex.firstMatch(line);
         if (m != null) tax = m.group(0) ?? tax;
       } else if (line.contains('\t') || line.contains('  ')) {
         final parts = line.split(RegExp(r'\t|\s{2,}'));
         if (parts.length >= 2) {
-          lineItems.add({
-            'description': parts.first,
-            'amount': parts.last,
-          });
+          lineItems.add({'description': parts.first, 'amount': parts.last});
         }
       }
     }
 
     if (lineItems.isEmpty && lines.isNotEmpty) {
       for (int i = 0; i < lines.length.clamp(0, 5); i++) {
-        if (lines[i].length > 5 && !lines[i].toLowerCase().contains('invoice')) {
+        if (lines[i].length > 5 &&
+            !lines[i].toLowerCase().contains('invoice')) {
           lineItems.add({'description': lines[i], 'amount': '\$100.00'});
         }
       }
@@ -1359,24 +1399,33 @@ class ApiService {
       'subtotal': subtotal != '\$0.00' ? subtotal : totalAmount,
       'tax': tax,
       'totalAmount': totalAmount != '\$0.00' ? totalAmount : '\$150.00',
-      'lineItems': lineItems.isNotEmpty ? lineItems : [
-        {'description': 'Professional Services', 'amount': '\$150.00'}
-      ],
+      'lineItems': lineItems.isNotEmpty
+          ? lineItems
+          : [
+              {'description': 'Professional Services', 'amount': '\$150.00'},
+            ],
       'rawText': text,
     };
   }
 
   // AI Speech-To-Text (Whisper / Gemini Model Endpoint)
-  Future<String> transcribeSpeechAi({required File audioFile, String language = 'en'}) async {
+  Future<String> transcribeSpeechAi({
+    required File audioFile,
+    String language = 'en',
+  }) async {
     try {
       final bytes = await audioFile.readAsBytes();
       final formData = FormData.fromMap({
         'language': language,
-        'file': MultipartFile.fromBytes(bytes, filename: audioFile.uri.pathSegments.last),
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: audioFile.uri.pathSegments.last,
+        ),
       });
       final response = await dio.post('/api/ai/speech-to-text', data: formData);
       if (response.statusCode == 200 && response.data != null) {
-        return response.data['text']?.toString() ?? 'Transcribed audio content.';
+        return response.data['text']?.toString() ??
+            'Transcribed audio content.';
       }
     } catch (_) {}
 
@@ -1384,12 +1433,15 @@ class ApiService {
   }
 
   // AI Text-To-Speech (Gemini / HuggingFace Model Synthesis Endpoint)
-  Future<String> synthesizeSpeechAi({required String text, String voice = 'en-US-Standard-A'}) async {
+  Future<String> synthesizeSpeechAi({
+    required String text,
+    String voice = 'en-US-Standard-A',
+  }) async {
     try {
-      final response = await dio.post('/api/ai/text-to-speech', data: {
-        'text': text,
-        'voice': voice,
-      });
+      final response = await dio.post(
+        '/api/ai/text-to-speech',
+        data: {'text': text, 'voice': voice},
+      );
       if (response.statusCode == 200 && response.data != null) {
         return response.data['audioUrl']?.toString() ?? '';
       }
@@ -1808,4 +1860,3 @@ class ApiService {
     return Map<String, dynamic>.from(response.data);
   }
 }
-

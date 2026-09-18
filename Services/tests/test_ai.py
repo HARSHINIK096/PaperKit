@@ -169,18 +169,73 @@ async def test_generate_podcast_script(client, auth_headers):
 
 
 @pytest.mark.asyncio
-async def test_analyze_contract(client, auth_headers):
-    """POST /ai/analyze-contract extracts contract clauses."""
-    mock_clauses = {
-        "clauses": [{"category": "Parties", "title": "Parties", "snippet": "Party A and Party B", "pageNumber": 1}]
+async def test_analyze_research_paper(client, seeded_file, auth_headers):
+    """POST /ai/analyze-research performs structural academic research analysis."""
+    mock_analysis = {
+        "title": "A Novel Deep Learning Approach",
+        "authors": ["Dr. Jane Doe"],
+        "abstract": "We present a novel approach.",
+        "methodology": "Neural network architecture.",
+        "results": "Accuracy improved by 15%.",
+        "limitations": ["Limited dataset size"],
+        "future_work": ["Scale up parameters"],
+        "sections": [],
     }
-    with patch.object(ai_service, "analyze_contract_clauses", new=AsyncMock(return_value=mock_clauses)):
+    with patch.object(ai_service, "analyze_research_paper", new=AsyncMock(return_value=mock_analysis)):
+        file_id = str(seeded_file["_id"])
         resp = await client.post(
-            "/ai/analyze-contract",
-            json={"text": "This agreement is made between Party A and Party B."},
+            "/ai/analyze-research",
+            json={"file_id": file_id},
             headers=auth_headers,
         )
         assert resp.status_code == 200
-        assert len(resp.json()["clauses"]) == 1
-        assert resp.json()["clauses"][0]["category"] == "Parties"
+        data = resp.json()
+        assert data["title"] == "A Novel Deep Learning Approach"
+        assert len(data["authors"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_literature_review(client, seeded_file, auth_headers):
+    """POST /ai/literature-review synthesizes multiple documents."""
+    mock_review = {
+        "overview": "Overview of literature.",
+        "research_themes": [],
+        "methodology_comparison": [],
+        "synthesis": "Comprehensive synthesis.",
+    }
+    with patch.object(ai_service, "literature_review", new=AsyncMock(return_value=mock_review)):
+        file_id = str(seeded_file["_id"])
+        resp = await client.post(
+            "/ai/literature-review",
+            json={"file_ids": [file_id]},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["overview"] == "Overview of literature."
+
+
+@pytest.mark.asyncio
+async def test_speech_to_text(client, auth_headers):
+    """POST /ai/speech-to-text transcribes audio."""
+    with patch.object(ai_service, "transcribe_audio", new=AsyncMock(return_value="Transcribed test audio")):
+        files = {"file": ("test.wav", b"RIFF....WAVEfmt ", "audio/wav")}
+        resp = await client.post(
+            "/ai/speech-to-text",
+            files=files,
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["text"] == "Transcribed test audio"
+
+
+@pytest.mark.asyncio
+async def test_text_to_speech(client, auth_headers):
+    """POST /ai/text-to-speech synthesizes speech audio."""
+    resp = await client.post(
+        "/ai/text-to-speech",
+        json={"text": "Hello world from MaskerV AI"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+
 

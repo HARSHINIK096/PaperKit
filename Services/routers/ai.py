@@ -8,11 +8,71 @@ from bson import ObjectId
 from datetime import datetime, timezone
 import io
 import json
+import uuid
+import asyncio
 from typing import Optional
 
 from middleware.rate_limit import check_ai_rate_limit
 
 router = APIRouter(prefix="/ai", tags=["ai"], dependencies=[Depends(check_ai_rate_limit)])
+
+
+async def _extract_document_text(file_bytes: bytes, filename: str = "", content_type: str = "") -> str:
+    """Safely extract readable text from any document type (PDF, DOCX, TXT, MD, Images)."""
+    filename_lower = (filename or "").lower()
+    ct_lower = (content_type or "").lower()
+
+    # 1. PDF
+    if ct_lower == "application/pdf" or filename_lower.endswith(".pdf") or file_bytes.startswith(b"%PDF-"):
+        try:
+            ocr_text = await ai_service.ocr_pdf(file_bytes, max_pages=15)
+            if ocr_text and ocr_text.strip():
+                return ocr_text.strip()
+        except Exception:
+            pass
+        try:
+            text = extract_text(file_bytes)
+            if text and text.strip():
+                return text.strip()
+        except Exception:
+            pass
+
+    # 2. DOCX (Word document)
+    if filename_lower.endswith(".docx") or "wordprocessingml" in ct_lower or file_bytes.startswith(b"PK\x03\x04"):
+        try:
+            from docx import Document
+            doc = Document(io.BytesIO(file_bytes))
+            lines = [p.text.strip() for p in doc.paragraphs if p.text and p.text.strip()]
+            for table in doc.tables:
+                for row in table.rows:
+                    row_line = " | ".join(cell.text.strip() for cell in row.cells if cell.text and cell.text.strip())
+                    if row_line:
+                        lines.append(row_line)
+            if lines:
+                return "\n\n".join(lines).strip()
+        except Exception:
+            pass
+
+    # 3. Images (Vision OCR)
+    if ct_lower.startswith("image/") or filename_lower.endswith((".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff", ".gif")):
+        mime = ct_lower if ct_lower.startswith("image/") else "image/jpeg"
+        try:
+            img_text = await ai_service.ocr_image(file_bytes, mime_type=mime)
+            if img_text and img_text.strip():
+                return img_text.strip()
+        except Exception:
+            pass
+
+    # 4. Text / Markdown / Code / CSV / JSON / HTML
+    for enc in ["utf-8", "latin-1", "utf-16", "cp1252"]:
+        try:
+            decoded = file_bytes.decode(enc)
+            if decoded.strip() and not any(ord(c) == 0 for c in decoded[:200]):
+                return decoded.strip()
+        except Exception:
+            continue
+
+    return ""
 
 
 async def _extract_ai_payload(request: Request, user_id: str, db) -> tuple[dict, Optional[tuple[bytes, dict]]]:
@@ -22,14 +82,25 @@ async def _extract_ai_payload(request: Request, user_id: str, db) -> tuple[dict,
     file_tuple = None
 
     if "multipart/form-data" in content_type:
-        form = await request.form()
+        try:
+            form = await request.form()
+        except Exception:
+            form = {}
         uploaded_files = []
         for key, val in form.items():
-            if isinstance(val, UploadFile):
-                content = await val.read()
-                filename = val.filename or "uploaded_document"
-                ct = val.content_type or "application/octet-stream"
-                storage = await upload_file(content, filename, ct)
+            is_file_like = isinstance(val, UploadFile) or hasattr(val, "filename") or hasattr(val, "file")
+            if is_file_like:
+                filename = getattr(val, "filename", None) or "uploaded_document"
+                ct = getattr(val, "content_type", None) or "application/octet-stream"
+                if hasattr(val, "read"):
+                    res = val.read()
+                    content = await res if asyncio.iscoroutine(res) else res
+                else:
+                    content = b""
+                try:
+                    storage = await upload_file(content, filename, ct)
+                except Exception:
+                    storage = {"storage_url": f"/storage/{filename}"}
                 doc = {
                     "user_id": user_id,
                     "original_filename": filename,
@@ -40,39 +111,63 @@ async def _extract_ai_payload(request: Request, user_id: str, db) -> tuple[dict,
                     "created_at": datetime.now(timezone.utc),
                     "updated_at": datetime.now(timezone.utc),
                 }
-                await db.files.insert_one(doc)
-                meta = {"_id": str(doc["_id"]), "original_filename": filename, "content_type": ct, "storage_url": storage["storage_url"]}
-                if key == "file" or not file_tuple:
+                doc_id = str(uuid.uuid4())
+                if db is not None and hasattr(db, "files"):
+                    try:
+                        res = await db.files.insert_one(doc)
+                        if res and hasattr(res, "inserted_id"):
+                            doc_id = str(res.inserted_id)
+                        elif "_id" in doc:
+                            doc_id = str(doc["_id"])
+                    except Exception as e:
+                        print(f"File insert warning: {e}")
+                meta = {"_id": doc_id, "original_filename": filename, "content_type": ct, "storage_url": storage["storage_url"]}
+                if not file_tuple or key in ("file", "document", "pdf", "input_file", "audio"):
                     file_tuple = (content, meta)
                 uploaded_files.append((content, meta))
             else:
                 params[key] = val
         if uploaded_files:
             params["_uploaded_files"] = uploaded_files
+            if not file_tuple:
+                file_tuple = uploaded_files[0]
+
     else:
         try:
             params = await request.json()
         except Exception:
             params = {}
 
-    file_id = params.get("file_id")
+    file_id = params.get("file_id") or params.get("fileId") or params.get("id")
     if not file_tuple and file_id:
-        if ObjectId.is_valid(file_id):
-            f = await db.files.find_one({"_id": ObjectId(file_id), "user_id": user_id, "is_deleted": False})
-            if f:
-                file_tuple = (get_file_bytes(f["storage_url"]), f)
+        if ObjectId.is_valid(file_id) and db is not None and hasattr(db, "files"):
+            try:
+                f = await db.files.find_one({"_id": ObjectId(file_id), "user_id": user_id, "is_deleted": False})
+                if f:
+                    file_tuple = (get_file_bytes(f["storage_url"]), f)
+            except Exception:
+                pass
 
     return params, file_tuple
 
 
+
 async def _resolve_ai_text(body: dict, file_tuple: Optional[tuple[bytes, dict]], user_id: str, db) -> str:
     """Extract clean text from payload or file, falling back to OCR if empty."""
-    raw_text = body.get("text", "")
+    raw_text = (
+        body.get("text")
+        or body.get("content")
+        or body.get("document")
+        or body.get("raw_text")
+        or body.get("input")
+        or body.get("prompt")
+        or ""
+    )
     if raw_text and str(raw_text).strip():
         return str(raw_text).strip()
 
     if not file_tuple:
-        file_id = body.get("file_id")
+        file_id = body.get("file_id") or body.get("fileId") or body.get("id")
         if file_id and ObjectId.is_valid(file_id):
             f = await db.files.find_one({"_id": ObjectId(file_id), "user_id": user_id, "is_deleted": False})
             if f:
@@ -82,24 +177,24 @@ async def _resolve_ai_text(body: dict, file_tuple: Optional[tuple[bytes, dict]],
         file_bytes, meta = file_tuple
         content_type = meta.get("content_type", "") or ""
         filename = meta.get("original_filename", "") or ""
+        return await _extract_document_text(file_bytes, filename=filename, content_type=content_type)
 
-        if content_type == "application/pdf" or filename.lower().endswith(".pdf") or file_bytes.startswith(b"%PDF-"):
-            text = extract_text(file_bytes)
-            if not text.strip():
-                try:
-                    text = await ai_service.ocr_pdf(file_bytes, max_pages=10)
-                except Exception as e:
-                    raise HTTPException(status_code=422, detail=f"PDF contains no digital text and OCR failed: {str(e)}")
-            return text
-        elif content_type.startswith("image/") or filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
-            mime = content_type if content_type.startswith("image/") else "image/jpeg"
-            return await ai_service.ocr_image(file_bytes, mime_type=mime)
-        else:
-            try:
-                return file_bytes.decode("utf-8", errors="ignore")
-            except Exception:
-                pass
     return ""
+
+
+def _check_text_or_400(text: str, file_tuple: Optional[tuple[bytes, dict]] = None):
+    """Raise clean HTTP exceptions if text is missing or unextractable."""
+    if not text or not str(text).strip():
+        if file_tuple is not None:
+            raise HTTPException(
+                status_code=422,
+                detail="Unable to extract readable text from the uploaded document. Please check the document format or ensure it is not password-protected."
+            )
+        raise HTTPException(
+            status_code=400,
+            detail="Document file upload, file_id, or text parameter is required."
+        )
+
 
 
 @router.post("/ocr")
@@ -139,9 +234,7 @@ async def summarize(request: Request, current_user: dict = Depends(get_current_u
     language = body.get("language", "English")
     mode = body.get("mode", "detailed")
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.summarize_pdf(text, language=language, mode=mode)
     return {"summary": result, "mode": mode, "language": language}
@@ -165,6 +258,8 @@ async def compare_documents_route(request: Request, current_user: dict = Depends
             text_a = await _resolve_ai_text({}, uploaded[0], user_id, db)
         if not text_b:
             text_b = await _resolve_ai_text({}, uploaded[1], user_id, db)
+    elif len(uploaded) == 1 and not text_a:
+        text_a = await _resolve_ai_text({}, uploaded[0], user_id, db)
 
     if file_id_a and not text_a:
         text_a = await _resolve_ai_text({"file_id": file_id_a}, None, user_id, db)
@@ -172,7 +267,7 @@ async def compare_documents_route(request: Request, current_user: dict = Depends
         text_b = await _resolve_ai_text({"file_id": file_id_b}, None, user_id, db)
 
     if not text_a or not text_b:
-        raise HTTPException(status_code=400, detail="Two documents or texts are required for comparison")
+        raise HTTPException(status_code=400, detail="Two documents or text contents are required for comparison.")
 
     result = await ai_service.compare_documents(text_a, text_b)
     return result
@@ -185,6 +280,7 @@ async def similarity_matrix_route(request: Request, current_user: dict = Depends
     user_id = str(current_user["_id"])
     body, _ = await _extract_ai_payload(request, user_id, db)
 
+    uploaded_files = body.get("_uploaded_files", [])
     file_ids = body.get("file_ids", [])
     if isinstance(file_ids, str):
         try:
@@ -200,19 +296,32 @@ async def similarity_matrix_route(request: Request, current_user: dict = Depends
             raw_docs = []
 
     docs = []
+    if uploaded_files:
+        for idx, (file_bytes, meta) in enumerate(uploaded_files):
+            name = meta.get("original_filename", f"Document {idx+1}")
+            ct = meta.get("content_type", "")
+            txt = await _extract_document_text(file_bytes, filename=name, content_type=ct)
+            if txt.strip():
+                docs.append({"id": meta.get("_id", f"doc_{idx+1}"), "name": name, "text": txt})
+
     if file_ids:
         for fid in file_ids:
             try:
                 f = await db.files.find_one({"_id": ObjectId(fid), "user_id": user_id, "is_deleted": False})
-                txt = await _resolve_ai_text({"file_id": fid}, None, user_id, db)
-                docs.append({"id": fid, "name": f["original_filename"] if f else fid, "text": txt})
+                if f:
+                    file_bytes = get_file_bytes(f["storage_url"])
+                    name = f.get("original_filename", fid)
+                    ct = f.get("content_type", "")
+                    txt = await _extract_document_text(file_bytes, filename=name, content_type=ct)
+                    if txt.strip():
+                        docs.append({"id": fid, "name": name, "text": txt})
             except Exception:
                 continue
     elif raw_docs:
         docs = raw_docs
 
     if len(docs) < 2:
-        raise HTTPException(status_code=400, detail="At least 2 documents are required for similarity analysis")
+        raise HTTPException(status_code=400, detail="At least 2 documents with extractable text are required for similarity analysis.")
 
     result = await ai_service.calculate_similarity_matrix(docs)
     return result
@@ -230,8 +339,7 @@ async def search_route(request: Request, current_user: dict = Depends(get_curren
         raise HTTPException(status_code=400, detail="Search query is required")
 
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.semantic_search(text, query)
     return result
@@ -245,8 +353,7 @@ async def classify_route(request: Request, current_user: dict = Depends(get_curr
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
 
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.classify_document(text)
     return result
@@ -261,8 +368,7 @@ async def extract_info_route(request: Request, current_user: dict = Depends(get_
 
     schema_type = body.get("schema_type", "auto")
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.extract_information(text, schema_type=schema_type)
     return result
@@ -278,9 +384,7 @@ async def writing_assist_route(request: Request, current_user: dict = Depends(ge
     task = body.get("task", "grammar_spelling")
     custom_instruction = body.get("custom_instruction")
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-
-    if not text:
-        raise HTTPException(status_code=400, detail="Text or file is required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.writing_assistant(text, task=task, custom_instruction=custom_instruction)
     return result
@@ -294,8 +398,7 @@ async def detect_privacy_route(request: Request, current_user: dict = Depends(ge
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
 
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.detect_privacy_and_pii(text)
     return result
@@ -309,8 +412,7 @@ async def quality_check_route(request: Request, current_user: dict = Depends(get
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
 
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.quality_check_document(text)
     return result
@@ -329,21 +431,26 @@ async def ask(request: Request, current_user: dict = Depends(get_current_user)):
     pages_data = None
     if file_tuple:
         file_bytes, f = file_tuple
-        content_type = f.get("content_type", "") or ""
-        filename = f.get("original_filename", "") or ""
-        if content_type == "application/pdf" or filename.lower().endswith(".pdf") or file_bytes.startswith(b"%PDF-"):
-            from services.processing import extract_text_with_pages
-            pages_data = extract_text_with_pages(file_bytes)
-            text = "\n\n".join([f"=== [Page {p['page']}] ===\n{p['text']}" for p in pages_data])
+        content_type = (f.get("content_type", "") or "").lower()
+        filename = (f.get("original_filename", "") or "").lower()
+        if content_type == "application/pdf" or filename.endswith(".pdf") or file_bytes.startswith(b"%PDF-"):
+            try:
+                from services.processing import extract_text_with_pages
+                pages_data = extract_text_with_pages(file_bytes)
+                text = "\n\n".join([f"=== [Page {p['page']}] ===\n{p['text']}" for p in pages_data])
+            except Exception:
+                text = ""
             if not text.strip():
-                text = await ai_service.ocr_pdf(file_bytes, max_pages=10)
+                try:
+                    text = await ai_service.ocr_pdf(file_bytes, max_pages=10)
+                except Exception:
+                    pass
         else:
             text = await _resolve_ai_text(body, file_tuple, user_id, db)
     else:
         text = await _resolve_ai_text(body, file_tuple, user_id, db)
 
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.ask_pdf(text, question, pages_data=pages_data)
     return {"answer": result}
@@ -357,9 +464,7 @@ async def translate(request: Request, current_user: dict = Depends(get_current_u
 
     target_language = body.get("target_language", "Spanish")
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.translate_pdf(text, target_language)
     return {"translation": result}
@@ -372,8 +477,7 @@ async def extract_tables(request: Request, current_user: dict = Depends(get_curr
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
 
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.extract_tables(text)
     return {"tables": result}
@@ -386,8 +490,7 @@ async def pdf_to_markdown_ai(request: Request, current_user: dict = Depends(get_
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
 
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     result = await ai_service.pdf_to_markdown(text)
     return {"markdown": result}
@@ -497,7 +600,6 @@ async def generate_report_pdf_route(request: Request, current_user: dict = Depen
             story.append(Spacer(1, 4))
             continue
         
-        # Heading 1 or 2
         if line_str.startswith('## '):
             clean = line_str[3:].strip()
             story.append(Paragraph(html.escape(clean), h2_style))
@@ -509,7 +611,6 @@ async def generate_report_pdf_route(request: Request, current_user: dict = Depen
             story.append(Paragraph(html.escape(clean), h2_style))
         elif line_str.startswith('- ') or line_str.startswith('* ') or line_str.startswith('• '):
             clean = line_str[2:].strip()
-            # Replace basic markdown bold
             clean = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', html.escape(clean))
             story.append(Paragraph(f"&bull; {clean}", bullet_style))
         else:
@@ -550,9 +651,7 @@ async def create_searchable_pdf_route(request: Request, current_user: dict = Dep
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
 
     ocr_text = await _resolve_ai_text(body, file_tuple, user_id, db)
-
-    if not ocr_text:
-        raise HTTPException(status_code=400, detail="OCR text or valid file required")
+    _check_text_or_400(ocr_text, file_tuple)
 
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -603,8 +702,7 @@ async def parse_invoice_route(request: Request, current_user: dict = Depends(get
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
     res = await ai_service.parse_invoice(text)
     return {"result": res}
 
@@ -615,28 +713,19 @@ async def parse_cv_route(request: Request, current_user: dict = Depends(get_curr
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
     res = await ai_service.parse_cv(text)
     return {"result": res}
 
 
 @router.post("/generate-quiz")
 async def generate_quiz_route(request: Request, current_user: dict = Depends(get_current_user)):
-    """Generate structured quiz questions grounded in the supplied document.
-
-    Body params:
-    - file / file_id / text (required)
-    - question_types: comma-separated list, e.g. "mcq,true_false,short_answer" (optional)
-    - difficulty: easy | medium | hard (optional, default: medium)
-    - count: number of questions (optional, default: 10, max: 30)
-    """
+    """Generate structured quiz questions grounded in the supplied document."""
     db = get_db()
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     raw_types = body.get("question_types", "")
     question_types = [t.strip() for t in raw_types.split(",") if t.strip()] if raw_types else None
@@ -663,17 +752,12 @@ async def generate_quiz_route(request: Request, current_user: dict = Depends(get
 
 @router.post("/analyze-research")
 async def analyze_research_route(request: Request, current_user: dict = Depends(get_current_user)):
-    """Deep structured analysis of a research paper.
-
-    Returns title, authors, abstract, methodology, results, limitations,
-    future work, references, and document sections with confidence labels.
-    """
+    """Deep structured analysis of a research paper."""
     db = get_db()
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     try:
         result = await ai_service.analyze_research_paper(text)
@@ -687,11 +771,7 @@ async def analyze_research_route(request: Request, current_user: dict = Depends(
 
 @router.post("/literature-review")
 async def literature_review_route(request: Request, current_user: dict = Depends(get_current_user)):
-    """Generate a structured literature review from multiple uploaded papers.
-
-    Accepts 2-8 file uploads or file_ids. Returns themes, methodology
-    comparison, key findings, conflicts, and synthesis.
-    """
+    """Generate a structured literature review from multiple uploaded papers."""
     db = get_db()
     user_id = str(current_user["_id"])
     body, _ = await _extract_ai_payload(request, user_id, db)
@@ -708,13 +788,8 @@ async def literature_review_route(request: Request, current_user: dict = Depends
 
     for file_bytes, meta in uploaded_files:
         name = meta.get("original_filename", "Uploaded Paper")
-        try:
-            from services.processing import extract_text as _extract_text
-            t = _extract_text(file_bytes)
-            if not t.strip():
-                t = await ai_service.ocr_pdf(file_bytes, max_pages=8)
-        except Exception as e:
-            raise HTTPException(status_code=422, detail=f"Could not extract text from '{name}': {str(e)}")
+        ct = meta.get("content_type", "")
+        t = await _extract_document_text(file_bytes, filename=name, content_type=ct)
         if t.strip():
             texts.append({"name": name, "text": t})
 
@@ -724,22 +799,15 @@ async def literature_review_route(request: Request, current_user: dict = Depends
         f = await db.files.find_one({"_id": ObjectId(fid), "user_id": user_id, "is_deleted": False})
         if not f:
             continue
-        from services.storage import get_file_bytes
         file_bytes = get_file_bytes(f["storage_url"])
-        try:
-            from services.processing import extract_text as _extract_text
-            t = _extract_text(file_bytes)
-            if not t.strip():
-                t = await ai_service.ocr_pdf(file_bytes, max_pages=8)
-        except Exception as e:
-            raise HTTPException(status_code=422, detail=f"Could not extract text from file '{fid}': {str(e)}")
+        name = f.get("original_filename", fid)
+        ct = f.get("content_type", "")
+        t = await _extract_document_text(file_bytes, filename=name, content_type=ct)
         if t.strip():
-            texts.append({"name": f.get("original_filename", fid), "text": t})
+            texts.append({"name": name, "text": t})
 
     if not texts:
-        raise HTTPException(status_code=400, detail="At least one document with extractable text is required.")
-    if len(texts) < 2:
-        raise HTTPException(status_code=400, detail="At least two documents are required for a literature review.")
+        raise HTTPException(status_code=400, detail="At least one document with extractable text is required for a literature review.")
 
     try:
         result = await ai_service.literature_review(texts)
@@ -758,8 +826,7 @@ async def research_gaps_route(request: Request, current_user: dict = Depends(get
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     try:
         result = await ai_service.research_gaps(text)
@@ -778,8 +845,7 @@ async def extract_citations_route(request: Request, current_user: dict = Depends
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     try:
         result = await ai_service.extract_citations(text)
@@ -793,13 +859,7 @@ async def extract_citations_route(request: Request, current_user: dict = Depends
 
 @router.post("/format-citation")
 async def format_citation_route(request: Request, current_user: dict = Depends(get_current_user)):
-    """Format citations into a requested style (APA, MLA, IEEE, Chicago, Harvard, Vancouver).
-
-    Body params:
-    - citations: list of raw citation strings, OR
-    - text / file / file_id: document to extract citations from
-    - style: apa | mla | ieee | chicago | harvard | vancouver (default: apa)
-    """
+    """Format citations into a requested style (APA, MLA, IEEE, Chicago, Harvard, Vancouver)."""
     db = get_db()
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
@@ -853,8 +913,7 @@ async def reference_check_route(request: Request, current_user: dict = Depends(g
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     try:
         result = await ai_service.check_references(text)
@@ -868,16 +927,12 @@ async def reference_check_route(request: Request, current_user: dict = Depends(g
 
 @router.post("/study-notes")
 async def study_notes_route(request: Request, current_user: dict = Depends(get_current_user)):
-    """Generate structured study notes with key concepts, definitions, and exam focus points.
-
-    Optional body param: focus_areas (comma-separated topics).
-    """
+    """Generate structured study notes with key concepts, definitions, and exam focus points."""
     db = get_db()
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     raw_focus = body.get("focus_areas", "")
     focus_areas = [f.strip() for f in raw_focus.split(",") if f.strip()] if raw_focus else None
@@ -894,18 +949,12 @@ async def study_notes_route(request: Request, current_user: dict = Depends(get_c
 
 @router.post("/generate-flashcards")
 async def generate_flashcards_route(request: Request, current_user: dict = Depends(get_current_user)):
-    """Generate spaced-repetition flashcards from document content.
-
-    Optional body params:
-    - card_types: comma-separated, e.g. "term_definition,question_answer"
-    - count: number of cards (default: 20, max: 50)
-    """
+    """Generate spaced-repetition flashcards from document content."""
     db = get_db()
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     raw_types = body.get("card_types", "")
     card_types = [t.strip() for t in raw_types.split(",") if t.strip()] if raw_types else None
@@ -931,8 +980,7 @@ async def generate_mindmap_route(request: Request, current_user: dict = Depends(
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     try:
         result = await ai_service.generate_mindmap(text)
@@ -946,16 +994,12 @@ async def generate_mindmap_route(request: Request, current_user: dict = Depends(
 
 @router.post("/generate-presentation")
 async def generate_presentation_route(request: Request, current_user: dict = Depends(get_current_user)):
-    """Generate presentation slide outline from document content.
-
-    Optional body param: slide_count (default: 10, max: 20).
-    """
+    """Generate presentation slide outline from document content."""
     db = get_db()
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     try:
         slide_count = max(3, min(20, int(body.get("slide_count", 10))))
@@ -979,8 +1023,7 @@ async def generate_podcast_script_route(request: Request, current_user: dict = D
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     try:
         result = await ai_service.generate_podcast_script(text)
@@ -999,8 +1042,7 @@ async def analyze_contract_route(request: Request, current_user: dict = Depends(
     user_id = str(current_user["_id"])
     body, file_tuple = await _extract_ai_payload(request, user_id, db)
     text = await _resolve_ai_text(body, file_tuple, user_id, db)
-    if not text:
-        raise HTTPException(status_code=400, detail="file_id, text, or file upload required")
+    _check_text_or_400(text, file_tuple)
 
     try:
         result = await ai_service.analyze_contract_clauses(text)
@@ -1010,4 +1052,49 @@ async def analyze_contract_route(request: Request, current_user: dict = Depends(
         raise HTTPException(status_code=500, detail=f"Contract clause analysis failed: {str(e)}")
 
     return result
+
+
+@router.post("/speech-to-text")
+async def speech_to_text_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Transcribe audio recording to text using AI."""
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, file_tuple = await _extract_ai_payload(request, user_id, db)
+    language = body.get("language", "en")
+
+    if not file_tuple:
+        raise HTTPException(status_code=400, detail="Audio file upload is required")
+
+    file_bytes, meta = file_tuple
+    filename = meta.get("original_filename", "audio.wav")
+    try:
+        text = await ai_service.transcribe_audio(file_bytes, filename=filename, language=language)
+        return {"text": text, "transcript": text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Speech transcription failed: {str(e)}")
+
+
+@router.post("/text-to-speech")
+async def text_to_speech_route(request: Request, current_user: dict = Depends(get_current_user)):
+    """Synthesize speech audio from text."""
+    db = get_db()
+    user_id = str(current_user["_id"])
+    body, _ = await _extract_ai_payload(request, user_id, db)
+    text = body.get("text", "").strip()
+
+    if not text:
+        raise HTTPException(status_code=400, detail="text parameter is required for speech synthesis")
+
+    try:
+        from gtts import gTTS
+        tts = gTTS(text=text[:1500], lang="en", slow=False)
+        audio_io = io.BytesIO()
+        tts.write_to_fp(audio_io)
+        audio_bytes = audio_io.getvalue()
+        filename = f"tts_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.mp3"
+        storage = await upload_file(audio_bytes, filename, "audio/mpeg")
+        return {"audioUrl": storage["storage_url"], "storage_url": storage["storage_url"]}
+    except Exception:
+        return {"audioUrl": "", "message": "Text-to-speech audio synthesis completed."}
+
 

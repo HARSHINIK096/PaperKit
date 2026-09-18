@@ -1,4 +1,4 @@
-"""MaskerV backend configuration — reads from .env"""
+"""paperkit backend configuration — reads from .env"""
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -11,8 +11,8 @@ load_dotenv(dotenv_path=ENV_PATH, override=False)
 
 class Settings(BaseSettings):
     # MongoDB
-    mongodb_url: str = "mock://"
-    database_name: str = "maskerv"
+    mongodb_url: str = ""
+    database_name: str = "paperkit"
 
     # JWT
     secret_key: str = "4FgEO_eIDN5458NzUUQgwHQkM4u5H2iS1ezjr7Zru3WRcX1xgaCXziiXf6kLjGVy3eAeKLJuZhR0W4-oFvyoxA"
@@ -24,12 +24,13 @@ class Settings(BaseSettings):
     # AI Providers
     gemini_api_key: str = ""
     groq_api_key: str = ""
+    hf_api_key: str = ""
     groq_text_model: str = "openai/gpt-oss-120b"
-    groq_vision_model: str = ""
+    groq_vision_model: str = "openai/gpt-oss-20b"
 
     # Frontend & Backend URLs on Render
-    frontend_url: str = "https://maskerv-web.onrender.com"
-    backend_url: str = "https://maskerv-backend.onrender.com"
+    frontend_url: str = "https://paperkit-web.onrender.com"
+    backend_url: str = "https://paperkit-backend.onrender.com"
 
     # PDF Rectification & Positional Engine Configuration
     pdf_editor_engine: str = "positional"
