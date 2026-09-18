@@ -29,6 +29,7 @@
    - [Hybrid Edge-Cloud Processing Router](#hybrid-edge-cloud-processing-router)
    - [Dual AI Provider Pipeline](#dual-ai-provider-pipeline)
    - [10-Minute Authenticated Temporary Share Architecture](#10-minute-authenticated-temporary-share-architecture)
+   - [Authoritative 15-Domain & 79 Tools Ecosystem Topology](#authoritative-15-domain--79-tools-ecosystem-topology)
 3. [Technology Stack & Dependency Matrix](#technology-stack--dependency-matrix)
    - [Backend Core (`Services/`)](#backend-core-services)
    - [Web & Mobile Hybrid Client (`maskerv-web/`)](#web--mobile-hybrid-client-maskerv-web)
@@ -224,6 +225,62 @@ flowchart TD
         S --> T["Update Database Status to Expired"]
     end
 ```
+
+### Authoritative 15-Domain & 79 Tools Ecosystem Topology
+
+MASKERV organizes its comprehensive suite of **79 production-ready tools** across **15 Authoritative Functional Domains** plus a centralized cross-domain General Utilities layer. Every single tool is fully backed by backend FastAPI endpoints and client routing engines (`app_router.dart` & `processingRouter.js`).
+
+<div align="center">
+
+![MASKERV 79 Tools Ecosystem Topology](docs/images/tools_ecosystem_diagram.jpg)
+
+*High-level architectural infographic diagram mapping all 79 tools across 15 core functional domains and the utilities hub.*
+
+</div>
+
+```mermaid
+graph TD
+    CORE["🚀 MASKERV Core Platform (79 Tools)"]
+
+    CORE --> D1["📂 Domain 1: File & PDF Tools (20)"]
+    CORE --> D2["🔒 Domain 2: Security & Compliance Vault (5)"]
+    CORE --> D3["🎓 Domain 3: Academic & Research AI (19)"]
+    CORE --> D4["📷 Domain 4: Optical Vision & OCR (7)"]
+    CORE --> D5["🧠 Domain 5: Cognitive Retention Studio (1)"]
+    CORE --> D6["🎙️ Domain 6: Voice & Podcast Audio (2)"]
+    CORE --> D7["👁️ Domain 7: Accessibility Reader (1)"]
+    CORE --> D8["⚖️ Domain 8: Legal & Forensic Audit (2)"]
+    CORE --> D9["📝 Domain 9: Interactive Form Builder (2)"]
+    CORE --> D10["🌿 Domain 10: Mind Mapping & Diagrams (3)"]
+    CORE --> D11["💻 Domain 11: Dual-Pane Workspace Hub (1)"]
+    CORE --> D12["📡 Domain 12: Offline P2P Air-Share (1)"]
+    CORE --> D13["📊 Domain 13: Data Analytics & Tables (3)"]
+    CORE --> D14["🌐 Domain 14: AI Translation & Localization (2)"]
+    CORE --> D15["📖 Domain 15: Automated Publishing Studio (1)"]
+    CORE --> UTILS["⚙️ General Utilities Layer (9)"]
+```
+
+#### Complete 79 Tools Domain Matrix
+
+| # | Authoritative Functional Domain | Count | Primary Tools Included |
+|---|---|:---:|---|
+| **1** | **File Manipulation & Document Tools** | **20** | PDF Editor, Merge PDF, Split PDF, Compress PDF, Extract Pages, Rotate PDF, Watermark, Organize Pages, N-Up Printing, Booklet Creator, Header & Footer, Word to PDF, PDF to Word, Excel to PDF, PDF to Excel, PPT to PDF, PDF to PPT, Image to PDF, PDF to Image, PDF/A Archive |
+| **2** | **Security, Cryptography & Compliance Vault** | **5** | Protect PDF, Redact Data, Digital Sign, Metadata Manager, Biometric App Lock |
+| **3** | **Academic & Research Intelligence Suite** | **19** | Research Analyzer, Literature Review, Research Gap Finder, Citation Extractor, Citation Formatter, Reference Checker, Study Notes, Quiz Generator, Flashcard Generator, AI Summary, AI Document Chat, Semantic Compare, Similarity Score, Semantic Search, Document Classify, Information Extract, Writing Assistant, Quality Checker, Resume AI Scanner |
+| **4** | **Optical Scanning & Vision Engine (OCR)** | **7** | OCR Text & Layout, Scan to PDF, Image Enhancer, Image Converter, Image Compressor, Image Adjust & Manipulator, Image Resizer |
+| **5** | **Gamified Cognitive Retention Studio** | **1** | Cognitive Retention Studio |
+| **6** | **Multi-Modal Voice & Podcast Audio Studio** | **2** | Voice & Podcast Studio, Audio Converter |
+| **7** | **Universal Accessibility & Inclusive Reading** | **1** | Accessibility Reader Studio |
+| **8** | **Legal & Forensic Compliance Audit Suite** | **2** | Bates Stamping, Legal & Forensic Audit Suite |
+| **9** | **Interactive Form Builder & Auto-Fill Engine** | **2** | Form Filler, Form Creator |
+| **10** | **Visual Mind Mapping & Diagram Studio** | **3** | Visual Mind Map Studio, Mind Map Generator, Presentation Generator |
+| **11** | **Student Productivity & Dual-Pane Workspace** | **1** | Dual-Pane Workspace Hub |
+| **12** | **Offline P2P Mesh & Air-Share Workspace** | **1** | Offline P2P Air-Share |
+| **13** | **Data Analytics & Tabular Data Extractor** | **3** | Tabular Data Extractor, Extract Tables, Invoice AI Parser |
+| **14** | **Translation & Multi-Lingual Localization** | **2** | AI Translation, Translation & Localization Hub |
+| **15** | **Automated Publishing & e-Book Studio** | **1** | Automated Publishing Studio |
+| **--**| **General Utilities Layer (Cross-Domain)** | **9** | QR Code Generator, QR Code Scanner, Barcode Generator, Video Converter, Video Compressor, Archive Studio, Video to Frames, Video Editor, 10-Minute Secure Share |
+| | **TOTAL SYSTEM TOOLS** | **79** | **100% Fully Implemented & Routed Across Web & Mobile Clients** |
 
 ---
 
@@ -824,34 +881,45 @@ All AI endpoints enforce a rate limit of 5 requests per hour.
 
 ## Authentication, Authorization & Multi-Tenant Segregation
 
-MASKERV supports three distinct identity models in `Services/middleware/auth.py`:
+### Key Architectural Explanations
+
+1. **No User Login / Sign-Up / Accounts**:
+   * The application contains **zero mandatory user registration, zero sign-up forms, and zero user login requirements**.
+   * **Google Play Console App Access Answer**: **"All functionality is available without restrictions"** (No test accounts or reviewer credentials are required because reviewers can immediately test all 79+ tools out of the box).
+
+2. **Technical Rationale for Backend Anonymous User IDs**:
+   * Upon initial client launch, the application locally generates an anonymous RFC4122 v4 UUID (`StorageService.getAnonymousUserId()`).
+   * **Process Isolation & Concurrency Protection**: This anonymous session User ID is passed in backend HTTP headers (`X-User-ID`, `X-Anonymous-ID`, or `user_id` query parameters) strictly to **segregate concurrent processing tasks, job queues, temporary storage buckets, and rate limits**. This ensures that if multiple users invoke document processing endpoints simultaneously, their tasks, temporary files, and output assets remain isolated on the server without data collisions or file mismatches.
+   * The "Profile / History" UI view displays local processing records and settings scoped exclusively to that client device's generated anonymous session ID.
+
+3. **No Account Deletion Needed**:
+   * Because no user accounts or personal credentials (email, name, password) exist, **User Account Deletion is Not Applicable**.
+   * Users maintain complete local data control and can reset their anonymous session identity (`StorageService.resetAnonymousIdentity()`) or purge local processing records and cached files at any time via the Settings screen (`/profile`).
+
+### Backend Identity Model
+
+MASKERV supports dynamic identity resolution in `Services/middleware/auth.py`:
 
 ```mermaid
 flowchart TD
-    Req["Incoming Request"] --> CheckToken{"Authorization Header Present?"}
+    Req["Incoming Request"] --> CheckAnonHeader{"X-User-ID / X-Anonymous-ID Header or user_id Query Param?"}
     
-    CheckToken -->|Valid JWT Bearer Token| RegisteredUser["1. Registered User<br/>Resolve user_id from JWT payload<br/>Full profile persistence"]
+    CheckAnonHeader -->|Present: Anonymous UUIDv4| AnonUser["1. Anonymous Device Session (Default)<br/>Process Isolation & Concurrency Protection<br/>Generated via StorageService.getAnonymousUserId()"]
     
-    CheckToken -->|No Token or Guest Token| CheckAnonHeader{"X-User-ID or X-Anonymous-ID Header?"}
+    CheckAnonHeader -->|Absent| DefaultGuest["2. Seamless Guest Session<br/>Fixed Guest User ID (GUEST_USER_ID)<br/>Files auto-purged in 15 minutes"]
     
-    CheckAnonHeader -->|Present: Non-empty String| AnonUser["2. Dynamic Anonymous Identity<br/>Query or create document in users collection<br/>Persists data across client reloads"]
-    
-    CheckAnonHeader -->|Absent| DefaultGuest["3. Seamless Guest User<br/>Fixed Guest User ID<br/>Files expire in 15 minutes"]
+    Req -->|Optional Auth Header| RegisteredUser["3. Optional Auth Header<br/>Legacy token support for backend testing"]
 ```
 
-1. **Registered JWT Users**:
-   * Password hashing via bcrypt (`bcrypt.hashpw` with salt).
-   * JSON Web Tokens (JWT) signed with HS256 algorithm via `python-jose`.
-   * Standard expiration configured via `ACCESS_TOKEN_EXPIRE_MINUTES` (default 10,080 minutes / 7 days).
-   * Dedicated database persistence across user profile, uploaded files, and processing history.
-2. **Dynamic Anonymous Users**:
-   * Designed for native mobile and guest web sessions that require state persistence without account registration.
-   * Clients supply an identifier in `X-User-ID`, `X-Anonymous-ID`, or query parameter `user_id`.
-   * The backend dynamically provisions an anonymous user document in `db.users`, segregating file storage and processing history.
-3. **Default Guest Users**:
+1. **Anonymous Device Sessions (Default)**:
+   * Native mobile and web client sessions use an anonymous UUIDv4 identifier (`StorageService.getAnonymousUserId()`).
+   * Passed in `X-User-ID`, `X-Anonymous-ID`, or `user_id` query parameter.
+   * Dynamically isolates MongoDB job queues, rate limit counters, and temporary storage files per client device.
+2. **Seamless Guest Sessions**:
    * Fallback using `GUEST_USER_ID = ObjectId("000000000000000000000001")`.
-   * Enables immediate use of all tools without registration friction.
-   * Protected by an aggressive background cleanup process that auto-purges guest assets older than 15 minutes.
+   * Enables immediate zero-friction tool usage.
+   * Protected by an aggressive background cleanup process that auto-purges guest assets older than 15 minutes (`Services/services/storage.py`).
+
 
 ---
 

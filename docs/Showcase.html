@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>MASKERV - Liquid Glass AI Workspace Architecture</title>
+    <meta name="description"
+        content="MASKERV is an open-source cross-platform PDF, Document, Media & Academic AI Workspace with 79 tools across 15 domains. Styled with Apple iPhone Liquid Glass & Frosted Glass HIG design.">
+
+    <!-- Favicon & Apple Touch Icon -->
+    <link rel="icon" type="image/png" href="images/app_icon.png">
+    <link rel="apple-touch-icon" href="images/app_icon.png">
+
+    <!-- Persistent Theme Restorer (Prevents FOUC) -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('maskerv-theme');
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Mermaid.js for Diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        ios: {
+                            blue: '#007AFF',
+                            indigo: '#5856D6',
+                            purple: '#AF52DE',
+                            pink: '#FF2D55',
+                            red: '#FF3B30',
+                            orange: '#FF9500',
+                            green: '#34C759',
+                            teal: '#30B0C7',
+                            cyan: '#32ADE6',
+                            darkBg: '#050811',
+                        }
+                    },
+                    animation: {
+                        'fluid-morph-1': 'fluidMorph1 18s ease-in-out infinite alternate',
+                        'fluid-morph-2': 'fluidMorph2 22s ease-in-out infinite alternate',
+                        'liquid-shimmer': 'liquidShimmer 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fluidMorph1: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1) rotate(0deg)', borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' },
+                            '50%': { transform: 'translate(140px, 90px) scale(1.22) rotate(180deg)', borderRadius: '60% 40% 30% 70% / 50% 30% 70% 50%' },
+                            '100%': { transform: 'translate(-80px, 160px) scale(0.95) rotate(360deg)', borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' }
+                        },
+                        fluidMorph2: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1.1) rotate(360deg)', borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%' },
+                            '50%': { transform: 'translate(-120px, -70px) scale(0.9) rotate(180deg)', borderRadius: '40% 60% 50% 50% / 50% 40% 60% 50%' },
+                            '100%': { transform: 'translate(90px, -140px) scale(1.3) rotate(0deg)', borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%' }
+                        },
+                        liquidShimmer: {
+                            '0%, 100%': { opacity: 0.6, filter: 'drop-shadow(0 0 20px rgba(0, 122, 255, 0.4))' },
+                            '50%': { opacity: 0.95, filter: 'drop-shadow(0 0 40px rgba(175, 82, 222, 0.7))' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Apple iPhone Liquid & Fluid Glass Design System */
+        body {
+            background-color: #050811;
+            color: #F2F2F7;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Fluid Mesh Canvas Background */
+        .fluid-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .fluid-blob-1 {
+            position: absolute;
+            top: -15%;
+            left: -10%;
+            width: 65vw;
+            height: 65vw;
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.38) 0%, rgba(88, 86, 214, 0.22) 50%, rgba(0, 0, 0, 0) 75%);
+            filter: blur(85px);
+        }
+
+        .fluid-blob-2 {
+            position: absolute;
+            bottom: -20%;
+            right: -10%;
+            width: 70vw;
+            height: 70vw;
+            background: radial-gradient(circle, rgba(175, 82, 222, 0.35) 0%, rgba(50, 173, 230, 0.2) 50%, rgba(0, 0, 0, 0) 75%);
+            filter: blur(95px);
+        }
+
+        .fluid-blob-3 {
+            position: absolute;
+            top: 40%;
+            left: 25%;
+            width: 45vw;
+            height: 45vw;
+            background: radial-gradient(circle, rgba(255, 45, 85, 0.25) 0%, rgba(52, 199, 89, 0.15) 50%, rgba(0, 0, 0, 0) 75%);
+            filter: blur(105px);
+        }
+
+        /* iPhone Liquid Glass Card & Specular Lensing */
+        .liquid-glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
+            backdrop-filter: blur(28px) saturate(210%);
+            -webkit-backdrop-filter: blur(28px) saturate(210%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow:
+                0 16px 40px 0 rgba(0, 0, 0, 0.45),
+                inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.35),
+                inset 0 -1.5px 1px 0 rgba(0, 0, 0, 0.4);
+            border-radius: 26px;
+            transition: all 0.35 cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .light .liquid-glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.65) 100%);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08), inset 0 1.5px 1px rgba(255, 255, 255, 0.9);
+        }
+
+        /* Refraction Glare Animation */
+        .liquid-glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+            transition: left 0.75s ease;
+        }
+
+        .liquid-glass-card:hover::before {
+            left: 150%;
+        }
+
+        .liquid-glass-card:hover {
+            transform: translateY(-4px) scale(1.008);
+            border-color: rgba(255, 255, 255, 0.32);
+            box-shadow:
+                0 24px 50px 0 rgba(0, 0, 0, 0.6),
+                0 0 30px 0 rgba(0, 122, 255, 0.28),
+                inset 0 2px 2px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        /* Liquid Glass Pill Control */
+        .liquid-pill-btn {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+            border-radius: 9999px;
+            transition: all 0.25s ease;
+        }
+
+        .liquid-pill-btn:hover,
+        .liquid-pill-btn.active {
+            background: linear-gradient(135deg, rgba(0, 122, 255, 0.35) 0%, rgba(88, 86, 214, 0.35) 100%);
+            border-color: rgba(0, 122, 255, 0.65);
+            box-shadow: 0 0 20px rgba(0, 122, 255, 0.45), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.5);
+            color: #FFFFFF;
+        }
+
+        /* Touch Scale Haptic Feedback */
+        .ios-touch-feedback {
+            transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .ios-touch-feedback:active {
+            transform: scale(0.96);
+        }
+
+        /* Ultra-Crisp High-Contrast Text System */
+        .text-slate-400 {
+            color: #CBD5E1 !important; /* Crisp high-contrast slate tone for dark glass cards */
+        }
+        .text-slate-300 {
+            color: #F1F5F9 !important; /* Crisp bright slate for body copy */
+        }
+
+        /* Light Mode Specific High-Contrast Overrides */
+        html:not(.dark) body {
+            background-color: #F2F4F8;
+            color: #0F172A;
+        }
+
+        html:not(.dark) .liquid-glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 244, 250, 0.88) 100%);
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08), inset 0 1.5px 1px rgba(255, 255, 255, 1);
+        }
+
+        html:not(.dark) h1, 
+        html:not(.dark) h2, 
+        html:not(.dark) h3, 
+        html:not(.dark) .text-white {
+            color: #0F172A !important;
+        }
+
+        html:not(.dark) p, 
+        html:not(.dark) .text-slate-300,
+        html:not(.dark) .text-slate-400 {
+            color: #334155 !important;
+        }
+
+        html:not(.dark) .bg-white\/5,
+        html:not(.dark) .bg-white\/10 {
+            background-color: rgba(0, 0, 0, 0.06) !important;
+            border-color: rgba(0, 0, 0, 0.12) !important;
+        }
+
+        html:not(.dark) .liquid-pill-btn {
+            background: rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.12);
+            color: #334155;
+        }
+
+        html:not(.dark) .mermaid {
+            background: rgba(240, 244, 250, 0.95);
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        /* Mermaid wrap */
+        .mermaid {
+            background: rgba(10, 15, 28, 0.85);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen flex flex-col selection:bg-ios-blue selection:text-white">
+
+    <!-- Fluid Mesh Background Canvas -->
+    <div class="fluid-canvas">
+        <div class="fluid-blob-1 animate-fluid-morph-1"></div>
+        <div class="fluid-blob-2 animate-fluid-morph-2"></div>
+        <div class="fluid-blob-3"></div>
+    </div>
+
+    <!-- Navigation Header (iPhone Translucent Liquid Glass Bar) -->
+    <header
+        class="sticky top-0 z-50 liquid-glass-card rounded-none border-x-0 border-t-0 border-b-white/15 backdrop-blur-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-[14px] bg-gradient-to-tr from-ios-blue via-ios-indigo to-ios-purple flex items-center justify-center text-white font-black text-xl shadow-lg shadow-ios-blue/40 border border-white/30 animate-liquid-shimmer">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <span
+                        class="font-black text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">MASKERV</span>
+                    <span
+                        class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-ios-blue/20 text-ios-blue border border-ios-blue/40 ml-2">iPhone
+                        Liquid Glass</span>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex items-center gap-6 text-xs font-bold text-slate-300">
+                <a href="#overview" class="hover:text-white transition-colors">Overview</a>
+                <a href="#tools" class="hover:text-white transition-colors">79 Tools Explorer</a>
+                <a href="#architecture" class="hover:text-white transition-colors">Architecture</a>
+                <a href="privacy_policy.html"
+                    class="text-ios-teal hover:underline flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ios-teal/15 border border-ios-teal/30">
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                    <span>Privacy Policy</span>
+                </a>
+            </nav>
+
+            <div class="flex items-center gap-2">
+                <a href="privacy_policy.html" class="sm:hidden p-2 rounded-full bg-white/10 text-ios-teal"
+                    title="Privacy Policy">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                </a>
+                <button id="themeToggle"
+                    class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition ios-touch-feedback"
+                    title="Toggle Theme">
+                    <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+                    <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-12">
+
+        <!-- Hero Header Card -->
+        <section id="overview" class="p-8 sm:p-10 liquid-glass-card shadow-2xl relative overflow-hidden">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
+                <div class="space-y-4 max-w-3xl">
+                    <div
+                        class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-ios-blue/15 border border-ios-blue/35 text-ios-blue text-xs font-extrabold">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                        <span>iPhone Liquid Glass & Frosted Glass HIG Design • Zero Login Required</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+                        MASKERV — Cross-Platform AI Document Workspace
+                    </h1>
+                    <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
+                        Complete open-source system specification, architecture blueprint, 79 tools domain catalog, and
+                        Google Play Store registration data for <code
+                            class="text-ios-blue font-mono font-bold">com.maskerv.app</code>.
+                    </p>
+
+                    <!-- Quick Metrics Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-2">
+                        <div class="p-4 rounded-[20px] bg-white/5 border border-white/15 backdrop-blur-md">
+                            <span class="block text-2xl font-black text-ios-blue">79</span>
+                            <span class="text-[11px] font-bold text-slate-400">Integrated Tools</span>
+                        </div>
+                        <div class="p-4 rounded-[20px] bg-white/5 border border-white/15 backdrop-blur-md">
+                            <span class="block text-2xl font-black text-ios-indigo">15</span>
+                            <span class="text-[11px] font-bold text-slate-400">Domain Suites</span>
+                        </div>
+                        <div class="p-4 rounded-[20px] bg-white/5 border border-white/15 backdrop-blur-md">
+                            <span class="block text-2xl font-black text-ios-green">0</span>
+                            <span class="text-[11px] font-bold text-slate-400">Logins Needed</span>
+                        </div>
+                        <div class="p-4 rounded-[20px] bg-white/5 border border-white/15 backdrop-blur-md">
+                            <span class="block text-2xl font-black text-ios-purple">100%</span>
+                            <span class="text-[11px] font-bold text-slate-400">Edge Capable</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Panel -->
+                <div class="flex flex-col gap-3 min-w-[250px]">
+                    <a href="GOOGLE_PLAY_STORE_QUESTIONNAIRE_ANALYSIS.md"
+                        class="px-5 py-3.5 rounded-full bg-gradient-to-r from-ios-blue to-ios-indigo text-white font-extrabold text-xs flex items-center justify-between shadow-lg shadow-ios-blue/35 hover:brightness-110 transition ios-touch-feedback">
+                        <span>Play Console Audit</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                    <a href="privacy_policy.html"
+                        class="px-5 py-3.5 rounded-full bg-white/10 hover:bg-white/15 text-white font-extrabold text-xs flex items-center justify-between border border-white/20 transition ios-touch-feedback">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-ios-teal"></i>
+                            <span>Privacy Policy</span>
+                        </span>
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </a>
+                    <a href="google_playstore_app_registration.md"
+                        class="px-5 py-3.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs flex items-center justify-between border border-white/10 transition ios-touch-feedback">
+                        <span>Store Listing Spec</span>
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search & Segmented Controls -->
+        <section id="tools" class="space-y-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-black text-white">79 Tools Explorer</h2>
+                    <p class="text-xs text-slate-400">Browse integrated PDF, AI, Academic, Security, and Media utility
+                        engines</p>
+                </div>
+
+                <!-- Search Input Bar -->
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                    <input type="text" id="toolSearchInput" placeholder="Search tools (e.g. OCR, Merge, Quiz)..."
+                        class="w-full pl-10 pr-4 py-2.5 rounded-full bg-white/10 border border-white/15 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-ios-blue transition">
+                </div>
+            </div>
+
+            <!-- Segmented Domain Pill Bar -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                <button class="filter-btn liquid-pill-btn px-4 py-2 text-xs font-bold text-slate-300 active"
+                    data-domain="all" onclick="filterDomain('all')">All (79)</button>
+                <button class="filter-btn liquid-pill-btn px-4 py-2 text-xs font-bold text-slate-300" data-domain="pdf"
+                    onclick="filterDomain('pdf')">PDF Tools</button>
+                <button class="filter-btn liquid-pill-btn px-4 py-2 text-xs font-bold text-slate-300" data-domain="ai"
+                    onclick="filterDomain('ai')">AI Tools</button>
+                <button class="filter-btn liquid-pill-btn px-4 py-2 text-xs font-bold text-slate-300"
+                    data-domain="academic" onclick="filterDomain('academic')">Academic</button>
+                <button class="filter-btn liquid-pill-btn px-4 py-2 text-xs font-bold text-slate-300"
+                    data-domain="security" onclick="filterDomain('security')">Security</button>
+                <button class="filter-btn liquid-pill-btn px-4 py-2 text-xs font-bold text-slate-300"
+                    data-domain="media" onclick="filterDomain('media')">Media & QR</button>
+            </div>
+
+            <!-- Tools Grid Container -->
+            <div id="toolsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Injected via JavaScript below -->
+            </div>
+        </section>
+
+        <!-- System Architecture & Tools Ecosystem Diagrams -->
+        <section id="architecture" class="space-y-8">
+            <!-- 79 Tools Ecosystem Diagram Showcase Card -->
+            <div class="p-8 rounded-[32px] liquid-glass-card shadow-2xl relative overflow-hidden space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-ios-purple/15 border border-ios-purple/35 text-ios-purple text-xs font-extrabold mb-2">
+                            <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
+                            <span>15 Domain Suites • Core Utilities Hub Architecture</span>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">79-Tools Integrated Ecosystem Diagram</h2>
+                        <p class="text-xs sm:text-sm text-slate-300 mt-1">Full system blueprint detailing the Core Utilities Hub, 15 domain suites, cross-process isolation, and API integration layers.</p>
+                    </div>
+                    <button onclick="openModal('images/tools_ecosystem_diagram.jpg')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-ios-blue/20 hover:bg-ios-blue/30 text-ios-blue font-extrabold text-xs border border-ios-blue/40 transition ios-touch-feedback">
+                        <i data-lucide="maximize-2" class="w-4 h-4"></i>
+                        <span>Expand Full Diagram</span>
+                    </button>
+                </div>
+
+                <!-- High-Res Interactive Image Container -->
+                <div class="relative group cursor-pointer overflow-hidden rounded-[24px] border border-white/20 bg-black/40 shadow-2xl backdrop-blur-xl" onclick="openModal('images/tools_ecosystem_diagram.jpg')">
+                    <img src="images/tools_ecosystem_diagram.jpg" alt="MASKERV 79-Tools Ecosystem Architecture Diagram" class="w-full h-auto object-cover transform group-hover:scale-[1.015] transition-transform duration-500 ease-out">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <span class="px-5 py-2.5 rounded-full bg-ios-blue text-white font-black text-xs shadow-xl flex items-center gap-2">
+                            <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                            <span>Click to Inspect High-Resolution Architecture Spec</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sequence / Data Flow Diagram -->
+            <div class="p-8 rounded-[32px] liquid-glass-card shadow-2xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-white">Edge Computing & Proxy Data Flow</h2>
+                        <p class="text-xs text-slate-300">Client-side WASM engine, anonymous UUID process isolation, and FastAPI AI orchestration</p>
+                    </div>
+                </div>
+
+                <div class="mermaid">
+                    graph TD
+                    Client[Flutter Client - com.maskerv.app] -->|Anonymous UUIDv4 Session ID| Proxy[FastAPI Backend Proxy]
+                    Client -->|Local Edge Operations| WASM[On-Device WASM Engine]
+
+                    Proxy -->|Sanitized Request| Groq[Groq LLaMA 3.3 / Vision API]
+                    Proxy -->|Multimodal Request| Gemini[Google Gemini 3.6 Flash API]
+
+                    Proxy -->|Guest Files Purge: 15m| Storage[(Ephemeral Sandbox Storage)]
+                    Proxy -->|AES-256-GCM Encrypted| Shares[(10-Min Temporary Shares)]
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="liquid-glass-card rounded-none border-x-0 border-b-0 border-t-white/15 py-8 relative z-10 mt-16">
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+            <div>
+                © 2026 MASKERV. Open-Source AI Document & Workspace Studio.
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="privacy_policy.html" class="hover:text-white transition">Privacy Policy</a>
+                <span>•</span>
+                <a href="google_playstore_app_registration.md" class="hover:text-white transition">Store Listing
+                    Spec</a>
+                <span>•</span>
+                <a href="GOOGLE_PLAY_STORE_QUESTIONNAIRE_ANALYSIS.md" class="hover:text-white transition">Play
+                    Questionnaire Audit</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Tools Data Registry & Filter Logic -->
+    <script>
+        lucide.createIcons();
+
+        const toolsData = [
+            { name: "Merge PDF", domain: "pdf", desc: "Combine multiple PDF documents losslessly", icon: "files" },
+            { name: "Split PDF", domain: "pdf", desc: "Extract or divide pages into separate files", icon: "scissors" },
+            { name: "Compress PDF", domain: "pdf", desc: "Reduce file size with vector optimization", icon: "minimize-2" },
+            { name: "Rotate PDF", domain: "pdf", desc: "Rotate pages 90°, 180°, or 270°", icon: "rotate-cw" },
+            { name: "Watermark PDF", domain: "pdf", desc: "Stamp custom text or image watermarks", icon: "stamp" },
+            { name: "Organize Pages", domain: "pdf", desc: "Reorder, duplicate, or delete PDF pages", icon: "layers" },
+            { name: "PDF to PDF/A", domain: "pdf", desc: "Convert to ISO long-term archiving standard", icon: "archive" },
+            { name: "PDF Text Editor", domain: "pdf", desc: "Modify in-place text strings inside PDFs", icon: "edit-3" },
+            { name: "N-Up Imposition", domain: "pdf", desc: "Arrange 2, 4, or 8 pages per sheet", icon: "grid" },
+            { name: "Booklet Creator", domain: "pdf", desc: "Saddle-stitch booklet print layout", icon: "book-open" },
+            { name: "Bates Stamping", domain: "pdf", desc: "Sequential legal numbering & indexing", icon: "hash" },
+
+            { name: "Multimodal AI OCR", domain: "ai", desc: "Vision text extraction from scanned images/PDFs", icon: "scan-text" },
+            { name: "AI Summarizer", domain: "ai", desc: "Executive summaries & key bullet points", icon: "sparkles" },
+            { name: "Ask PDF (RAG)", domain: "ai", desc: "Conversational Q&A grounded in document context", icon: "message-square" },
+            { name: "Semantic Compare", domain: "ai", desc: "Compare conceptual changes between documents", icon: "file-diff" },
+            { name: "Similarity Matrix", domain: "ai", desc: "Multi-document semantic duplicate finder", icon: "network" },
+            { name: "Semantic Search", domain: "ai", desc: "Search documents by intent & meaning", icon: "search" },
+            { name: "Document Classifier", domain: "ai", desc: "Auto-detect document type & structure", icon: "tag" },
+            { name: "Information Extractor", domain: "ai", desc: "Structured entity & table data extraction", icon: "database" },
+            { name: "AI Writing Assistant", domain: "ai", desc: "Grammar polish, paraphrase, simplify & tone edit", icon: "pen-tool" },
+            { name: "Quality Auditor", domain: "ai", desc: "Audit document clarity & citation structure", icon: "check-check" },
+
+            { name: "Research Analyzer", domain: "academic", desc: "Deep structural academic paper breakdown", icon: "graduation-cap" },
+            { name: "Literature Review", domain: "academic", desc: "Synthesize findings across multiple papers", icon: "library" },
+            { name: "Research Gap Finder", domain: "academic", desc: "Identify missing methodologies & open questions", icon: "search-code" },
+            { name: "Citation Formatter", domain: "academic", desc: "Format citations in APA, MLA, IEEE, BibTeX", icon: "quote" },
+            { name: "Quiz Generator", domain: "academic", desc: "Generate MCQ & True/False study quizzes", icon: "help-circle" },
+
+            { name: "Smart Redaction", domain: "security", desc: "Regex PII purge for SSN, credit cards & emails", icon: "shield-alert" },
+            { name: "PDF Password Lock", domain: "security", desc: "Encrypt PDF with AES-256 user password", icon: "lock" },
+            { name: "Digital Signature", domain: "security", desc: "Draw & apply cryptographic e-Signatures", icon: "signature" },
+            { name: "Biometric App Lock", domain: "security", desc: "Fingerprint & Face ID local app lock", icon: "fingerprint" },
+            { name: "10-Min Encrypted Share", domain: "security", desc: "AES-256 self-destructing temporary share", icon: "share-2" },
+
+            { name: "Image Converter", domain: "media", desc: "Convert PNG, JPG, WEBP, HEIC, TIFF", icon: "image" },
+            { name: "Video to Frames", domain: "media", desc: "Extract frame images from video files", icon: "film" },
+            { name: "QR Generator", domain: "media", desc: "Create stylized QR & Barcodes", icon: "qr-code" },
+            { name: "Audio Transcoder", domain: "media", desc: "Convert MP3, WAV, AAC, FLAC audio", icon: "music" },
+            { name: "Archive Studio", domain: "media", desc: "Extract & create ZIP, 7Z, TAR, GZ archives", icon: "package" },
+        ];
+
+        function renderTools(domainFilter = 'all', searchQuery = '') {
+            const grid = document.getElementById('toolsGrid');
+            grid.innerHTML = '';
+
+            const filtered = toolsData.filter(tool => {
+                const matchDomain = domainFilter === 'all' || tool.domain === domainFilter;
+                const matchSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) || tool.desc.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchDomain && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs">No matching tools found</div>`;
+                return;
+            }
+
+            filtered.forEach(tool => {
+                const card = document.createElement('div');
+                card.className = 'p-5 liquid-glass-card flex flex-col justify-between space-y-3 ios-touch-feedback cursor-pointer';
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div class="w-10 h-10 rounded-[14px] bg-ios-blue/15 border border-ios-blue/30 text-ios-blue flex items-center justify-center">
+                            <i data-lucide="${tool.icon}" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/10 text-slate-300 border border-white/15">${tool.domain}</span>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-white text-sm leading-snug">${tool.name}</h3>
+                        <p class="text-xs text-slate-400 mt-1 line-clamp-2">${tool.desc}</p>
+                    </div>
+                    <div class="pt-2 flex items-center text-[11px] font-extrabold text-ios-blue group">
+                        <span>Launch Tool</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 ml-1"></i>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function filterDomain(domain) {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.dataset.domain === domain) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            const searchVal = document.getElementById('toolSearchInput').value;
+            renderTools(domain, searchVal);
+        }
+
+        document.getElementById('toolSearchInput').addEventListener('input', (e) => {
+            const activeBtn = document.querySelector('.filter-btn.active');
+            const domain = activeBtn ? activeBtn.dataset.domain : 'all';
+            renderTools(domain, e.target.value);
+        });
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('maskerv-theme', isDark ? 'dark' : 'light');
+        });
+
+        function openModal(imgSrc) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImg');
+            modalImg.src = imgSrc;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        document.getElementById('imageModal').addEventListener('click', (e) => {
+            if (e.target.id === 'imageModal') closeModal();
+        });
+
+        renderTools('all', '');
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    </script>
+
+    <!-- Lightbox Modal for Ecosystem Architecture Diagram -->
+    <div id="imageModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-2xl hidden items-center justify-center p-4 transition-opacity duration-300">
+        <div class="relative max-w-6xl w-full max-h-[90vh] flex flex-col items-center">
+            <button onclick="closeModal()" class="absolute -top-12 right-0 p-2.5 rounded-full bg-white/20 text-white hover:bg-white/30 transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <img id="modalImg" src="" alt="High Resolution Ecosystem Diagram" class="max-w-full max-h-[85vh] object-contain rounded-2xl border border-white/20 shadow-2xl">
+        </div>
+    </div>
+</body>
+
+</html>

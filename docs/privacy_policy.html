@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Privacy Policy - MASKERV Liquid Glass Studio</title>
+    <meta name="description"
+        content="Privacy Policy for MASKERV - AI Document & Workspace Studio. Designed with Apple iPhone Liquid Glass, Fluid Glass & Frosted Glass HIG aesthetics.">
+
+    <!-- Favicon & Apple Touch Icon -->
+    <link rel="icon" type="image/png" href="images/app_icon.png">
+    <link rel="apple-touch-icon" href="images/app_icon.png">
+
+    <!-- Persistent Theme Restorer (Prevents FOUC) -->
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem('maskerv-theme');
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        ios: {
+                            blue: '#007AFF',
+                            indigo: '#5856D6',
+                            purple: '#AF52DE',
+                            pink: '#FF2D55',
+                            red: '#FF3B30',
+                            orange: '#FF9500',
+                            yellow: '#FFCC00',
+                            green: '#34C759',
+                            teal: '#30B0C7',
+                            cyan: '#32ADE6',
+                            darkBg: '#050811',
+                        }
+                    },
+                    animation: {
+                        'fluid-morph-1': 'fluidMorph1 18s ease-in-out infinite alternate',
+                        'fluid-morph-2': 'fluidMorph2 22s ease-in-out infinite alternate',
+                        'liquid-shimmer': 'liquidShimmer 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fluidMorph1: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1) rotate(0deg)', borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' },
+                            '50%': { transform: 'translate(140px, 90px) scale(1.22) rotate(180deg)', borderRadius: '60% 40% 30% 70% / 50% 30% 70% 50%' },
+                            '100%': { transform: 'translate(-80px, 160px) scale(0.95) rotate(360deg)', borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' }
+                        },
+                        fluidMorph2: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1.1) rotate(360deg)', borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%' },
+                            '50%': { transform: 'translate(-120px, -70px) scale(0.9) rotate(180deg)', borderRadius: '40% 60% 50% 50% / 50% 40% 60% 50%' },
+                            '100%': { transform: 'translate(90px, -140px) scale(1.3) rotate(0deg)', borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%' }
+                        },
+                        liquidShimmer: {
+                            '0%, 100%': { opacity: 0.6, filter: 'drop-shadow(0 0 20px rgba(0, 122, 255, 0.4))' },
+                            '50%': { opacity: 0.95, filter: 'drop-shadow(0 0 40px rgba(175, 82, 222, 0.7))' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Apple iPhone Liquid & Fluid Glass Design System */
+        body {
+            background-color: #050811;
+            color: #F2F2F7;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Fluid Mesh Canvas Background */
+        .fluid-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .fluid-blob-1 {
+            position: absolute;
+            top: -15%;
+            left: -10%;
+            width: 65vw;
+            height: 65vw;
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.38) 0%, rgba(88, 86, 214, 0.22) 50%, rgba(0, 0, 0, 0) 75%);
+            filter: blur(85px);
+        }
+
+        .fluid-blob-2 {
+            position: absolute;
+            bottom: -20%;
+            right: -10%;
+            width: 70vw;
+            height: 70vw;
+            background: radial-gradient(circle, rgba(175, 82, 222, 0.35) 0%, rgba(50, 173, 230, 0.2) 50%, rgba(0, 0, 0, 0) 75%);
+            filter: blur(95px);
+        }
+
+        .fluid-blob-3 {
+            position: absolute;
+            top: 40%;
+            left: 25%;
+            width: 45vw;
+            height: 45vw;
+            background: radial-gradient(circle, rgba(52, 199, 89, 0.25) 0%, rgba(0, 122, 255, 0.15) 50%, rgba(0, 0, 0, 0) 75%);
+            filter: blur(105px);
+        }
+
+        /* iPhone Liquid Glass Card & Specular Lensing */
+        .liquid-glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
+            backdrop-filter: blur(28px) saturate(210%);
+            -webkit-backdrop-filter: blur(28px) saturate(210%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow:
+                0 16px 40px 0 rgba(0, 0, 0, 0.45),
+                inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.35),
+                inset 0 -1.5px 1px 0 rgba(0, 0, 0, 0.4);
+            border-radius: 26px;
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .light .liquid-glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.65) 100%);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08), inset 0 1.5px 1px rgba(255, 255, 255, 0.9);
+        }
+
+        .ios-touch-feedback {
+            transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .ios-touch-feedback:active {
+            transform: scale(0.96);
+        }
+
+        /* Ultra-Crisp High-Contrast Text System */
+        .text-slate-400 {
+            color: #CBD5E1 !important; /* Crisp high-contrast slate tone for dark glass cards */
+        }
+        .text-slate-300 {
+            color: #F1F5F9 !important; /* Crisp bright slate for body copy */
+        }
+
+        /* Light Mode Specific High-Contrast Overrides */
+        html:not(.dark) body {
+            background-color: #F2F4F8;
+            color: #0F172A;
+        }
+
+        html:not(.dark) .liquid-glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 244, 250, 0.88) 100%);
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08), inset 0 1.5px 1px rgba(255, 255, 255, 1);
+        }
+
+        html:not(.dark) h1, 
+        html:not(.dark) h2, 
+        html:not(.dark) h3, 
+        html:not(.dark) .text-white {
+            color: #0F172A !important;
+        }
+
+        html:not(.dark) p, 
+        html:not(.dark) .text-slate-300,
+        html:not(.dark) .text-slate-400 {
+            color: #334155 !important;
+        }
+
+        html:not(.dark) .bg-white\/5,
+        html:not(.dark) .bg-white\/10 {
+            background-color: rgba(0, 0, 0, 0.06) !important;
+            border-color: rgba(0, 0, 0, 0.12) !important;
+        }
+
+        html:not(.dark) .liquid-pill-btn {
+            background: rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.12);
+            color: #334155;
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen flex flex-col selection:bg-ios-blue selection:text-white">
+
+    <!-- Fluid Mesh Background Canvas -->
+    <div class="fluid-canvas">
+        <div class="fluid-blob-1 animate-fluid-morph-1"></div>
+        <div class="fluid-blob-2 animate-fluid-morph-2"></div>
+        <div class="fluid-blob-3"></div>
+    </div>
+
+    <!-- Navigation Header (iPhone Translucent Liquid Glass Bar) -->
+    <header
+        class="sticky top-0 z-50 liquid-glass-card rounded-none border-x-0 border-t-0 border-b-white/15 backdrop-blur-2xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-9 h-9 rounded-[14px] bg-gradient-to-tr from-ios-blue via-ios-indigo to-ios-purple flex items-center justify-center shadow-lg shadow-ios-blue/30 border border-white/30 animate-liquid-shimmer">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <span
+                        class="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">MASKERV</span>
+                    <span
+                        class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-ios-blue/20 text-ios-blue border border-ios-blue/40 ml-2">Privacy
+                        Policy</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <a href="Showcase.html"
+                    class="hidden sm:inline-flex items-center gap-2 text-xs font-bold text-slate-300 hover:text-white px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 transition ios-touch-feedback">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                    <span>Showcase Hub</span>
+                </a>
+                <button id="themeToggle"
+                    class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition ios-touch-feedback"
+                    title="Toggle Theme">
+                    <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+                    <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- Header Banner Card -->
+        <div class="mb-10 p-8 sm:p-10 rounded-[32px] liquid-glass-card shadow-2xl relative overflow-hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                <div>
+                    <div
+                        class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-ios-green/15 border border-ios-green/35 text-ios-green text-xs font-extrabold mb-3">
+                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                        <span>Zero User Accounts • Anonymous Process Isolation</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white mb-2">Privacy Policy</h1>
+                    <p class="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
+                        Official Privacy Policy for MASKERV - AI Document & Workspace Studio (<code
+                            class="text-ios-blue font-mono font-bold">com.maskerv.app</code>). Styled with Apple iPhone
+                        Liquid Glass, Fluid Glass & Frosted Glass HIG design.
+                    </p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3 min-w-[230px]">
+                    <div class="px-4 py-3 rounded-[18px] bg-white/5 border border-white/15 text-xs backdrop-blur-md">
+                        <span class="text-slate-400 block font-semibold">Effective Date</span>
+                        <span class="font-bold text-white">September 18, 2026</span>
+                    </div>
+                    <div class="px-4 py-3 rounded-[18px] bg-white/5 border border-white/15 text-xs backdrop-blur-md">
+                        <span class="text-slate-400 block font-semibold">Package ID</span>
+                        <span class="font-bold text-ios-blue font-mono">com.maskerv.app</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- Sidebar Navigation Table of Contents -->
+            <aside class="lg:col-span-3 hidden lg:block">
+                <div class="sticky top-24 p-5 rounded-[24px] liquid-glass-card space-y-3 text-xs">
+                    <h3
+                        class="font-black text-white uppercase tracking-wider text-[11px] flex items-center space-x-2 pb-2.5 border-b border-white/15">
+                        <i data-lucide="list" class="w-3.5 h-3.5 text-ios-blue"></i>
+                        <span>Table of Contents</span>
+                    </h3>
+                    <nav class="space-y-2 text-slate-300 font-bold">
+                        <a href="#section-1" class="block hover:text-ios-blue transition py-1">1. Introduction &
+                            Overview</a>
+                        <a href="#section-2" class="block hover:text-ios-blue transition py-1">2. Architecture & Data
+                            Handling</a>
+                        <a href="#section-3" class="block hover:text-ios-blue transition py-1">3. How We Use
+                            Information</a>
+                        <a href="#section-4" class="block hover:text-ios-blue transition py-1">4. Third-Party Service
+                            Providers</a>
+                        <a href="#section-5" class="block hover:text-ios-blue transition py-1">5. Device Permissions</a>
+                        <a href="#section-6" class="block hover:text-ios-blue transition py-1">6. Data Security &
+                            Encryption</a>
+                        <a href="#section-7" class="block hover:text-ios-blue transition py-1">7. Data Retention & User
+                            Control</a>
+                        <a href="#section-8" class="block hover:text-ios-blue transition py-1">8. Children's Privacy</a>
+                        <a href="#section-9" class="block hover:text-ios-blue transition py-1">9. Policy Updates</a>
+                        <a href="#section-10" class="block hover:text-ios-blue transition py-1">10. Contact Us</a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Policy Content Sections -->
+            <article class="lg:col-span-9 space-y-8 text-slate-200 text-sm leading-relaxed">
+
+                <!-- Section 1 -->
+                <section id="section-1" class="p-6 sm:p-8 rounded-[26px] liquid-glass-card space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-9 h-9 rounded-[14px] bg-ios-blue/20 text-ios-blue border border-ios-blue/35 flex items-center justify-center font-black font-mono text-sm">
+                            01</div>
+                        <h2 class="text-xl font-black text-white">Introduction & Overview</h2>
+                    </div>
+                    <p>
+                        Welcome to <strong>MASKERV</strong> ("we," "our," or "us"). We are committed to protecting your
+                        privacy and maintaining complete transparency regarding how data is handled when you use our
+                        application (<strong>MASKERV - AI Document & Workspace Studio</strong>, package <code
+                            class="text-ios-blue font-mono font-bold">com.maskerv.app</code>).
+                    </p>
+                    <p>
+                        MASKERV is engineered with a <strong>zero-account, edge-first architecture</strong>. The
+                        application functions 100% out of the box <strong>without requiring any account registration,
+                            user sign-up, user login, or personal information</strong>.
+                    </p>
+                    <div
+                        class="p-4 rounded-[18px] bg-ios-blue/15 border border-ios-blue/30 flex items-start space-x-3 text-xs text-ios-blue font-bold">
+                        <i data-lucide="info" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                        <span>By using MASKERV, you agree to the processing of information as described in this Privacy
+                            Policy.</span>
+                    </div>
+                </section>
+
+                <!-- Section 2 -->
+                <section id="section-2" class="p-6 sm:p-8 rounded-[26px] liquid-glass-card space-y-6">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-9 h-9 rounded-[14px] bg-ios-purple/20 text-ios-purple border border-ios-purple/35 flex items-center justify-center font-black font-mono text-sm">
+                            02</div>
+                        <h2 class="text-xl font-black text-white">Architecture & Data Handling</h2>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-base font-extrabold text-white">A. Zero User Accounts / Zero Personal Data</h3>
+                        <ul class="list-disc list-inside space-y-2 text-slate-300 pl-2">
+                            <li><strong class="text-white">No Sign-Up or Login:</strong> There are no registration
+                                forms, sign-up flows, or user credential stores.</li>
+                            <li><strong class="text-white">No Personal Data:</strong> We do not request or collect
+                                names, email addresses, phone numbers, or passwords.</li>
+                            <li><strong class="text-white">No Advertising ID Trackers:</strong> We do not collect
+                                Advertising IDs (<code class="font-mono text-ios-blue">AAID</code>), Android IDs, or
+                                hardware serials.</li>
+                        </ul>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-base font-extrabold text-white">B. Anonymous Session IDs & Process Isolation
+                        </h3>
+                        <div class="p-4 rounded-[18px] bg-white/5 border border-white/15 space-y-2 text-xs">
+                            <div class="flex items-center space-x-2 text-ios-purple font-extrabold">
+                                <i data-lucide="layers" class="w-4 h-4"></i>
+                                <span>Why Anonymous User IDs Exist at Backend</span>
+                            </div>
+                            <p class="text-slate-300 leading-relaxed">
+                                Upon initial app launch, the client generates a local anonymous RFC4122 v4 UUID (<code
+                                    class="text-ios-blue font-mono font-bold">StorageService.getAnonymousUserId()</code>).
+                                This anonymous ID is sent in backend request headers solely for <strong>process
+                                    isolation and concurrency protection</strong>—ensuring that if multiple devices
+                                invoke document processing endpoints simultaneously, each user's jobs, temporary
+                                storage, and rate limits remain strictly isolated without cross-user data collisions or
+                                file mismatches.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-base font-extrabold text-white">C. Files & Documents Processing</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div class="p-4 rounded-[18px] bg-white/5 border border-white/15 space-y-2">
+                                <span class="font-extrabold text-ios-green flex items-center space-x-2">
+                                    <i data-lucide="cpu" class="w-4 h-4"></i>
+                                    <span>Client-Side Edge Engine</span>
+                                </span>
+                                <p class="text-slate-300">PDF merge, split, rotate, watermark, booklet, and WASM
+                                    utilities execute 100% locally on your device. Files involved never leave your
+                                    device.</p>
+                            </div>
+                            <div class="p-4 rounded-[18px] bg-white/5 border border-white/15 space-y-2">
+                                <span class="font-extrabold text-ios-blue flex items-center space-x-2">
+                                    <i data-lucide="clock" class="w-4 h-4"></i>
+                                    <span>15-Minute Server Purge</span>
+                                </span>
+                                <p class="text-slate-300">For cloud AI, OCR, or conversion tasks, uploaded files process
+                                    in isolated server sandboxes and auto-purge permanently after 15 minutes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 3 -->
+                <section id="section-3" class="p-6 sm:p-8 rounded-[26px] liquid-glass-card space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-9 h-9 rounded-[14px] bg-ios-green/20 text-ios-green border border-ios-green/35 flex items-center justify-center font-black font-mono text-sm">
+                            03</div>
+                        <h2 class="text-xl font-black text-white">How We Use Information</h2>
+                    </div>
+                    <ol class="list-decimal list-inside space-y-2 text-slate-300 pl-2">
+                        <li>To execute user-requested document processing, optical character recognition (OCR), AI
+                            document analysis, and media conversions.</li>
+                        <li>To segregate concurrent processing jobs between different client devices.</li>
+                        <li>To enforce fair-use rate limits and protect server infrastructure against abuse.</li>
+                    </ol>
+                    <p class="font-bold text-white pt-2">We NEVER sell, rent, or trade your personal data, files, or
+                        document contents to third parties.</p>
+                </section>
+
+                <!-- Section 4 -->
+                <section id="section-4" class="p-6 sm:p-8 rounded-[26px] liquid-glass-card space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-9 h-9 rounded-[14px] bg-ios-orange/20 text-ios-orange border border-ios-orange/35 flex items-center justify-center font-black font-mono text-sm">
+                            04</div>
+                        <h2 class="text-xl font-black text-white">Third-Party Service Providers</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-200 border-collapse">
+                            <thead>
+                                <tr class="border-b border-white/15 text-slate-400 font-bold bg-white/5">
+                                    <th class="p-3">Provider</th>
+                                    <th class="p-3">Purpose</th>
+                                    <th class="p-3">Data Transmitted</th>
+                                    <th class="p-3">Retention Policy</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/10 font-medium">
+                                <tr>
+                                    <td class="p-3 font-bold text-white">Groq Cloud API</td>
+                                    <td class="p-3">LLaMA 3.3 Text & Vision AI</td>
+                                    <td class="p-3">User document text / excerpts</td>
+                                    <td class="p-3 text-slate-400">Transient in-memory; zero training retention.</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold text-white">Google Gemini API</td>
+                                    <td class="p-3">Gemini 3.6 Multimodal AI</td>
+                                    <td class="p-3">User document text / image excerpts</td>
+                                    <td class="p-3 text-slate-400">Enterprise cloud privacy compliance; zero training.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Section 5 -->
+                <section id="section-5" class="p-6 sm:p-8 rounded-[26px] liquid-glass-card space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-9 h-9 rounded-[14px] bg-ios-pink/20 text-ios-pink border border-ios-pink/35 flex items-center justify-center font-black font-mono text-sm">
+                            05</div>
+                        <h2 class="text-xl font-black text-white">Device Permissions</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-200 border-collapse">
+                            <thead>
+                                <tr class="border-b border-white/15 text-slate-400 font-bold bg-white/5">
+                                    <th class="p-3">Permission</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Justification</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/10 font-medium">
+                                <tr>
+                                    <td class="p-3 font-mono text-ios-blue font-bold">INTERNET</td>
+                                    <td class="p-3">Normal</td>
+                                    <td class="p-3">API communication for AI tools, online conversions, and shares.</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-mono text-ios-blue font-bold">ACCESS_NETWORK_STATE</td>
+                                    <td class="p-3">Normal</td>
+                                    <td class="p-3">Detect connectivity to route tasks to offline WASM engines when
+                                        offline.</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-mono text-ios-blue font-bold">READ_MEDIA_IMAGES / VIDEO / AUDIO
+                                    </td>
+                                    <td class="p-3 text-ios-orange font-bold">Dangerous</td>
+                                    <td class="p-3">Allow user to select images/videos/audio for editing and conversion.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-mono text-ios-blue font-bold">CAMERA</td>
+                                    <td class="p-3 text-ios-orange font-bold">Dangerous</td>
+                                    <td class="p-3">Document camera scanning, live camera OCR, and QR/Barcode reading.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Section 6, 7, 8, 9, 10 -->
+                <section id="section-6" class="p-6 sm:p-8 rounded-[26px] liquid-glass-card space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-9 h-9 rounded-[14px] bg-ios-blue/20 text-ios-blue border border-ios-blue/35 flex items-center justify-center font-black font-mono text-sm">
+                            06</div>
+                        <h2 class="text-xl font-black text-white">Data Security & Encryption</h2>
+                    </div>
+                    <ul class="list-disc list-inside space-y-2 text-slate-300 pl-2">
+                        <li><strong class="text-white">TLS 1.3 / HTTPS Encryption:</strong> All data transmitted between
+                            the client app and backend servers is encrypted in transit.</li>
+                        <li><strong class="text-white">AES-256-GCM Ephemeral Share Encryption:</strong> Temporary shared
+                            files are encrypted at rest with keys derived via PBKDF2-HMAC-SHA256.</li>
+                    </ul>
+                </section>
+
+                <section id="section-7" class="p-6 sm:p-8 rounded-[26px] liquid-glass-card space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-9 h-9 rounded-[14px] bg-ios-purple/20 text-ios-purple border border-ios-purple/35 flex items-center justify-center font-black font-mono text-sm">
+                            07</div>
+                        <h2 class="text-xl font-black text-white">Data Retention & User Control</h2>
+                    </div>
+                    <p class="text-slate-300">Because no user accounts exist, there are no user accounts to delete.
+                        Users maintain full local control:</p>
+                    <ul class="list-disc list-inside space-y-2 text-xs text-slate-300 pl-2">
+                        <li><strong class="text-white">Reset Session Identity:</strong> Users can reset their anonymous
+                            session ID (<code
+                                class="font-mono text-ios-blue font-bold">StorageService.resetAnonymousIdentity()</code>)
+                            at any time.</li>
+                        <li><strong class="text-white">In-App Clear History:</strong> Open Settings (<code
+                                class="font-mono text-ios-blue font-bold">/profile</code>) and tap <strong>"Clear
+                                Storage & History Data"</strong> to instantly purge local files and records.</li>
+                    </ul>
+                </section>
+
+                <section id="section-8" class="p-6 sm:p-8 rounded-[26px] liquid-glass-card space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-9 h-9 rounded-[14px] bg-ios-green/20 text-ios-green border border-ios-green/35 flex items-center justify-center font-black font-mono text-sm">
+                            08</div>
+                        <h2 class="text-xl font-black text-white">Children's Privacy</h2>
+                    </div>
+                    <p class="text-slate-300">MASKERV is designed for general productivity by individuals aged
+                        <strong>13 and older</strong>. We do not knowingly collect personal information from children
+                        under 13.</p>
+                </section>
+
+                <section id="section-9" class="p-6 sm:p-8 rounded-[26px] liquid-glass-card space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-9 h-9 rounded-[14px] bg-ios-orange/20 text-ios-orange border border-ios-orange/35 flex items-center justify-center font-black font-mono text-sm">
+                            09</div>
+                        <h2 class="text-xl font-black text-white">Policy Updates</h2>
+                    </div>
+                    <p class="text-slate-300">We may update this Privacy Policy periodically. Modifications will be
+                        posted on this page with an updated revision date.</p>
+                </section>
+
+                <section id="section-10" class="p-6 sm:p-8 rounded-[26px] liquid-glass-card space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div
+                            class="w-9 h-9 rounded-[14px] bg-ios-blue/20 text-ios-blue border border-ios-blue/35 flex items-center justify-center font-black font-mono text-sm">
+                            10</div>
+                        <h2 class="text-xl font-black text-white">Contact & Support</h2>
+                    </div>
+                    <div class="p-4 rounded-[18px] bg-white/5 border border-white/15 space-y-2 text-xs font-mono">
+                        <div><span class="text-slate-400">Email:</span> <a href="mailto:support@maskerv.app"
+                                class="text-ios-blue font-bold hover:underline">support@maskerv.app</a> / <a
+                                href="mailto:harshinik096@gmail.com"
+                                class="text-ios-blue font-bold hover:underline">harshinik096@gmail.com</a></div>
+                        <div><span class="text-slate-400">GitHub:</span> <a
+                                href="https://github.com/HARSHINIK096/PaperKit" target="_blank"
+                                class="text-ios-blue font-bold hover:underline">github.com/HARSHINIK096/PaperKit</a>
+                        </div>
+                        <div><span class="text-slate-400">Web Portal:</span> <a href="https://maskerv-web.onrender.com"
+                                target="_blank"
+                                class="text-ios-blue font-bold hover:underline">maskerv-web.onrender.com</a></div>
+                    </div>
+                </section>
+
+            </article>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="liquid-glass-card rounded-none border-x-0 border-b-0 border-t-white/15 py-8 relative z-10 mt-16">
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+            <div>
+                © 2026 MASKERV. Open-Source AI Document & Workspace Studio.
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="Showcase.html" class="hover:text-white transition">Showcase Hub</a>
+                <span>•</span>
+                <a href="google_playstore_app_registration.md" class="hover:text-white transition">Store Listing
+                    Spec</a>
+                <span>•</span>
+                <a href="GOOGLE_PLAY_STORE_QUESTIONNAIRE_ANALYSIS.md" class="hover:text-white transition">Play
+                    Questionnaire Audit</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Lucide Initialization & Theme Handler -->
+    <script>
+        lucide.createIcons();
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('maskerv-theme', isDark ? 'dark' : 'light');
+        });
+    </script>
+</body>
+
+</html>
