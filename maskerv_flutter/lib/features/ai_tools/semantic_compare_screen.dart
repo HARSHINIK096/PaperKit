@@ -1,11 +1,12 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/document_picker_sheet.dart';
 
 class SemanticCompareScreen extends StatefulWidget {
   const SemanticCompareScreen({super.key});
@@ -17,21 +18,38 @@ class SemanticCompareScreen extends StatefulWidget {
 class _SemanticCompareScreenState extends State<SemanticCompareScreen> {
   File? _fileA;
   File? _fileB;
+  String _fileAName = '';
+  String _fileBName = '';
+
   bool _isProcessing = false;
   Map<String, dynamic>? _compareResult;
 
   Future<void> _pickFile(bool isFileA) async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'docx', 'txt'],
+    final res = await DocumentPickerSheet.show(
+      context,
+      title: isFileA ? 'Select Document A (Original)' : 'Select Document B (Modified)',
     );
 
-    if (result.isNotEmpty && result.single.path != null) {
+    if (res != null) {
+      File fileToUse;
+      if (res.file != null && res.file!.existsSync()) {
+        fileToUse = res.file!;
+      } else {
+        // Create temp file for sample or pasted text
+        final tempDir = await getTemporaryDirectory();
+        final sanitized = res.name.replaceAll(RegExp(r'[^\w\.-]'), '_');
+        final tempFile = File('${tempDir.path}/$sanitized.txt');
+        await tempFile.writeAsString(res.textContent);
+        fileToUse = tempFile;
+      }
+
       setState(() {
         if (isFileA) {
-          _fileA = File(result.single.path!);
+          _fileA = fileToUse;
+          _fileAName = res.name;
         } else {
-          _fileB = File(result.single.path!);
+          _fileB = fileToUse;
+          _fileBName = res.name;
         }
         _compareResult = null;
       });
@@ -74,9 +92,9 @@ class _SemanticCompareScreenState extends State<SemanticCompareScreen> {
         children: [
           Row(
             children: [
-              Expanded(child: _buildFilePickerBox('Document A (Original)', _fileA, () => _pickFile(true), isDark)),
+              Expanded(child: _buildFilePickerBox('Document A (Original)', _fileA, _fileAName, () => _pickFile(true), isDark)),
               const SizedBox(width: 12),
-              Expanded(child: _buildFilePickerBox('Document B (Modified)', _fileB, () => _pickFile(false), isDark)),
+              Expanded(child: _buildFilePickerBox('Document B (Modified)', _fileB, _fileBName, () => _pickFile(false), isDark)),
             ],
           ),
           const SizedBox(height: 24),
@@ -162,7 +180,9 @@ class _SemanticCompareScreenState extends State<SemanticCompareScreen> {
     );
   }
 
-  Widget _buildFilePickerBox(String title, File? file, VoidCallback onTap, bool isDark) {
+  Widget _buildFilePickerBox(String title, File? file, String name, VoidCallback onTap, bool isDark) {
+    final displayName = name.isNotEmpty ? name : (file != null ? file.uri.pathSegments.last : 'Tap to select document');
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -180,7 +200,7 @@ class _SemanticCompareScreenState extends State<SemanticCompareScreen> {
             Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
             const SizedBox(height: 4),
             Text(
-              file != null ? file.uri.pathSegments.last : 'Tap to select',
+              displayName,
               style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

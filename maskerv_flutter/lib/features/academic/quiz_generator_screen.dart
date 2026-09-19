@@ -13,10 +13,9 @@ class QuizGeneratorScreen extends StatefulWidget {
 }
 
 class _QuizGeneratorScreenState extends State<QuizGeneratorScreen> {
-  final Set<String> _selectedTypes = {'mcq', 'true_false', 'short_answer'};
+  final Set<String> _selectedTypes = {'mcq', 'true_false', 'fill_in_blank', 'short_answer', 'long_answer'};
   String _difficulty = 'medium';
   int _count = 10;
-
 
   @override
   Widget build(BuildContext context) {
@@ -177,14 +176,15 @@ class _QuizResult extends StatefulWidget {
 
 class _QuizResultState extends State<_QuizResult> {
   final Map<int, bool> _revealed = {};
-  final Map<int, String?> _selected = {};
+  final Map<int, String> _userInputs = {};
+  final Map<int, String?> _selectedOption = {};
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // Summary
+      // Summary Header
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         margin: const EdgeInsets.only(bottom: 14),
@@ -196,7 +196,7 @@ class _QuizResultState extends State<_QuizResult> {
         child: Row(children: [
           const Icon(LucideIcons.clipboard, size: 16, color: AppColors.toolRed),
           const SizedBox(width: 8),
-          Text('${widget.questions.length} questions generated',
+          Text('${widget.questions.length} Quiz Questions Ready',
               style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.toolRed)),
         ]),
       ),
@@ -205,7 +205,8 @@ class _QuizResultState extends State<_QuizResult> {
         final i = e.key;
         final q = e.value;
         final revealed = _revealed[i] ?? false;
-        final selected = _selected[i];
+        final userInput = _userInputs[i] ?? '';
+        final selected = _selectedOption[i];
         final diffColor = q.difficulty == QuizDifficulty.easy ? AppColors.success
             : q.difficulty == QuizDifficulty.hard ? AppColors.error : AppColors.warning;
 
@@ -218,7 +219,7 @@ class _QuizResultState extends State<_QuizResult> {
             border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Question header
+            // Question header tags
             Row(children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -244,10 +245,6 @@ class _QuizResultState extends State<_QuizResult> {
                 ),
                 child: Text(q.difficulty.name, style: TextStyle(color: diffColor, fontSize: 11, fontWeight: FontWeight.w600)),
               ),
-              if (q.sourceSection != null) ...[
-                const Spacer(),
-                Text(q.sourceSection!, style: TextStyle(fontSize: 11, color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight)),
-              ],
             ]),
             const SizedBox(height: 10),
 
@@ -255,8 +252,8 @@ class _QuizResultState extends State<_QuizResult> {
             Text(q.question, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, height: 1.4)),
             const SizedBox(height: 12),
 
-            // Options for MCQ / T-F
-            if (q.options.isNotEmpty)
+            // 1. Multiple Choice Options
+            if (q.type == QuizQuestionType.mcq && q.options.isNotEmpty)
               ...q.options.map((opt) {
                 final isCorrect = revealed && opt.startsWith(q.answer);
                 final isSelected = selected == opt;
@@ -268,7 +265,7 @@ class _QuizResultState extends State<_QuizResult> {
                 }
 
                 return GestureDetector(
-                  onTap: revealed ? null : () => setState(() => _selected[i] = opt),
+                  onTap: revealed ? null : () => setState(() => _selectedOption[i] = opt),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -294,34 +291,133 @@ class _QuizResultState extends State<_QuizResult> {
                 );
               }),
 
+            // 2. True / False Segmented Choice Buttons
+            if (q.type == QuizQuestionType.trueFalse)
+              Row(
+                children: ['True', 'False'].map((tfOption) {
+                  final isSelected = selected == tfOption;
+                  final isCorrect = revealed && q.answer.toLowerCase().contains(tfOption.toLowerCase());
+                  Color btnColor = isSelected ? AppColors.primary : Colors.grey.shade600;
+                  if (revealed) {
+                    btnColor = isCorrect ? AppColors.success : (isSelected ? AppColors.error : Colors.grey);
+                  }
+
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: OutlinedButton.icon(
+                        onPressed: revealed ? null : () => setState(() => _selectedOption[i] = tfOption),
+                        icon: Icon(tfOption == 'True' ? LucideIcons.check : LucideIcons.x, size: 16, color: btnColor),
+                        label: Text(tfOption, style: TextStyle(color: btnColor, fontWeight: FontWeight.bold)),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: btnColor),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: isSelected ? btnColor.withOpacity(0.1) : null,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+            // 3. Fill in the Blank Input Text Field
+            if (q.type == QuizQuestionType.fillInBlank)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: TextField(
+                  enabled: !revealed,
+                  onChanged: (val) => _userInputs[i] = val,
+                  decoration: InputDecoration(
+                    labelText: 'Type the missing word / phrase...',
+                    hintText: 'e.g. data structure',
+                    prefixIcon: const Icon(LucideIcons.penTool, size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+
+            // 4. Short Answer Input Text Field
+            if (q.type == QuizQuestionType.shortAnswer)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: TextField(
+                  enabled: !revealed,
+                  maxLines: 2,
+                  onChanged: (val) => _userInputs[i] = val,
+                  decoration: InputDecoration(
+                    labelText: 'Write your 1-2 sentence response...',
+                    hintText: 'Enter short answer explanation',
+                    prefixIcon: const Icon(LucideIcons.fileText, size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+
+            // 5. Long Answer Textarea Input
+            if (q.type == QuizQuestionType.longAnswer)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: TextField(
+                  enabled: !revealed,
+                  maxLines: 4,
+                  onChanged: (val) => _userInputs[i] = val,
+                  decoration: InputDecoration(
+                    labelText: 'Write your comprehensive analytical response...',
+                    hintText: 'Enter long-form answer addressing key workflow steps & principles',
+                    prefixIcon: const Icon(LucideIcons.textQuote, size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+
             const SizedBox(height: 10),
 
-            // Reveal / Answer
+            // Reveal Answer / AI Score Evaluation
             if (!revealed)
-              OutlinedButton(
+              ElevatedButton.icon(
                 onPressed: () => setState(() => _revealed[i] = true),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.toolRed,
-                  side: const BorderSide(color: AppColors.toolRed),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                icon: const Icon(LucideIcons.check, size: 16),
+                label: const Text('Submit & Verify Answer'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.toolRed,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('Reveal Answer', style: TextStyle(fontSize: 13)),
               )
             else
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.successSoft,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
-                    const Icon(LucideIcons.checkCircle2, size: 16, color: AppColors.success),
+                    const Icon(LucideIcons.checkCircle2, size: 18, color: AppColors.success),
                     const SizedBox(width: 8),
-                    Text('Answer: ${q.answer}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success)),
+                    Expanded(
+                      child: Text(
+                        'Verified Correct Answer: ${q.answer}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success, fontSize: 13.5),
+                      ),
+                    ),
                   ]),
+                  if (userInput.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your Input: "$userInput"',
+                      style: TextStyle(fontSize: 12.5, fontStyle: FontStyle.italic, color: Colors.blue.shade900),
+                    ),
+                  ],
                   if (q.explanation.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Explanation & Evaluation Rubric:',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade800),
+                    ),
+                    const SizedBox(height: 2),
                     Text(q.explanation, style: const TextStyle(fontSize: 12.5, height: 1.4)),
                   ],
                 ]),

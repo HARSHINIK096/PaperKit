@@ -7,6 +7,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/services/storage_service.dart';
 
+import '../../../core/widgets/document_picker_sheet.dart';
+
 class AirShareFileItem {
   final String name;
   final String path;
@@ -44,16 +46,21 @@ class AirShareFileSelectorSheet extends StatefulWidget {
   static Future<File?> show(
     BuildContext context, {
     int initialTab = 0,
-  }) {
-    return showModalBottomSheet<File?>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => AirShareFileSelectorSheet(
-        initialTab: initialTab,
-        onFileSelected: (f) => Navigator.of(ctx).pop(f),
-      ),
+  }) async {
+    final res = await DocumentPickerSheet.show(
+      context,
+      title: 'Select Document to AirShare',
     );
+    if (res == null) return null;
+    if (res.file != null && res.file!.existsSync()) {
+      return res.file;
+    } else {
+      final tempDir = await getTemporaryDirectory();
+      final sanitized = res.name.replaceAll(RegExp(r'[^\w\.-]'), '_');
+      final tempFile = File('${tempDir.path}/$sanitized.txt');
+      await tempFile.writeAsString(res.textContent);
+      return tempFile;
+    }
   }
 
   @override

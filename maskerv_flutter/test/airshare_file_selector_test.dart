@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:maskerv_flutter/core/widgets/compact_upload_container.dart';
+import 'package:provider/provider.dart';
+import 'package:maskerv_flutter/core/providers/files_provider.dart';
+import 'package:maskerv_flutter/core/widgets/document_picker_sheet.dart';
 import 'package:maskerv_flutter/features/p2p_share/widgets/airshare_file_selector_sheet.dart';
 import 'package:maskerv_flutter/features/p2p_share/p2p_mesh_share_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('AirShare WhatsApp-Style In-App & In-Phone File Selector', () {
-    testWidgets('AirShareFileSelectorSheet renders search, dual tabs, and category filters', (tester) async {
+  group('DocumentPickerSheet & AirShare P2P File Selector Tests', () {
+    testWidgets('DocumentPickerSheet renders title, tabs, search, and sample docs', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AirShareFileSelectorSheet(
-              initialTab: 0,
+        ChangeNotifierProvider(
+          create: (_) => FilesProvider(),
+          child: MaterialApp(
+            home: Scaffold(
+              body: DocumentPickerSheet(
+                title: 'Select Document to AirShare',
+              ),
             ),
           ),
         ),
@@ -21,91 +26,78 @@ void main() {
 
       await tester.pump();
 
-      // Check header and search bar
+      // Header title
       expect(find.text('Select Document to AirShare'), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('Search documents by name or extension...'), findsOneWidget);
 
-      // Check dual-source tabs
-      expect(find.textContaining('In-App Files'), findsOneWidget);
-      expect(find.textContaining('Phone Files'), findsOneWidget);
+      // Tabs
+      expect(find.text('App Storage'), findsOneWidget);
+      expect(find.text('Device Storage'), findsOneWidget);
+      expect(find.text('Sample Docs'), findsOneWidget);
+      expect(find.text('Paste Text'), findsOneWidget);
 
-      // Check category filter chips
-      expect(find.text('All Files'), findsOneWidget);
-      expect(find.text('PDFs'), findsOneWidget);
-      expect(find.text('Documents'), findsOneWidget);
-      expect(find.text('Images'), findsOneWidget);
-      expect(find.text('Sheets'), findsOneWidget);
+      // Search bar hint
+      expect(find.text('Search stored documents...'), findsOneWidget);
     });
 
-    testWidgets('Switching to Phone Files tab displays browse device files tile and phone files', (tester) async {
+    testWidgets('Switching to Sample Docs tab displays sample papers', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AirShareFileSelectorSheet(
-              initialTab: 1, // Phone Files Tab
-              customPhoneFiles: [
-                AirShareFileItem(
-                  name: 'contract_sample.pdf',
-                  path: '/storage/download/contract_sample.pdf',
-                  size: 1024 * 500,
-                  modifiedAt: DateTime.now(),
-                  isInApp: false,
-                  extension: 'pdf',
+        ChangeNotifierProvider(
+          create: (_) => FilesProvider(),
+          child: MaterialApp(
+            home: Scaffold(
+              body: DocumentPickerSheet(
+                title: 'Import / Select Document',
+                initialTab: 2, // Sample Docs
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.textContaining('Academic Research Paper'), findsOneWidget);
+      expect(find.textContaining('Computer Science Syllabus'), findsOneWidget);
+      expect(find.textContaining('Legal Agreement Template'), findsOneWidget);
+    });
+
+    testWidgets('AirShareFileSelectorSheet.show opens DocumentPickerSheet', (tester) async {
+      await tester.pumpWidget(
+        ChangeNotifierProvider(
+          create: (_) => FilesProvider(),
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => AirShareFileSelectorSheet.show(context),
+                  child: const Text('Open AirShare Selector'),
                 ),
-              ],
+              ),
             ),
           ),
         ),
       );
 
-      await tester.pump();
+      await tester.tap(find.text('Open AirShare Selector'));
+      await tester.pump(const Duration(milliseconds: 300));
 
-      // Check that "Browse More Files on Phone" tile is rendered
-      expect(find.text('Browse More Files on Phone'), findsOneWidget);
-      expect(find.text('Open device storage to select any document or file'), findsOneWidget);
-      expect(find.text('contract_sample.pdf'), findsOneWidget);
-    });
-
-    testWidgets('CompactUploadContainer with onTap triggers custom callback', (tester) async {
-      bool tapped = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompactUploadContainer(
-              files: const [],
-              onFilesSelected: (_) {},
-              onTap: () {
-                tapped = true;
-              },
-              title: 'AirShare Document Beam',
-              subtitle: 'Tap to select from In-App Files or Phone Storage',
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('AirShare Document Beam'), findsOneWidget);
-      expect(find.text('Tap to select from In-App Files or Phone Storage'), findsOneWidget);
-
-      // Tap container
-      await tester.tap(find.text('AirShare Document Beam'));
-      await tester.pump();
-
-      expect(tapped, isTrue);
+      expect(find.text('Select Document to AirShare'), findsOneWidget);
     });
 
     testWidgets('P2PMeshShareScreen renders CompactUploadContainer and Quick Jump Pills', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: P2PMeshShareScreen(),
+        ChangeNotifierProvider(
+          create: (_) => FilesProvider(),
+          child: const MaterialApp(
+            home: P2PMeshShareScreen(),
+          ),
         ),
       );
 
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
-      // Verify the Send/Host tab contains the new upload container and source jump buttons
+      // Verify the Send/Host tab contains upload container and jump buttons
       expect(find.text('AirShare Document Beam'), findsOneWidget);
       expect(find.text('In-App Files'), findsOneWidget);
       expect(find.text('Phone Storage'), findsOneWidget);

@@ -1,11 +1,12 @@
 import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/document_picker_sheet.dart';
 import '../../core/widgets/how_it_works_carousel.dart';
 import '../../core/widgets/markdown_viewer.dart';
 
@@ -18,6 +19,7 @@ class TranslatePDFScreen extends StatefulWidget {
 
 class _TranslatePDFScreenState extends State<TranslatePDFScreen> {
   File? _selectedFile;
+  String _selectedFileName = '';
   String _targetLanguage = 'Spanish';
   bool _isTranslating = false;
   String _translatedText = '';
@@ -36,14 +38,26 @@ class _TranslatePDFScreenState extends State<TranslatePDFScreen> {
   ];
 
   Future<void> _pickFile() async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'docx', 'txt'],
+    final res = await DocumentPickerSheet.show(
+      context,
+      title: 'Select Document to Translate',
     );
 
-    if (result.isNotEmpty && result.single.path != null) {
+    if (res != null) {
+      File fileToUse;
+      if (res.file != null && res.file!.existsSync()) {
+        fileToUse = res.file!;
+      } else {
+        final tempDir = await getTemporaryDirectory();
+        final sanitized = res.name.replaceAll(RegExp(r'[^\w\.-]'), '_');
+        final tempFile = File('${tempDir.path}/$sanitized.txt');
+        await tempFile.writeAsString(res.textContent);
+        fileToUse = tempFile;
+      }
+
       setState(() {
-        _selectedFile = File(result.single.path!);
+        _selectedFile = fileToUse;
+        _selectedFileName = res.name;
         _translatedText = '';
       });
     }
@@ -101,7 +115,7 @@ class _TranslatePDFScreenState extends State<TranslatePDFScreen> {
           else ...[
             ListTile(
               leading: const Icon(LucideIcons.fileText, color: AppColors.toolGreen),
-              title: Text(_selectedFile!.uri.pathSegments.last, style: const TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(_selectedFileName.isNotEmpty ? _selectedFileName : _selectedFile!.uri.pathSegments.last, style: const TextStyle(fontWeight: FontWeight.bold)),
               trailing: TextButton(onPressed: _pickFile, child: const Text('Change')),
             ),
             const SizedBox(height: 14),

@@ -20,6 +20,73 @@ class ToolFeaturesRegistry {
   ToolFeaturesRegistry._();
 
   static const Map<String, List<ToolFeatureStep>> _featuresMap = {
+    // ── Workspace Tools ───────────────────────────────────────────────────────
+    'dual-pane-reader': [
+      ToolFeatureStep(
+        title: 'Side-by-Side Dual Panes',
+        subtitle: 'Compare primary textbooks, lecture slides, or documents against notes.',
+        icon: LucideIcons.columns,
+        color: AppColors.toolBlue,
+      ),
+      ToolFeatureStep(
+        title: 'Unified Document Import',
+        subtitle: 'Choose files from App Storage library, device storage, sample docs, or text.',
+        icon: LucideIcons.folderPlus,
+        color: AppColors.toolPurple,
+      ),
+      ToolFeatureStep(
+        title: 'Proportional Sync Scroll',
+        subtitle: 'Scroll Pane A and Pane B simultaneously with ratio tracking.',
+        icon: LucideIcons.combine,
+        color: AppColors.toolTeal,
+      ),
+      ToolFeatureStep(
+        title: 'AI Comparison & Analysis',
+        subtitle: 'Switch to AI mode for semantic match scores, key diffs & combined summaries.',
+        icon: LucideIcons.sparkles,
+        color: AppColors.toolOrange,
+      ),
+      ToolFeatureStep(
+        title: 'Swap & Clear Controls',
+        subtitle: 'Instantly swap Panes or clear files with one-tap toolbar controls.',
+        icon: LucideIcons.arrowLeftRight,
+        color: AppColors.toolGreen,
+      ),
+    ],
+
+    'syllabus-tracker': [
+      ToolFeatureStep(
+        title: 'Course & Unit Tracking',
+        subtitle: 'Add academic courses, subjects, and topics to manage study progress.',
+        icon: LucideIcons.bookOpen,
+        color: AppColors.toolIndigo,
+      ),
+      ToolFeatureStep(
+        title: 'Completion Progress Bar',
+        subtitle: 'Visual progress ratio and completed topic counts for overall studies.',
+        icon: LucideIcons.checkSquare,
+        color: AppColors.toolGreen,
+      ),
+      ToolFeatureStep(
+        title: 'Topic Checklists',
+        subtitle: 'Tap topics to mark completion as you study each module.',
+        icon: LucideIcons.listCheck,
+        color: AppColors.toolBlue,
+      ),
+      ToolFeatureStep(
+        title: 'Persistent Storage',
+        subtitle: 'Saves all courses and unit completion data locally on device.',
+        icon: LucideIcons.database,
+        color: AppColors.toolPurple,
+      ),
+      ToolFeatureStep(
+        title: 'Integrated Workspace',
+        subtitle: 'Cross-reference syllabus topics directly while reading documents.',
+        icon: LucideIcons.layoutGrid,
+        color: AppColors.toolOrange,
+      ),
+    ],
+
     // ── PDF Tools ────────────────────────────────────────────────────────────
     'pdf-editor': [
       ToolFeatureStep(
