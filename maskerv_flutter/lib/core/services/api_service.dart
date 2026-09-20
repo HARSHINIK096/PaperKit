@@ -1635,63 +1635,122 @@ class ApiService {
 
   // ── Academic / Research API Methods ─────────────────────────────────────
 
+  static String _extractDioErrorDetail(DioException e) {
+    if (e.response != null && e.response?.data != null) {
+      final data = e.response!.data;
+      if (data is Map) {
+        if (data.containsKey('detail')) {
+          final detail = data['detail'];
+          if (detail is String) return detail;
+          if (detail is List) {
+            final msgs = detail.map((d) {
+              if (d is Map && d.containsKey('msg')) {
+                final loc = (d['loc'] as List?)?.join('.') ?? 'field';
+                return '$loc: ${d['msg']}';
+              }
+              return d.toString();
+            }).join(', ');
+            return 'Validation error: $msgs';
+          }
+        }
+        if (data.containsKey('message')) return data['message'].toString();
+      }
+    }
+    return e.message ?? 'Server request failed (Status: ${e.response?.statusCode ?? 500})';
+  }
+
   /// Analyze a research paper — returns structured JSON with confidence labels.
   Future<Map<String, dynamic>> analyzeResearchPaper({
     required File file,
   }) async {
-    final bytes = await file.readAsBytes();
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(
-        bytes,
-        filename: file.uri.pathSegments.last,
-      ),
-    });
-    final response = await dio.post('/ai/analyze-research', data: formData);
-    return Map<String, dynamic>.from(response.data);
+    try {
+      final bytes = await file.readAsBytes();
+      final filename = file.uri.pathSegments.last;
+      final contentType = filename.toLowerCase().endsWith('.pdf')
+          ? MediaType('application', 'pdf')
+          : MediaType('application', 'octet-stream');
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: contentType,
+        ),
+      });
+      final response = await dio.post('/ai/analyze-research', data: formData);
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(_extractDioErrorDetail(e));
+    }
   }
 
   /// Literature review from 2–8 files.
   Future<Map<String, dynamic>> literatureReview({
     required List<File> files,
   }) async {
-    final fields = <String, dynamic>{};
-    for (int i = 0; i < files.length; i++) {
-      final bytes = await files[i].readAsBytes();
-      fields['file_$i'] = MultipartFile.fromBytes(
-        bytes,
-        filename: files[i].uri.pathSegments.last,
-        contentType: MediaType('application', 'pdf'),
-      );
+    try {
+      final fields = <String, dynamic>{};
+      for (int i = 0; i < files.length; i++) {
+        final bytes = await files[i].readAsBytes();
+        final filename = files[i].uri.pathSegments.last;
+        final contentType = filename.toLowerCase().endsWith('.pdf')
+            ? MediaType('application', 'pdf')
+            : MediaType('application', 'octet-stream');
+        fields['file_$i'] = MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: contentType,
+        );
+      }
+      final formData = FormData.fromMap(fields);
+      final response = await dio.post('/ai/literature-review', data: formData);
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(_extractDioErrorDetail(e));
     }
-    final formData = FormData.fromMap(fields);
-    final response = await dio.post('/ai/literature-review', data: formData);
-    return Map<String, dynamic>.from(response.data);
   }
 
   /// Research gap analysis — returns structured JSON with gap list.
   Future<Map<String, dynamic>> researchGaps({required File file}) async {
-    final bytes = await file.readAsBytes();
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(
-        bytes,
-        filename: file.uri.pathSegments.last,
-      ),
-    });
-    final response = await dio.post('/ai/research-gaps', data: formData);
-    return Map<String, dynamic>.from(response.data);
+    try {
+      final bytes = await file.readAsBytes();
+      final filename = file.uri.pathSegments.last;
+      final contentType = filename.toLowerCase().endsWith('.pdf')
+          ? MediaType('application', 'pdf')
+          : MediaType('application', 'octet-stream');
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: contentType,
+        ),
+      });
+      final response = await dio.post('/ai/research-gaps', data: formData);
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(_extractDioErrorDetail(e));
+    }
   }
 
   /// Extract citations and bibliography entries.
   Future<Map<String, dynamic>> extractCitations({required File file}) async {
-    final bytes = await file.readAsBytes();
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(
-        bytes,
-        filename: file.uri.pathSegments.last,
-      ),
-    });
-    final response = await dio.post('/ai/extract-citations', data: formData);
-    return Map<String, dynamic>.from(response.data);
+    try {
+      final bytes = await file.readAsBytes();
+      final filename = file.uri.pathSegments.last;
+      final contentType = filename.toLowerCase().endsWith('.pdf')
+          ? MediaType('application', 'pdf')
+          : MediaType('application', 'octet-stream');
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: contentType,
+        ),
+      });
+      final response = await dio.post('/ai/extract-citations', data: formData);
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(_extractDioErrorDetail(e));
+    }
   }
 
   /// Format citations by style (apa, mla, ieee, chicago, harvard, vancouver).
@@ -1701,40 +1760,58 @@ class ApiService {
     List<String>? citations,
     String style = 'apa',
   }) async {
-    if (citations != null && citations.isNotEmpty) {
-      final response = await dio.post(
-        '/ai/format-citation',
-        data: {'citations': citations, 'style': style},
-      );
-      return Map<String, dynamic>.from(response.data);
-    }
+    try {
+      if (citations != null && citations.isNotEmpty) {
+        final response = await dio.post(
+          '/ai/format-citation',
+          data: {'citations': citations, 'style': style},
+        );
+        return Map<String, dynamic>.from(response.data);
+      }
 
-    if (file == null) {
-      throw ArgumentError('Either citations or file must be provided.');
+      if (file == null) {
+        throw ArgumentError('Either citations or file must be provided.');
+      }
+      final bytes = await file.readAsBytes();
+      final filename = file.uri.pathSegments.last;
+      final contentType = filename.toLowerCase().endsWith('.pdf')
+          ? MediaType('application', 'pdf')
+          : MediaType('application', 'octet-stream');
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: contentType,
+        ),
+        'style': style,
+      });
+      final response = await dio.post('/ai/format-citation', data: formData);
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(_extractDioErrorDetail(e));
     }
-    final bytes = await file.readAsBytes();
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(
-        bytes,
-        filename: file.uri.pathSegments.last,
-      ),
-      'style': style,
-    });
-    final response = await dio.post('/ai/format-citation', data: formData);
-    return Map<String, dynamic>.from(response.data);
   }
 
   /// Reference consistency check — returns issues, missing refs, duplicates.
   Future<Map<String, dynamic>> checkReferences({required File file}) async {
-    final bytes = await file.readAsBytes();
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(
-        bytes,
-        filename: file.uri.pathSegments.last,
-      ),
-    });
-    final response = await dio.post('/ai/reference-check', data: formData);
-    return Map<String, dynamic>.from(response.data);
+    try {
+      final bytes = await file.readAsBytes();
+      final filename = file.uri.pathSegments.last;
+      final contentType = filename.toLowerCase().endsWith('.pdf')
+          ? MediaType('application', 'pdf')
+          : MediaType('application', 'octet-stream');
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: contentType,
+        ),
+      });
+      final response = await dio.post('/ai/reference-check', data: formData);
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(_extractDioErrorDetail(e));
+    }
   }
 
   /// Generate structured study notes.
@@ -1742,17 +1819,26 @@ class ApiService {
     required File file,
     List<String>? focusAreas,
   }) async {
-    final bytes = await file.readAsBytes();
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(
-        bytes,
-        filename: file.uri.pathSegments.last,
-      ),
-      if (focusAreas != null && focusAreas.isNotEmpty)
-        'focus_areas': focusAreas.join(','),
-    });
-    final response = await dio.post('/ai/study-notes', data: formData);
-    return Map<String, dynamic>.from(response.data);
+    try {
+      final bytes = await file.readAsBytes();
+      final filename = file.uri.pathSegments.last;
+      final contentType = filename.toLowerCase().endsWith('.pdf')
+          ? MediaType('application', 'pdf')
+          : MediaType('application', 'octet-stream');
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: contentType,
+        ),
+        if (focusAreas != null && focusAreas.isNotEmpty)
+          'focus_areas': focusAreas.join(','),
+      });
+      final response = await dio.post('/ai/study-notes', data: formData);
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(_extractDioErrorDetail(e));
+    }
   }
 
   /// Generate structured quiz questions.
@@ -1764,10 +1850,15 @@ class ApiService {
   }) async {
     try {
       final bytes = await file.readAsBytes();
+      final filename = file.uri.pathSegments.last;
+      final contentType = filename.toLowerCase().endsWith('.pdf')
+          ? MediaType('application', 'pdf')
+          : MediaType('application', 'octet-stream');
       final formData = FormData.fromMap({
         'file': MultipartFile.fromBytes(
           bytes,
-          filename: file.uri.pathSegments.last,
+          filename: filename,
+          contentType: contentType,
         ),
         if (questionTypes != null && questionTypes.isNotEmpty)
           'question_types': questionTypes.join(','),
@@ -1781,6 +1872,7 @@ class ApiService {
     } catch (_) {}
 
     // Fallback: Client-Side Quiz Generator
+
     final text = await _resolveText(file: file);
     final fileName = file.uri.pathSegments.last;
     final types = (questionTypes != null && questionTypes.isNotEmpty)
