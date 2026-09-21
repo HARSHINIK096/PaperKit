@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:qr/qr.dart';
+
 import '../../core/models/p2p_share_model.dart';
 import '../../core/services/biometric_auth_service.dart';
 import '../../core/widgets/particle_background.dart';
@@ -26,7 +28,8 @@ class P2PMeshShareScreen extends StatefulWidget {
   State<P2PMeshShareScreen> createState() => _P2PMeshShareScreenState();
 }
 
-class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTickerProviderStateMixin {
+class _P2PMeshShareScreenState extends State<P2PMeshShareScreen>
+    with SingleTickerProviderStateMixin {
   final P2PMeshService _service = P2PMeshService();
   late TabController _tabController;
 
@@ -100,7 +103,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
 
   Future<void> _scanNearbyDevices() async {
     setState(() => _isScanningNearby = true);
-    final devices = await _service.scanNearbyDevices(maxRadiusMeters: _selectedRadius);
+    final devices = await _service.scanNearbyDevices(
+      maxRadiusMeters: _selectedRadius,
+    );
     if (mounted) {
       setState(() {
         _nearbyDevices = devices;
@@ -121,7 +126,8 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
     }
 
     final authenticated = await BiometricAuthService().authenticate(
-      reason: 'Authenticate to beam "${_hostSelectedFile!.uri.pathSegments.last}" to ${device.deviceName} (${device.distanceMeters.toStringAsFixed(1)}m away).',
+      reason:
+          'Authenticate to beam "${_hostSelectedFile!.uri.pathSegments.last}" to ${device.deviceName} (${device.distanceMeters.toStringAsFixed(1)}m away).',
       context: context,
     );
 
@@ -149,7 +155,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('AirShare beam sent to ${device.deviceName} (${device.distanceLabel})!'),
+          content: Text(
+            'AirShare beam sent to ${device.deviceName} (${device.distanceLabel})!',
+          ),
           backgroundColor: const Color(0xFF10B981),
         ),
       );
@@ -168,7 +176,10 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
             Icon(LucideIcons.radio, color: Color(0xFF10B981), size: 24),
             SizedBox(width: 10),
             Expanded(
-              child: Text('Incoming AirShare Transfer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text(
+                'Incoming AirShare Transfer',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
@@ -176,11 +187,61 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('From: ${invite.senderDeviceName}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              'From: ${invite.senderDeviceName}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 6),
-            Text('Document: ${invite.documentName}', style: const TextStyle(fontSize: 14)),
+            Text(
+              'Document: ${invite.documentName}',
+              style: const TextStyle(fontSize: 14),
+            ),
             const SizedBox(height: 4),
-            Text('Size: ${(invite.fileSize / 1024).toStringAsFixed(1)} KB', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            Text(
+              'Size: ${(invite.fileSize / 1024).toStringAsFixed(1)} KB',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 14),
+
+            // AIR-SHARE Style 4-Digit Security Passkey Verification Box
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2563EB).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    'AIR-SHARE VERIFICATION PIN',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    invite.passkey.split('').join('  '),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 4,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const Text(
+                    'Verify this PIN matches sender device before accepting',
+                    style: TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 12),
             const Text(
               'Would you like to authorize biometric verification and download this file directly?',
@@ -220,7 +281,6 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
     }
   }
 
-
   // ───────────────────────────────────────────────────────────────────────────
   // PERSON A — HOST ACTIONS
   // ───────────────────────────────────────────────────────────────────────────
@@ -242,7 +302,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Selected "${file.uri.pathSegments.last}" for AirShare'),
+              content: Text(
+                'Selected "${file.uri.pathSegments.last}" for AirShare',
+              ),
               duration: const Duration(seconds: 2),
             ),
           );
@@ -250,9 +312,8 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error selecting file: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error selecting file: $e')));
       }
     }
   }
@@ -375,9 +436,17 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
           SnackBar(
             content: Row(
               children: [
-                const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 18),
+                const Icon(
+                  LucideIcons.checkCircle2,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
-                Expanded(child: Text('Downloaded "${file.uri.pathSegments.last}" successfully!')),
+                Expanded(
+                  child: Text(
+                    'Downloaded "${file.uri.pathSegments.last}" successfully!',
+                  ),
+                ),
               ],
             ),
             backgroundColor: const Color(0xFF10B981),
@@ -391,7 +460,6 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
       });
     }
   }
-
 
   Future<void> _openCameraQrScanner() async {
     HapticFeedback.mediumImpact();
@@ -409,9 +477,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
 
   Future<void> _pickQrImageFromGallery() async {
     try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.image,
-      );
+      final result = await FilePicker.pickFiles(type: FileType.image);
       if (result.isNotEmpty && result.single.path != null) {
         final file = File(result.single.path!);
         final payload = await QrImageDecoder.decodeFile(file);
@@ -422,7 +488,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('No decodable QR code detected in the selected image.'),
+                content: Text(
+                  'No decodable QR code detected in the selected image.',
+                ),
                 backgroundColor: Color(0xFFDC2626),
               ),
             );
@@ -431,9 +499,8 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error reading image: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error reading image: $e')));
       }
     }
   }
@@ -442,7 +509,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Air-Share P2P Workspace'),
+        title: const Text('AIR-SHARE  P2P Workspace'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -489,14 +556,22 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
             onClear: _isHosting
                 ? null
                 : () => setState(() {
-                      _hostSelectedFile = null;
-                      _activeHostPayload = null;
-                    }),
+                    _hostSelectedFile = null;
+                    _activeHostPayload = null;
+                  }),
             title: 'AirShare Document Beam',
             subtitle: 'Tap to select from In-App Files or Phone Storage',
             icon: LucideIcons.send,
             primaryColor: const Color(0xFF2563EB),
-            allowedExtensions: const ['pdf', 'docx', 'doc', 'xlsx', 'png', 'jpg', 'zip'],
+            allowedExtensions: const [
+              'pdf',
+              'docx',
+              'doc',
+              'xlsx',
+              'png',
+              'jpg',
+              'zip',
+            ],
             enabled: !_isHosting,
           ),
 
@@ -507,30 +582,52 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _isHosting ? null : () => _pickHostDocument(initialTab: 0),
-                  icon: const Icon(LucideIcons.sparkles, size: 14, color: Color(0xFF2563EB)),
-                  label: const Text('In-App Files', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  onPressed: _isHosting
+                      ? null
+                      : () => _pickHostDocument(initialTab: 0),
+                  icon: const Icon(
+                    LucideIcons.sparkles,
+                    size: 14,
+                    color: Color(0xFF2563EB),
+                  ),
+                  label: const Text(
+                    'In-App Files',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     side: BorderSide(
                       color: const Color(0xFF2563EB).withValues(alpha: 0.35),
                     ),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _isHosting ? null : () => _pickHostDocument(initialTab: 1),
-                  icon: const Icon(LucideIcons.smartphone, size: 14, color: Color(0xFF10B981)),
-                  label: const Text('Phone Storage', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  onPressed: _isHosting
+                      ? null
+                      : () => _pickHostDocument(initialTab: 1),
+                  icon: const Icon(
+                    LucideIcons.smartphone,
+                    size: 14,
+                    color: Color(0xFF10B981),
+                  ),
+                  label: const Text(
+                    'Phone Storage',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     side: BorderSide(
                       color: const Color(0xFF10B981).withValues(alpha: 0.35),
                     ),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
@@ -566,7 +663,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                           Icon(
                             LucideIcons.radar,
                             size: 16,
-                            color: _sendModeIndex == 0 ? Colors.white : Colors.grey,
+                            color: _sendModeIndex == 0
+                                ? Colors.white
+                                : Colors.grey,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -574,7 +673,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
-                              color: _sendModeIndex == 0 ? Colors.white : Colors.grey,
+                              color: _sendModeIndex == 0
+                                  ? Colors.white
+                                  : Colors.grey,
                             ),
                           ),
                         ],
@@ -586,7 +687,8 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                   child: GestureDetector(
                     onTap: () async {
                       setState(() => _sendModeIndex = 1);
-                      if (_activeHostPayload == null && _hostSelectedFile != null) {
+                      if (_activeHostPayload == null &&
+                          _hostSelectedFile != null) {
                         await _startHostSession();
                       }
                     },
@@ -605,7 +707,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                           Icon(
                             LucideIcons.qrCode,
                             size: 16,
-                            color: _sendModeIndex == 1 ? Colors.white : Colors.grey,
+                            color: _sendModeIndex == 1
+                                ? Colors.white
+                                : Colors.grey,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -613,7 +717,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
-                              color: _sendModeIndex == 1 ? Colors.white : Colors.grey,
+                              color: _sendModeIndex == 1
+                                  ? Colors.white
+                                  : Colors.grey,
                             ),
                           ),
                         ],
@@ -641,13 +747,14 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
               isScanning: _isScanningNearby,
             ),
           ]
-
           // Mode 1: QR Code Matrix & Share Sheet
           else ...[
             if (_activeHostPayload != null) ...[
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
@@ -657,7 +764,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                         children: [
                           Chip(
                             avatar: const Icon(LucideIcons.wifi, size: 16),
-                            label: Text('Host IP: ${_activeHostPayload!.hostIp}:${_activeHostPayload!.port}'),
+                            label: Text(
+                              'Host IP: ${_activeHostPayload!.hostIp}:${_activeHostPayload!.port}',
+                            ),
                           ),
                           OutlinedButton(
                             onPressed: _stopHostSession,
@@ -666,14 +775,24 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                         ],
                       ),
                       const Divider(height: 24),
-                      const Text('PAIRING QR CODE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blue)),
+                      const Text(
+                        'PAIRING QR CODE',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.blue,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade300, width: 2),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 2,
+                          ),
                         ),
                         child: Column(
                           children: [
@@ -694,7 +813,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF4F46E5),
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
                             ),
                           ],
@@ -703,10 +824,16 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                       const SizedBox(height: 16),
                       Text(
                         'Document: ${_activeHostPayload!.documentName}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                       const SizedBox(height: 4),
-                      const Text('Person B: Open MaskerV Air-Share ➔ Scan QR to pair and receive file.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const Text(
+                        'Person B: Open MaskerV AIR-SHARE  ➔ Scan QR to pair and receive file.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
                     ],
                   ),
                 ),
@@ -717,14 +844,25 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      const Icon(LucideIcons.qrCode, size: 48, color: Colors.blue),
+                      const Icon(
+                        LucideIcons.qrCode,
+                        size: 48,
+                        color: Colors.blue,
+                      ),
                       const SizedBox(height: 12),
-                      const Text('Generate P2P QR Code', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Generate P2P QR Code',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       const SizedBox(height: 6),
-                      const Text('Select a document above and tap below to start local server and render the scannable pairing QR code.'),
+                      const Text(
+                        'Select a document above and tap below to start local server and render the scannable pairing QR code.',
+                      ),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
-                        onPressed: _hostSelectedFile == null ? null : _startHostSession,
+                        onPressed: _hostSelectedFile == null
+                            ? null
+                            : _startHostSession,
                         icon: const Icon(LucideIcons.play),
                         label: const Text('Generate Pairing QR Matrix'),
                       ),
@@ -777,7 +915,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                           Icon(
                             LucideIcons.radio,
                             size: 16,
-                            color: _receiveModeIndex == 0 ? Colors.white : Colors.grey,
+                            color: _receiveModeIndex == 0
+                                ? Colors.white
+                                : Colors.grey,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -785,7 +925,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
-                              color: _receiveModeIndex == 0 ? Colors.white : Colors.grey,
+                              color: _receiveModeIndex == 0
+                                  ? Colors.white
+                                  : Colors.grey,
                             ),
                           ),
                         ],
@@ -811,7 +953,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                           Icon(
                             LucideIcons.scanLine,
                             size: 16,
-                            color: _receiveModeIndex == 1 ? Colors.white : Colors.grey,
+                            color: _receiveModeIndex == 1
+                                ? Colors.white
+                                : Colors.grey,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -819,7 +963,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
-                              color: _receiveModeIndex == 1 ? Colors.white : Colors.grey,
+                              color: _receiveModeIndex == 1
+                                  ? Colors.white
+                                  : Colors.grey,
                             ),
                           ),
                         ],
@@ -838,18 +984,27 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                color: isDark
+                    ? const Color(0xFF1E293B)
+                    : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
                 ),
               ),
               child: Column(
                 children: [
                   CircleAvatar(
                     radius: 36,
-                    backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
-                    child: const Icon(LucideIcons.radio, size: 36, color: Color(0xFF10B981)),
+                    backgroundColor: const Color(0xFF10B981)
+                        .withValues(alpha: 0.15),
+                    child: const Icon(
+                      LucideIcons.radio,
+                      size: 36,
+                      color: Color(0xFF10B981),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   const Text(
@@ -860,11 +1015,17 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                   Text(
                     'This device is broadcasting on your local Wi-Fi / Hotspot. Any nearby MaskerV user can detect this device on their radar and beam documents to you directly.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF10B981).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -872,7 +1033,11 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(LucideIcons.shieldCheck, size: 16, color: Color(0xFF10B981)),
+                        Icon(
+                          LucideIcons.shieldCheck,
+                          size: 16,
+                          color: Color(0xFF10B981),
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'Biometric Verification Enabled on Arrival',
@@ -889,8 +1054,19 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                   SwitchListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Discoverable by Nearby Devices', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    subtitle: Text(_isDiscoverable ? 'Broadcasting on local radius' : 'Device hidden', style: const TextStyle(fontSize: 11)),
+                    title: const Text(
+                      'Discoverable by Nearby Devices',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    subtitle: Text(
+                      _isDiscoverable
+                          ? 'Broadcasting on local radius'
+                          : 'Device hidden',
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     value: _isDiscoverable,
                     onChanged: (val) {
                       setState(() => _isDiscoverable = val);
@@ -906,10 +1082,12 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
             ),
             const SizedBox(height: 20),
           ]
-
           // Receiver Mode 1: QR Code Scanner & Manual Paste
           else ...[
-            const Text('Scan / Enter MaskerV QR Payload', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text(
+              'Scan / Enter MaskerV QR Payload',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 14),
 
             // Camera QR Scanner & Gallery Trigger Buttons
@@ -924,7 +1102,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                       backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
@@ -934,8 +1114,13 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                   icon: const Icon(LucideIcons.image, size: 18),
                   label: const Text('Pick Image'),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ],
@@ -947,7 +1132,14 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                 Expanded(child: Divider()),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('OR PASTE PAYLOAD', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  child: Text(
+                    'OR PASTE PAYLOAD',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ),
                 ),
                 Expanded(child: Divider()),
               ],
@@ -959,12 +1151,15 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
               maxLines: 2,
               decoration: InputDecoration(
                 hintText: 'Paste or scan maskerv://airshare?session=...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 suffixIcon: IconButton(
                   icon: const Icon(LucideIcons.qrCode),
                   onPressed: () {
                     if (_activeHostPayload != null) {
-                      _qrPayloadController.text = _activeHostPayload!.toEncodedUrl();
+                      _qrPayloadController.text = _activeHostPayload!
+                          .toEncodedUrl();
                     }
                   },
                 ),
@@ -972,7 +1167,11 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: _isConnecting ? null : () => _parseAndConnectQrPayload(_qrPayloadController.text.trim()),
+              onPressed: _isConnecting
+                  ? null
+                  : () => _parseAndConnectQrPayload(
+                      _qrPayloadController.text.trim(),
+                    ),
               icon: const Icon(LucideIcons.link),
               label: const Text('Validate & Pair Session'),
             ),
@@ -990,7 +1189,15 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                   children: [
                     const Icon(LucideIcons.alertTriangle, color: Colors.red),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(_transferError!, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+                    Expanded(
+                      child: Text(
+                        _transferError!,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -998,7 +1205,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
           else if (_connectedHostInfo != null) ...[
             Card(
               elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -1008,18 +1217,31 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                       children: [
                         Icon(LucideIcons.checkCircle2, color: Colors.green),
                         SizedBox(width: 8),
-                        Text('Pairing Connected to Host', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+                        Text(
+                          'Pairing Connected to Host',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.green,
+                          ),
+                        ),
                       ],
                     ),
                     const Divider(height: 20),
                     Text('File Name: ${_connectedHostInfo!['fileName']}'),
-                    Text('Size: ${((_connectedHostInfo!['fileSize'] as int? ?? 0) / 1024).toStringAsFixed(1)} KB'),
-                    Text('SHA-256 Checksum: ${(_connectedHostInfo!['sha256'] as String? ?? '').substring(0, 16)}...'),
+                    Text(
+                      'Size: ${((_connectedHostInfo!['fileSize'] as int? ?? 0) / 1024).toStringAsFixed(1)} KB',
+                    ),
+                    Text(
+                      'SHA-256 Checksum: ${(_connectedHostInfo!['sha256'] as String? ?? '').substring(0, 16)}...',
+                    ),
                     const SizedBox(height: 16),
                     if (_isTransferring) ...[
                       LinearProgressIndicator(value: _transferProgress),
                       const SizedBox(height: 8),
-                      Text('Transferring: ${(_transferProgress * 100).toStringAsFixed(1)}% (${(_transferredBytes / 1024).toStringAsFixed(0)} / ${(_totalBytes / 1024).toStringAsFixed(0)} KB)'),
+                      Text(
+                        'Transferring: ${(_transferProgress * 100).toStringAsFixed(1)}% (${(_transferredBytes / 1024).toStringAsFixed(0)} / ${(_totalBytes / 1024).toStringAsFixed(0)} KB)',
+                      ),
                     ] else ...[
                       Row(
                         children: [
@@ -1027,11 +1249,15 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                             onPressed: _acceptAndDownloadTransfer,
                             icon: const Icon(LucideIcons.download),
                             label: const Text('Accept & Receive File'),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           OutlinedButton(
-                            onPressed: () => setState(() => _connectedHostInfo = null),
+                            onPressed: () =>
+                                setState(() => _connectedHostInfo = null),
                             child: const Text('Reject'),
                           ),
                         ],
@@ -1057,56 +1283,85 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                   children: [
                     Row(
                       children: [
-                        const Icon(LucideIcons.fileCheck, color: Colors.green, size: 24),
+                        const Icon(
+                          LucideIcons.fileCheck,
+                          color: Colors.green,
+                          size: 24,
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             'Downloaded: ${_receivedFile!.uri.pathSegments.last}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.green.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text('VERIFIED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green)),
+                          child: const Text(
+                            'VERIFIED',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
                       'Saved to MaskerV App Storage • SHA-256 Verified',
-                      style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[300] : Colors.grey[700]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.grey[300] : Colors.grey[700],
+                      ),
                     ),
                     const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () => OpenFilex.open(_receivedFile!.path),
-                            icon: const Icon(LucideIcons.externalLink, size: 16),
+                            onPressed: () =>
+                                OpenFilex.open(_receivedFile!.path),
+                            icon: const Icon(
+                              LucideIcons.externalLink,
+                              size: 16,
+                            ),
                             label: const Text('Open File'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF10B981),
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => Share.shareXFiles([XFile(_receivedFile!.path)]),
+                            onPressed: () =>
+                                Share.shareXFiles([XFile(_receivedFile!.path)]),
                             icon: const Icon(LucideIcons.share2, size: 16),
                             label: const Text('Export / Share'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF10B981),
                               side: const BorderSide(color: Color(0xFF10B981)),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ),
@@ -1181,7 +1436,11 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                             color: Color(0xFF6366F1),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(LucideIcons.users, color: Colors.white, size: 22),
+                          child: const Icon(
+                            LucideIcons.users,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -1193,7 +1452,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w800,
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF0F172A),
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -1201,7 +1462,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                                 'Live page scrolling, laser pointer & real-time document sync over encrypted local socket.',
                                 style: TextStyle(
                                   fontSize: 12.5,
-                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                  color: isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
                                 ),
                               ),
                             ],
@@ -1213,7 +1476,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.7) : Colors.white.withValues(alpha: 0.85),
+                        color: isDark
+                            ? const Color(0xFF0F172A).withValues(alpha: 0.7)
+                            : Colors.white.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -1222,20 +1487,44 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Active Sync Page', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8))),
-                              Text('Page ${event.currentPage + 1}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              const Text(
+                                'Active Sync Page',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                              Text(
+                                'Page ${event.currentPage + 1}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Text('Laser Pointer Status', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF94A3B8))),
+                              const Text(
+                                'Laser Pointer Status',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
                               Text(
-                                event.laserX != null ? 'Active (${event.laserX!.toStringAsFixed(0)}, ${event.laserY!.toStringAsFixed(0)})' : 'Inactive',
+                                event.laserX != null
+                                    ? 'Active (${event.laserX!.toStringAsFixed(0)}, ${event.laserY!.toStringAsFixed(0)})'
+                                    : 'Inactive',
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: event.laserX != null ? const Color(0xFF10B981) : const Color(0xFF64748B),
+                                  color: event.laserX != null
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF64748B),
                                 ),
                               ),
                             ],
@@ -1265,7 +1554,9 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
                 icon: LucideIcons.radio,
                 color: const Color(0xFF2563EB),
                 onTap: () {
-                  _service.sendCoReviewScrollEvent(pageIndex: event.currentPage + 1);
+                  _service.sendCoReviewScrollEvent(
+                    pageIndex: event.currentPage + 1,
+                  );
                   setState(() {});
                 },
               ),
@@ -1322,7 +1613,10 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
               const SizedBox(height: 8),
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                ),
                 maxLines: 1,
               ),
               const SizedBox(height: 2),
@@ -1407,4 +1701,3 @@ class _QrCanvasPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _QrCanvasPainter oldDelegate) => false;
 }
-

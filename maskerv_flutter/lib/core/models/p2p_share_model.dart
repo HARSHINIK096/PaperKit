@@ -91,6 +91,7 @@ class DirectTransferInvite {
   final String documentName;
   final int fileSize;
   final String sha256;
+  final String passkey;
 
   DirectTransferInvite({
     required this.senderDeviceId,
@@ -101,6 +102,7 @@ class DirectTransferInvite {
     required this.documentName,
     required this.fileSize,
     required this.sha256,
+    this.passkey = '8492',
   });
 
   factory DirectTransferInvite.fromJson(Map<String, dynamic> json) => DirectTransferInvite(
@@ -112,6 +114,7 @@ class DirectTransferInvite {
         documentName: json['documentName'] as String? ?? 'document.pdf',
         fileSize: json['fileSize'] as int? ?? 0,
         sha256: json['sha256'] as String? ?? '',
+        passkey: json['passkey'] as String? ?? '8492',
       );
 
   Map<String, dynamic> toJson() => {
@@ -123,6 +126,7 @@ class DirectTransferInvite {
         'documentName': documentName,
         'fileSize': fileSize,
         'sha256': sha256,
+        'passkey': passkey,
       };
 
   QrSessionPayload toQrSessionPayload() {
@@ -132,6 +136,7 @@ class DirectTransferInvite {
       port: senderPort,
       secretToken: sessionToken,
       documentName: documentName,
+      passkey: passkey,
       expiresAt: DateTime.now().add(const Duration(minutes: 10)),
     );
   }
@@ -145,6 +150,7 @@ class QrSessionPayload {
   final int port;
   final String secretToken;
   final String documentName;
+  final String passkey;
   final DateTime expiresAt;
 
   QrSessionPayload({
@@ -154,6 +160,7 @@ class QrSessionPayload {
     required this.port,
     required this.secretToken,
     required this.documentName,
+    this.passkey = '8492',
     DateTime? expiresAt,
   }) : expiresAt = expiresAt ?? DateTime.now().add(const Duration(minutes: 10));
 
@@ -166,6 +173,7 @@ class QrSessionPayload {
         port: json['port'] as int? ?? 8080,
         secretToken: json['secretToken'] as String? ?? '',
         documentName: json['documentName'] as String? ?? '',
+        passkey: json['passkey'] as String? ?? '8492',
         expiresAt: json['expiresAt'] != null
             ? DateTime.parse(json['expiresAt'] as String)
             : DateTime.now().add(const Duration(minutes: 10)),
@@ -178,11 +186,12 @@ class QrSessionPayload {
         'port': port,
         'secretToken': secretToken,
         'documentName': documentName,
+        'passkey': passkey,
         'expiresAt': expiresAt.toIso8601String(),
       };
 
   String toEncodedUrl() {
-    return 'maskerv://airshare?session=$sessionId&ip=$hostIp&port=$port&token=$secretToken&name=$documentName&exp=${expiresAt.millisecondsSinceEpoch}';
+    return 'maskerv://airshare?session=$sessionId&ip=$hostIp&port=$port&token=$secretToken&name=$documentName&pin=$passkey&exp=${expiresAt.millisecondsSinceEpoch}';
   }
 }
 

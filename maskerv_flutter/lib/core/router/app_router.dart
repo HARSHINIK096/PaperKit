@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:go_router/go_router.dart';
 
 import '../../features/welcome/splash_screen.dart';
@@ -37,6 +38,12 @@ import '../../features/security_tools/smart_redaction_screen.dart';
 import '../../features/security_tools/digital_signature_screen.dart';
 import '../../features/security_tools/metadata_screen.dart';
 import '../../features/security_tools/biometric_app_lock_screen.dart';
+
+// Biometric Vault
+import '../../features/biometric_vault/presentation/biometric_vault_page.dart';
+import '../../features/biometric_vault/presentation/upload_vault_page.dart';
+import '../../features/biometric_vault/presentation/encryption_progress_page.dart';
+import '../../features/biometric_vault/presentation/file_vault_page.dart';
 
 // Image & Media Tools
 import '../../features/image_media_tools/image_converter_screen.dart';
@@ -118,10 +125,7 @@ class AppRouter {
           key: state.pageKey,
         ),
       ),
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const HomeScreen(),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/tools',
         pageBuilder: (context, state) => CloudTransitionPage(
@@ -133,10 +137,7 @@ class AppRouter {
         path: '/scanner',
         builder: (context, state) => const ScannerScreen(),
       ),
-      GoRoute(
-        path: '/files',
-        builder: (context, state) => const FilesScreen(),
-      ),
+      GoRoute(path: '/files', builder: (context, state) => const FilesScreen()),
       GoRoute(
         path: '/storage',
         builder: (context, state) => const StorageScreen(),
@@ -149,14 +150,8 @@ class AppRouter {
         path: '/history',
         builder: (context, state) => const HistoryScreen(),
       ),
-      GoRoute(
-        path: '/help',
-        builder: (context, state) => const HelpScreen(),
-      ),
-      GoRoute(
-        path: '/about',
-        builder: (context, state) => const AboutScreen(),
-      ),
+      GoRoute(path: '/help', builder: (context, state) => const HelpScreen()),
+      GoRoute(path: '/about', builder: (context, state) => const AboutScreen()),
       GoRoute(
         path: '/welcome',
         builder: (context, state) => const LandingScreen(),
@@ -181,9 +176,18 @@ class AppRouter {
       ),
 
       // PDF Tools
-      GoRoute(path: '/tools/merge', builder: (context, state) => const MergePDFScreen()),
-      GoRoute(path: '/tools/split', builder: (context, state) => const SplitPDFScreen()),
-      GoRoute(path: '/tools/compress', builder: (context, state) => const CompressPDFScreen()),
+      GoRoute(
+        path: '/tools/merge',
+        builder: (context, state) => const MergePDFScreen(),
+      ),
+      GoRoute(
+        path: '/tools/split',
+        builder: (context, state) => const SplitPDFScreen(),
+      ),
+      GoRoute(
+        path: '/tools/compress',
+        builder: (context, state) => const CompressPDFScreen(),
+      ),
       GoRoute(
         path: '/tools/convert',
         builder: (context, state) => ConvertDocumentScreen(
@@ -191,48 +195,173 @@ class AppRouter {
           initialTo: state.uri.queryParameters['to'],
         ),
       ),
-      GoRoute(path: '/tools/rotate', builder: (context, state) => const RotatePDFScreen()),
-      GoRoute(path: '/tools/watermark', builder: (context, state) => const WatermarkPDFScreen()),
-      GoRoute(path: '/tools/organize-pages', builder: (context, state) => const OrganizePagesScreen()),
-      GoRoute(path: '/tools/organize', builder: (context, state) => const OrganizePagesScreen()),
-      GoRoute(path: '/tools/remove-pages', builder: (context, state) => const OrganizePagesScreen()),
-      GoRoute(path: '/tools/reorder-pages', builder: (context, state) => const OrganizePagesScreen()),
-      GoRoute(path: '/tools/duplicate-pages', builder: (context, state) => const OrganizePagesScreen()),
-      GoRoute(path: '/tools/extract-pages', builder: (context, state) => const ExtractPagesScreen()),
-      GoRoute(path: '/tools/extract', builder: (context, state) => const ExtractPagesScreen()),
-      GoRoute(path: '/tools/pdf-to-pdfa', builder: (context, state) => const PDFToPDFAScreen()),
-      GoRoute(path: '/tools/pdf-editor', builder: (context, state) => const PDFEditorScreen()),
-      GoRoute(path: '/tools/nup', builder: (context, state) => const NupPdfScreen()),
-      GoRoute(path: '/tools/booklet', builder: (context, state) => const BookletPdfScreen()),
-      GoRoute(path: '/tools/bates', builder: (context, state) => const BatesStampingScreen()),
-      GoRoute(path: '/tools/headers', builder: (context, state) => const HeaderFooterScreen()),
+      GoRoute(
+        path: '/tools/rotate',
+        builder: (context, state) => const RotatePDFScreen(),
+      ),
+      GoRoute(
+        path: '/tools/watermark',
+        builder: (context, state) => const WatermarkPDFScreen(),
+      ),
+      GoRoute(
+        path: '/tools/organize-pages',
+        builder: (context, state) => const OrganizePagesScreen(),
+      ),
+      GoRoute(
+        path: '/tools/organize',
+        builder: (context, state) => const OrganizePagesScreen(),
+      ),
+      GoRoute(
+        path: '/tools/remove-pages',
+        builder: (context, state) => const OrganizePagesScreen(),
+      ),
+      GoRoute(
+        path: '/tools/reorder-pages',
+        builder: (context, state) => const OrganizePagesScreen(),
+      ),
+      GoRoute(
+        path: '/tools/duplicate-pages',
+        builder: (context, state) => const OrganizePagesScreen(),
+      ),
+      GoRoute(
+        path: '/tools/extract-pages',
+        builder: (context, state) => const ExtractPagesScreen(),
+      ),
+      GoRoute(
+        path: '/tools/extract',
+        builder: (context, state) => const ExtractPagesScreen(),
+      ),
+      GoRoute(
+        path: '/tools/pdf-to-pdfa',
+        builder: (context, state) => const PDFToPDFAScreen(),
+      ),
+      GoRoute(
+        path: '/tools/pdf-editor',
+        builder: (context, state) => const PDFEditorScreen(),
+      ),
+      GoRoute(
+        path: '/tools/nup',
+        builder: (context, state) => const NupPdfScreen(),
+      ),
+      GoRoute(
+        path: '/tools/booklet',
+        builder: (context, state) => const BookletPdfScreen(),
+      ),
+      GoRoute(
+        path: '/tools/bates',
+        builder: (context, state) => const BatesStampingScreen(),
+      ),
+      GoRoute(
+        path: '/tools/headers',
+        builder: (context, state) => const HeaderFooterScreen(),
+      ),
 
       // Security Tools
-      GoRoute(path: '/security/protect', builder: (context, state) => const ProtectPDFScreen()),
-      GoRoute(path: '/tools/protect', builder: (context, state) => const ProtectPDFScreen()),
-      GoRoute(path: '/tools/protect-pdf', builder: (context, state) => const ProtectPDFScreen()),
-      GoRoute(path: '/security/redact', builder: (context, state) => const SmartRedactionScreen()),
-      GoRoute(path: '/tools/redact', builder: (context, state) => const SmartRedactionScreen()),
-      GoRoute(path: '/tools/smart-redaction', builder: (context, state) => const SmartRedactionScreen()),
-      GoRoute(path: '/tools/redact-file', builder: (context, state) => const SmartRedactionScreen()),
-      GoRoute(path: '/tools/redact-pdf', builder: (context, state) => const SmartRedactionScreen()),
-      GoRoute(path: '/pdf/redact', builder: (context, state) => const SmartRedactionScreen()),
-      GoRoute(path: '/security/sign', builder: (context, state) => const DigitalSignatureScreen()),
-      GoRoute(path: '/tools/sign', builder: (context, state) => const DigitalSignatureScreen()),
-      GoRoute(path: '/tools/digital-sign', builder: (context, state) => const DigitalSignatureScreen()),
-      GoRoute(path: '/tools/digital-signature', builder: (context, state) => const DigitalSignatureScreen()),
-      GoRoute(path: '/security/metadata', builder: (context, state) => const MetadataScreen()),
-      GoRoute(path: '/tools/metadata', builder: (context, state) => const MetadataScreen()),
-      GoRoute(path: '/tools/metadata-cleaner', builder: (context, state) => const MetadataScreen()),
-      GoRoute(path: '/tools/metadata-manager', builder: (context, state) => const MetadataScreen()),
-      GoRoute(path: '/security/biometric-lock', builder: (context, state) => const BiometricAppLockScreen()),
+      GoRoute(
+        path: '/security/protect',
+        builder: (context, state) => const ProtectPDFScreen(),
+      ),
+      GoRoute(
+        path: '/tools/protect',
+        builder: (context, state) => const ProtectPDFScreen(),
+      ),
+      GoRoute(
+        path: '/tools/protect-pdf',
+        builder: (context, state) => const ProtectPDFScreen(),
+      ),
+      GoRoute(
+        path: '/security/redact',
+        builder: (context, state) => const SmartRedactionScreen(),
+      ),
+      GoRoute(
+        path: '/tools/redact',
+        builder: (context, state) => const SmartRedactionScreen(),
+      ),
+      GoRoute(
+        path: '/tools/smart-redaction',
+        builder: (context, state) => const SmartRedactionScreen(),
+      ),
+      GoRoute(
+        path: '/tools/redact-file',
+        builder: (context, state) => const SmartRedactionScreen(),
+      ),
+      GoRoute(
+        path: '/tools/redact-pdf',
+        builder: (context, state) => const SmartRedactionScreen(),
+      ),
+      GoRoute(
+        path: '/pdf/redact',
+        builder: (context, state) => const SmartRedactionScreen(),
+      ),
+      GoRoute(
+        path: '/security/sign',
+        builder: (context, state) => const DigitalSignatureScreen(),
+      ),
+      GoRoute(
+        path: '/tools/sign',
+        builder: (context, state) => const DigitalSignatureScreen(),
+      ),
+      GoRoute(
+        path: '/tools/digital-sign',
+        builder: (context, state) => const DigitalSignatureScreen(),
+      ),
+      GoRoute(
+        path: '/tools/digital-signature',
+        builder: (context, state) => const DigitalSignatureScreen(),
+      ),
+      GoRoute(
+        path: '/security/metadata',
+        builder: (context, state) => const MetadataScreen(),
+      ),
+      GoRoute(
+        path: '/tools/metadata',
+        builder: (context, state) => const MetadataScreen(),
+      ),
+      GoRoute(
+        path: '/tools/metadata-cleaner',
+        builder: (context, state) => const MetadataScreen(),
+      ),
+      GoRoute(
+        path: '/tools/metadata-manager',
+        builder: (context, state) => const MetadataScreen(),
+      ),
+      // Legacy route — redirects to new Biometric Vault via BiometricAppLockScreen
+      GoRoute(
+        path: '/security/biometric-lock',
+        builder: (context, state) => const BiometricAppLockScreen(),
+      ),
+      GoRoute(
+        path: '/security/app-lock',
+        builder: (context, state) => const BiometricAppLockScreen(),
+      ),
+
+      // Biometric Vault routes
+      GoRoute(
+        path: '/vault',
+        builder: (context, state) => const BiometricVaultPage(),
+      ),
+      GoRoute(
+        path: '/vault/upload',
+        builder: (context, state) => const UploadVaultPage(),
+      ),
+      GoRoute(
+        path: '/vault/encrypt',
+        builder: (context, state) {
+          final file = state.extra as File?;
+          if (file == null) return const BiometricVaultPage();
+          return EncryptionProgressPage(sourceFile: file);
+        },
+      ),
+      GoRoute(
+        path: '/vault/file-list',
+        builder: (context, state) => const FileVaultPage(),
+      ),
 
       // Image & Media Tools
       GoRoute(
         path: '/tools/image-converter',
-        builder: (context, state) => ImageConverterScreen(
-          initialTo: state.uri.queryParameters['to'],
-        ),
+        builder: (context, state) =>
+            ImageConverterScreen(initialTo: state.uri.queryParameters['to']),
       ),
       GoRoute(
         path: '/tools/image-compressor',
@@ -240,22 +369,35 @@ class AppRouter {
           initialPreset: state.uri.queryParameters['preset'],
         ),
       ),
-      GoRoute(path: '/tools/image-manipulator', builder: (context, state) => const ImageManipulatorScreen()),
-      GoRoute(path: '/tools/image-resizer', builder: (context, state) => const ImageResizerScreen()),
-      GoRoute(path: '/tools/qr-generator', builder: (context, state) => const QrGeneratorScreen()),
-      GoRoute(path: '/tools/qr-scanner', builder: (context, state) => const QrScannerScreen()),
-      GoRoute(path: '/tools/barcode-generator', builder: (context, state) => const BarcodeGeneratorScreen()),
+      GoRoute(
+        path: '/tools/image-manipulator',
+        builder: (context, state) => const ImageManipulatorScreen(),
+      ),
+      GoRoute(
+        path: '/tools/image-resizer',
+        builder: (context, state) => const ImageResizerScreen(),
+      ),
+      GoRoute(
+        path: '/tools/qr-generator',
+        builder: (context, state) => const QrGeneratorScreen(),
+      ),
+      GoRoute(
+        path: '/tools/qr-scanner',
+        builder: (context, state) => const QrScannerScreen(),
+      ),
+      GoRoute(
+        path: '/tools/barcode-generator',
+        builder: (context, state) => const BarcodeGeneratorScreen(),
+      ),
       GoRoute(
         path: '/tools/audio-converter',
-        builder: (context, state) => AudioConverterScreen(
-          initialTo: state.uri.queryParameters['to'],
-        ),
+        builder: (context, state) =>
+            AudioConverterScreen(initialTo: state.uri.queryParameters['to']),
       ),
       GoRoute(
         path: '/tools/video-converter',
-        builder: (context, state) => VideoConverterScreen(
-          initialTo: state.uri.queryParameters['to'],
-        ),
+        builder: (context, state) =>
+            VideoConverterScreen(initialTo: state.uri.queryParameters['to']),
       ),
       GoRoute(
         path: '/tools/video-compressor',
@@ -283,67 +425,191 @@ class AppRouter {
       ),
       GoRoute(
         path: '/tools/archive',
-        builder: (context, state) => ArchiveStudioScreen(
-          initialMode: state.uri.queryParameters['mode'],
-        ),
+        builder: (context, state) =>
+            ArchiveStudioScreen(initialMode: state.uri.queryParameters['mode']),
       ),
       GoRoute(
         path: '/tools/archive-studio',
-        builder: (context, state) => ArchiveStudioScreen(
-          initialMode: state.uri.queryParameters['mode'],
-        ),
+        builder: (context, state) =>
+            ArchiveStudioScreen(initialMode: state.uri.queryParameters['mode']),
       ),
 
       // AI Tools
-      GoRoute(path: '/ai', builder: (context, state) => const AIToolsHubScreen()),
-      GoRoute(path: '/ai/hub', builder: (context, state) => const AIToolsHubScreen()),
+      GoRoute(
+        path: '/ai',
+        builder: (context, state) => const AIToolsHubScreen(),
+      ),
+      GoRoute(
+        path: '/ai/hub',
+        builder: (context, state) => const AIToolsHubScreen(),
+      ),
       GoRoute(path: '/ai/ocr', builder: (context, state) => const OCRScreen()),
-      GoRoute(path: '/tools/ocr', builder: (context, state) => const OCRScreen()),
-      GoRoute(path: '/ai/summarize', builder: (context, state) => const SummarizePDFScreen()),
-      GoRoute(path: '/ai/ask', builder: (context, state) => const AskPDFScreen()),
-      GoRoute(path: '/ai/compare', builder: (context, state) => const SemanticCompareScreen()),
-      GoRoute(path: '/ai/similarity', builder: (context, state) => const SimilarityMatrixScreen()),
-      GoRoute(path: '/ai/similarity-matrix', builder: (context, state) => const SimilarityMatrixScreen()),
-      GoRoute(path: '/ai/search', builder: (context, state) => const SemanticSearchScreen()),
-      GoRoute(path: '/ai/classify', builder: (context, state) => const ClassifyPDFScreen()),
-      GoRoute(path: '/ai/extract-info', builder: (context, state) => const ExtractInfoScreen()),
-      GoRoute(path: '/ai/translate', builder: (context, state) => const TranslatePDFScreen()),
-      GoRoute(path: '/ai/writing-assist', builder: (context, state) => const WritingAssistantScreen()),
-      GoRoute(path: '/ai/writing-assistant', builder: (context, state) => const WritingAssistantScreen()),
-      GoRoute(path: '/ai/quality-checker', builder: (context, state) => const QualityCheckerScreen()),
-      GoRoute(path: '/ai/extract-tables', builder: (context, state) => const ExtractTablesScreen()),
-      GoRoute(path: '/ai/image-enhancer', builder: (context, state) => const ImageEnhancerScreen()),
-      GoRoute(path: '/ai/invoice', builder: (context, state) => const InvoiceParserScreen()),
-      GoRoute(path: '/ai/parse-invoice', builder: (context, state) => const InvoiceParserScreen()),
-      GoRoute(path: '/tools/invoice', builder: (context, state) => const InvoiceParserScreen()),
-      GoRoute(path: '/tools/parse-invoice', builder: (context, state) => const InvoiceParserScreen()),
-      GoRoute(path: '/ai/resume', builder: (context, state) => const ResumeScannerScreen()),
-      GoRoute(path: '/tools/parse-resume', builder: (context, state) => const ResumeScannerScreen()),
+      GoRoute(
+        path: '/tools/ocr',
+        builder: (context, state) => const OCRScreen(),
+      ),
+      GoRoute(
+        path: '/ai/summarize',
+        builder: (context, state) => const SummarizePDFScreen(),
+      ),
+      GoRoute(
+        path: '/ai/ask',
+        builder: (context, state) => const AskPDFScreen(),
+      ),
+      GoRoute(
+        path: '/ai/compare',
+        builder: (context, state) => const SemanticCompareScreen(),
+      ),
+      GoRoute(
+        path: '/ai/similarity',
+        builder: (context, state) => const SimilarityMatrixScreen(),
+      ),
+      GoRoute(
+        path: '/ai/similarity-matrix',
+        builder: (context, state) => const SimilarityMatrixScreen(),
+      ),
+      GoRoute(
+        path: '/ai/search',
+        builder: (context, state) => const SemanticSearchScreen(),
+      ),
+      GoRoute(
+        path: '/ai/classify',
+        builder: (context, state) => const ClassifyPDFScreen(),
+      ),
+      GoRoute(
+        path: '/ai/extract-info',
+        builder: (context, state) => const ExtractInfoScreen(),
+      ),
+      GoRoute(
+        path: '/ai/translate',
+        builder: (context, state) => const TranslatePDFScreen(),
+      ),
+      GoRoute(
+        path: '/ai/writing-assist',
+        builder: (context, state) => const WritingAssistantScreen(),
+      ),
+      GoRoute(
+        path: '/ai/writing-assistant',
+        builder: (context, state) => const WritingAssistantScreen(),
+      ),
+      GoRoute(
+        path: '/ai/quality-checker',
+        builder: (context, state) => const QualityCheckerScreen(),
+      ),
+      GoRoute(
+        path: '/ai/extract-tables',
+        builder: (context, state) => const ExtractTablesScreen(),
+      ),
+      GoRoute(
+        path: '/ai/image-enhancer',
+        builder: (context, state) => const ImageEnhancerScreen(),
+      ),
+      GoRoute(
+        path: '/ai/invoice',
+        builder: (context, state) => const InvoiceParserScreen(),
+      ),
+      GoRoute(
+        path: '/ai/parse-invoice',
+        builder: (context, state) => const InvoiceParserScreen(),
+      ),
+      GoRoute(
+        path: '/tools/invoice',
+        builder: (context, state) => const InvoiceParserScreen(),
+      ),
+      GoRoute(
+        path: '/tools/parse-invoice',
+        builder: (context, state) => const InvoiceParserScreen(),
+      ),
+      GoRoute(
+        path: '/ai/resume',
+        builder: (context, state) => const ResumeScannerScreen(),
+      ),
+      GoRoute(
+        path: '/tools/parse-resume',
+        builder: (context, state) => const ResumeScannerScreen(),
+      ),
 
       // Academic Tools
-      GoRoute(path: '/academic/research-analyzer', builder: (context, state) => const ResearchAnalyzerScreen()),
-      GoRoute(path: '/academic/literature-review', builder: (context, state) => const LiteratureReviewScreen()),
-      GoRoute(path: '/academic/research-gap', builder: (context, state) => const ResearchGapScreen()),
-      GoRoute(path: '/academic/citation-extractor', builder: (context, state) => const CitationExtractorScreen()),
-      GoRoute(path: '/academic/citation-formatter', builder: (context, state) => const CitationFormatterScreen()),
-      GoRoute(path: '/academic/reference-checker', builder: (context, state) => const ReferenceCheckerScreen()),
-      GoRoute(path: '/academic/study-notes', builder: (context, state) => const StudyNotesScreen()),
-      GoRoute(path: '/academic/quiz-generator', builder: (context, state) => const QuizGeneratorScreen()),
-      GoRoute(path: '/academic/flashcards', builder: (context, state) => const FlashcardScreen()),
-      GoRoute(path: '/academic/mind-map', builder: (context, state) => const MindMapScreen()),
-      GoRoute(path: '/academic/presentation-generator', builder: (context, state) => const PresentationGeneratorScreen()),
+      GoRoute(
+        path: '/academic/research-analyzer',
+        builder: (context, state) => const ResearchAnalyzerScreen(),
+      ),
+      GoRoute(
+        path: '/academic/literature-review',
+        builder: (context, state) => const LiteratureReviewScreen(),
+      ),
+      GoRoute(
+        path: '/academic/research-gap',
+        builder: (context, state) => const ResearchGapScreen(),
+      ),
+      GoRoute(
+        path: '/academic/citation-extractor',
+        builder: (context, state) => const CitationExtractorScreen(),
+      ),
+      GoRoute(
+        path: '/academic/citation-formatter',
+        builder: (context, state) => const CitationFormatterScreen(),
+      ),
+      GoRoute(
+        path: '/academic/reference-checker',
+        builder: (context, state) => const ReferenceCheckerScreen(),
+      ),
+      GoRoute(
+        path: '/academic/study-notes',
+        builder: (context, state) => const StudyNotesScreen(),
+      ),
+      GoRoute(
+        path: '/academic/quiz-generator',
+        builder: (context, state) => const QuizGeneratorScreen(),
+      ),
+      GoRoute(
+        path: '/academic/flashcards',
+        builder: (context, state) => const FlashcardScreen(),
+      ),
+      GoRoute(
+        path: '/academic/mind-map',
+        builder: (context, state) => const MindMapScreen(),
+      ),
+      GoRoute(
+        path: '/academic/presentation-generator',
+        builder: (context, state) => const PresentationGeneratorScreen(),
+      ),
 
       // Forms
-      GoRoute(path: '/forms/filler', builder: (context, state) => const FormFillerScreen()),
-      GoRoute(path: '/forms/creator', builder: (context, state) => const FormCreatorScreen()),
+      GoRoute(
+        path: '/forms/filler',
+        builder: (context, state) => const FormFillerScreen(),
+      ),
+      GoRoute(
+        path: '/forms/creator',
+        builder: (context, state) => const FormCreatorScreen(),
+      ),
 
       // Multi-Domain Expansion Screens
-      GoRoute(path: '/cognitive/retention', builder: (context, state) => const CognitiveRetentionScreen()),
-      GoRoute(path: '/voice/podcast', builder: (context, state) => const VoicePodcastScreen()),
-      GoRoute(path: '/accessibility/reader', builder: (context, state) => const AccessibilityReaderScreen()),
-      GoRoute(path: '/legal/audit', builder: (context, state) => const LegalAuditScreen()),
-      GoRoute(path: '/diagram/mindmap', builder: (context, state) => const MindMapDiagramScreen()),
-      GoRoute(path: '/workspace/dualpane', builder: (context, state) => const DualPaneWorkspaceScreen()),
+      GoRoute(
+        path: '/cognitive/retention',
+        builder: (context, state) => const CognitiveRetentionScreen(),
+      ),
+      GoRoute(
+        path: '/voice/podcast',
+        builder: (context, state) => const VoicePodcastScreen(),
+      ),
+      GoRoute(
+        path: '/accessibility/reader',
+        builder: (context, state) => const AccessibilityReaderScreen(),
+      ),
+      GoRoute(
+        path: '/legal/audit',
+        builder: (context, state) => const LegalAuditScreen(),
+      ),
+      GoRoute(
+        path: '/diagram/mindmap',
+        builder: (context, state) => const MindMapDiagramScreen(),
+      ),
+      GoRoute(
+        path: '/workspace/dualpane',
+        builder: (context, state) => const DualPaneWorkspaceScreen(),
+      ),
       GoRoute(
         path: '/p2p/meshshare',
         pageBuilder: (context, state) => CloudTransitionPage(
@@ -358,11 +624,19 @@ class AppRouter {
           key: state.pageKey,
         ),
       ),
-      GoRoute(path: '/analytics/tables', builder: (context, state) => const TabularExtractorScreen()),
-      GoRoute(path: '/translation/hub', builder: (context, state) => const TranslationHubScreen()),
-      GoRoute(path: '/publishing/studio', builder: (context, state) => const PublishingStudioScreen()),
+      GoRoute(
+        path: '/analytics/tables',
+        builder: (context, state) => const TabularExtractorScreen(),
+      ),
+      GoRoute(
+        path: '/translation/hub',
+        builder: (context, state) => const TranslationHubScreen(),
+      ),
+      GoRoute(
+        path: '/publishing/studio',
+        builder: (context, state) => const PublishingStudioScreen(),
+      ),
     ],
     errorBuilder: (context, state) => const AllToolsScreen(),
   );
 }
-

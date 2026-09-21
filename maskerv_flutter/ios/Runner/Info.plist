@@ -70,5 +70,7 @@
 	<string>MaskerV requires camera access to scan QR codes and capture documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>MaskerV requires photo library access to import QR images and documents.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>MaskerV uses Face ID to protect your Biometric Vault.</string>
 </dict>
 </plist>
