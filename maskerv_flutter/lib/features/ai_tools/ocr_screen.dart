@@ -8,10 +8,12 @@ import '../../core/providers/history_provider.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/pdf_engine.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
 import '../../core/widgets/how_it_works_carousel.dart';
 import '../../core/widgets/markdown_viewer.dart';
+import '../../core/widgets/social_platform_share_section.dart';
 
 class OCRScreen extends StatefulWidget {
   const OCRScreen({super.key});
@@ -119,13 +121,27 @@ class _OCRScreenState extends State<OCRScreen> {
             child: Column(
               children: [
                 if (_selectedFile == null)
-                  Center(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickFile,
-                      icon: const Icon(LucideIcons.scanLine, size: 20),
-                      label: const Text('Choose PDF or Image for OCR'),
-                      style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(16)),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _pickFile,
+                        icon: const Icon(LucideIcons.fileText, size: 18),
+                        label: const Text('Pick File'),
+                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: () => context.push('/tools/scanner'),
+                        icon: const Icon(LucideIcons.camera, size: 18),
+                        label: const Text('Camera Scanner'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.toolBlue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                      ),
+                    ],
                   )
                 else ...[
                   Row(
@@ -169,6 +185,12 @@ class _OCRScreenState extends State<OCRScreen> {
             MarkdownViewer(
               markdown: _extractedText,
               title: 'OCR Extracted Content',
+            ),
+            const SizedBox(height: 16),
+            SocialPlatformShareSection(
+              file: _selectedFile,
+              text: _extractedText,
+              subject: 'OCR Extracted Text',
             ),
           ],
         ],

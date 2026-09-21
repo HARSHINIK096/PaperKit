@@ -1,10 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
+
 import '../models/document_file.dart';
 import '../theme/app_colors.dart';
 
@@ -58,7 +57,8 @@ class FileListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fileColor = _getFileColor();
-    final formattedDate = DateFormat('MMM d, yyyy • h:mm a').format(file.modifiedAt);
+    final formattedDate = DateFormat('MMM d, yyyy • h:mm a')
+        .format(file.modifiedAt);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -73,132 +73,141 @@ class FileListItem extends StatelessWidget {
           ),
         ),
         child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: fileColor.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 4,
           ),
-          child: Icon(_getFileIcon(), color: fileColor, size: 22),
-        ),
-        title: Text(
-          file.name,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Row(
-          children: [
-            Text(
-              file.formattedSize,
-              style: TextStyle(
-                fontSize: 12,
-                color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
-              ),
+          leading: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: fileColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(width: 8),
-            Text(
-              '•',
-              style: TextStyle(
-                color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                formattedDate,
+            child: Icon(_getFileIcon(), color: fileColor, size: 22),
+          ),
+          title: Text(
+            file.name,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Row(
+            children: [
+              Text(
+                file.formattedSize,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
+                  color: isDark
+                      ? AppColors.textMutedDark
+                      : AppColors.textSecondaryLight,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (onFavoriteToggle != null)
-              IconButton(
+              const SizedBox(width: 8),
+              Text(
+                '•',
+                style: TextStyle(
+                  color: isDark
+                      ? AppColors.textMutedDark
+                      : AppColors.textSecondaryLight,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  formattedDate,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppColors.textMutedDark
+                        : AppColors.textSecondaryLight,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onFavoriteToggle != null)
+                IconButton(
+                  icon: Icon(
+                    file.isFavorite
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    color: file.isFavorite
+                        ? AppColors.warning
+                        : (isDark
+                              ? AppColors.textMutedDark
+                              : AppColors.textSecondaryLight),
+                    size: 22,
+                  ),
+                  onPressed: onFavoriteToggle,
+                ),
+              PopupMenuButton<String>(
                 icon: Icon(
-                  file.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
-                  color: file.isFavorite ? AppColors.warning : (isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight),
-                  size: 22,
+                  LucideIcons.moreVertical,
+                  size: 18,
+                  color: isDark
+                      ? AppColors.textMutedDark
+                      : AppColors.textSecondaryLight,
                 ),
-                onPressed: onFavoriteToggle,
+                onSelected: (value) async {
+                  if (value == 'open') {
+                    await OpenFilex.open(file.path);
+                  } else if (value == 'share') {
+                    await Share.shareXFiles([XFile(file.path)]);
+                  } else if (value == 'delete' && onDelete != null) {
+                    onDelete!();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'open',
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.externalLink, size: 16),
+                        SizedBox(width: 10),
+                        Text('Open'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'share',
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.share2, size: 16),
+                        SizedBox(width: 10),
+                        Text('Share'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(
+                          LucideIcons.trash2,
+                          size: 16,
+                          color: AppColors.error,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Delete',
+                          style: TextStyle(color: AppColors.error),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            PopupMenuButton<String>(
-              icon: Icon(
-                LucideIcons.moreVertical,
-                size: 18,
-                color: isDark ? AppColors.textMutedDark : AppColors.textSecondaryLight,
-              ),
-              onSelected: (value) async {
-                if (value == 'open') {
-                  await OpenFilex.open(file.path);
-                } else if (value == 'airshare') {
-                  context.push('/airshare', extra: File(file.path));
-                } else if (value == 'share') {
-                  await Share.shareXFiles([XFile(file.path)]);
-                } else if (value == 'delete' && onDelete != null) {
-                  onDelete!();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'open',
-                  child: Row(
-                    children: [
-                      Icon(LucideIcons.externalLink, size: 16),
-                      SizedBox(width: 10),
-                      Text('Open'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'airshare',
-                  child: Row(
-                    children: [
-                      Icon(LucideIcons.qrCode, size: 16, color: Color(0xFF4F46E5)),
-                      SizedBox(width: 10),
-                      Text(
-                        'AirShare via QR',
-                        style: TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'share',
-                  child: Row(
-                    children: [
-                      Icon(LucideIcons.share2, size: 16),
-                      SizedBox(width: 10),
-                      Text('Share'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(LucideIcons.trash2, size: 16, color: AppColors.error),
-                      SizedBox(width: 10),
-                      Text('Delete', style: TextStyle(color: AppColors.error)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
+          onTap: () => OpenFilex.open(file.path),
         ),
-        onTap: () => OpenFilex.open(file.path),
       ),
-    ),
-  );
+    );
   }
 }

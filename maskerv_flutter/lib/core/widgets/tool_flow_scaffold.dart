@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'particle_background.dart';
 import 'google_dotted_loader.dart';
 import 'tool_how_it_works_card.dart';
+import 'social_platform_share_section.dart';
 
 enum ToolStep {
   upload,
@@ -756,27 +757,9 @@ class _ToolFlowScaffoldState extends State<ToolFlowScaffold> with TickerProvider
           ),
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: OutlinedButton.icon(
-            onPressed: () {
-              if (_resultFile != null) {
-                context.push('/airshare', extra: _resultFile);
-              }
-            },
-            icon: const Icon(LucideIcons.qrCode, size: 18),
-            label: const Text(
-              'Beam directly via AirShare QR',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF4F46E5),
-              side: const BorderSide(color: Color(0xFF818CF8), width: 1.5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-          ),
-        ),
+
+        // Online Social Sharing Section
+        SocialPlatformShareSection(file: _resultFile),
       ],
     );
   }
@@ -972,29 +955,8 @@ class _ToolFlowScaffoldState extends State<ToolFlowScaffold> with TickerProvider
         ),
         const SizedBox(height: 12),
 
-        // Action 1.5: AirShare P2P via QR
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              if (_resultFile != null) {
-                context.push('/airshare', extra: _resultFile);
-              }
-            },
-            icon: const Icon(LucideIcons.qrCode, size: 18),
-            label: const Text(
-              'AirShare Beam via QR',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4F46E5), // Electric Indigo
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              elevation: 2,
-            ),
-          ),
-        ),
+        // Online Social Sharing Section
+        SocialPlatformShareSection(file: _resultFile),
         const SizedBox(height: 12),
 
         // Action 2: Share with Apps

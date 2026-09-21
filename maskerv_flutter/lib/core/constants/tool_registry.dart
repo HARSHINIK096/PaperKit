@@ -379,20 +379,6 @@ class ToolRegistry {
     tags: ['metadata', 'privacy', 'sanitize', 'author', 'pdf'],
   );
 
-  static const ToolItem biometricAppLock = ToolItem(
-    id: 'biometric-app-lock',
-    label: 'Biometric App Lock',
-    description: 'Hardware biometric fingerprint & Face ID vault security',
-    route: '/security/biometric-lock',
-    icon: LucideIcons.fingerprint,
-    color: AppColors.toolTeal,
-    softColor: AppColors.toolTealSoft,
-    category: ToolCategory.security,
-    domainNumber: 2,
-    domainName: 'Security, Cryptography & Compliance Vault',
-    domainId: DomainId.securityVault,
-    tags: ['biometric', 'fingerprint', 'face id', 'auth', 'security', 'vault'],
-  );
 
   // ──────────────────────────────────────────────────────────────────────────
   // DOMAIN 3: Academic & Research Intelligence Suite
@@ -1038,25 +1024,6 @@ class ToolRegistry {
   );
 
   // ──────────────────────────────────────────────────────────────────────────
-  // DOMAIN 12: Offline P2P Mesh & Air-Share Workspace
-  // ──────────────────────────────────────────────────────────────────────────
-
-  static const ToolItem p2pMeshShare = ToolItem(
-    id: 'p2p-meshshare',
-    label: 'Offline P2P Air-Share',
-    description: 'Zero-internet QR pairing & direct device-to-device transfer',
-    route: '/p2p/meshshare',
-    icon: LucideIcons.qrCode,
-    color: AppColors.toolGreen,
-    softColor: AppColors.toolGreenSoft,
-    category: ToolCategory.p2p,
-    domainNumber: 12,
-    domainName: 'Offline P2P Mesh & Air-Share Workspace',
-    domainId: DomainId.p2pAirShare,
-    tags: ['p2p', 'airshare', 'mesh', 'qr', 'offline', 'transfer', 'direct'],
-  );
-
-  // ──────────────────────────────────────────────────────────────────────────
   // DOMAIN 13: Data Analytics & Tabular Data Extractor
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -1378,7 +1345,6 @@ class ToolRegistry {
     smartRedaction.id: smartRedaction,
     digitalSign.id: digitalSign,
     metadataManager.id: metadataManager,
-    biometricAppLock.id: biometricAppLock,
 
     // Domain 3
     researchAnalyzer.id: researchAnalyzer,
@@ -1435,9 +1401,6 @@ class ToolRegistry {
 
     // Domain 11
     dualPaneWorkspace.id: dualPaneWorkspace,
-
-    // Domain 12
-    p2pMeshShare.id: p2pMeshShare,
 
     // Domain 13
     tabularExtractor.id: tabularExtractor,
@@ -1544,7 +1507,6 @@ class ToolRegistry {
         compressPdf,
         cognitiveRetention,
         legalAudit,
-        p2pMeshShare,
         publishingStudio,
       ];
 

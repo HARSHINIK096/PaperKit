@@ -4,7 +4,6 @@ import 'package:maskerv_flutter/core/models/audit_ledger_model.dart';
 import 'package:maskerv_flutter/core/models/dual_pane_model.dart';
 import 'package:maskerv_flutter/core/models/form_field_model.dart';
 import 'package:maskerv_flutter/core/models/mind_map_model.dart';
-import 'package:maskerv_flutter/core/models/p2p_share_model.dart';
 import 'package:maskerv_flutter/core/models/podcast_model.dart';
 import 'package:maskerv_flutter/core/models/publishing_model.dart';
 import 'package:maskerv_flutter/core/models/study_session_model.dart';
@@ -13,7 +12,6 @@ import 'package:maskerv_flutter/core/models/translation_model.dart';
 import 'package:maskerv_flutter/features/accessibility/bionic_reading_engine.dart';
 import 'package:maskerv_flutter/features/cognitive_retention/cognitive_retention_service.dart';
 import 'package:maskerv_flutter/features/forms/form_engine_service.dart';
-import 'package:maskerv_flutter/features/p2p_share/p2p_mesh_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -215,52 +213,6 @@ void main() {
     });
   });
 
-  group('Domain 12: Offline P2P Air-Share & Bundle Serialization', () {
-    test('QrSessionPayload URL encoding contains required parameters', () {
-      final payload = QrSessionPayload(
-        protocolVersion: '1.0',
-        sessionId: 'sess_123',
-        hostIp: '192.168.1.50',
-        port: 8080,
-        secretToken: 'secret_token_123',
-        documentName: 'thesis.pdf',
-        expiresAt: DateTime.now().add(const Duration(minutes: 10)),
-      );
-
-      final url = payload.toEncodedUrl();
-      expect(url.contains('maskerv://airshare'), isTrue);
-      expect(url.contains('ip=192.168.1.50'), isTrue);
-      expect(url.contains('port=8080'), isTrue);
-    });
-
-    test('P2PMeshService.scanNearbyDevices returns list without error', () async {
-      final service = P2PMeshService();
-      final devices = await service.scanNearbyDevices(maxRadiusMeters: 20.0);
-      expect(devices, isA<List<PeerDevice>>());
-    });
-
-    test('DirectTransferInvite serializes and converts to QrSessionPayload', () {
-      final invite = DirectTransferInvite(
-        senderDeviceId: 'dev_123',
-        senderDeviceName: 'Pixel 8 Pro',
-        senderIp: '192.168.1.105',
-        senderPort: 8089,
-        sessionToken: 'tok_abc',
-        documentName: 'report.pdf',
-        fileSize: 1048576,
-        sha256: 'sha256hash',
-      );
-
-      final json = invite.toJson();
-      final restored = DirectTransferInvite.fromJson(json);
-      expect(restored.senderDeviceName, equals('Pixel 8 Pro'));
-      expect(restored.documentName, equals('report.pdf'));
-
-      final qrPayload = invite.toQrSessionPayload();
-      expect(qrPayload.hostIp, equals('192.168.1.105'));
-      expect(qrPayload.documentName, equals('report.pdf'));
-    });
-  });
 
   group('Domain 13: Tabular Analytics & Data Extraction', () {
     test('ExtractedTableData formats CSV row content with double quotes', () {

@@ -265,7 +265,7 @@ graph TD
 | # | Authoritative Functional Domain | Count | Primary Tools Included |
 |---|---|:---:|---|
 | **1** | **File Manipulation & Document Tools** | **20** | PDF Editor, Merge PDF, Split PDF, Compress PDF, Extract Pages, Rotate PDF, Watermark, Organize Pages, N-Up Printing, Booklet Creator, Header & Footer, Word to PDF, PDF to Word, Excel to PDF, PDF to Excel, PPT to PDF, PDF to PPT, Image to PDF, PDF to Image, PDF/A Archive |
-| **2** | **Security, Cryptography & Compliance Vault** | **5** | Protect PDF, Redact Data, Digital Sign, Metadata Manager, Biometric App Lock |
+| **2** | **Security, Cryptography & Compliance Vault** | **4** | Protect PDF, Redact Data, Digital Sign, Metadata Manager |
 | **3** | **Academic & Research Intelligence Suite** | **19** | Research Analyzer, Literature Review, Research Gap Finder, Citation Extractor, Citation Formatter, Reference Checker, Study Notes, Quiz Generator, Flashcard Generator, AI Summary, AI Document Chat, Semantic Compare, Similarity Score, Semantic Search, Document Classify, Information Extract, Writing Assistant, Quality Checker, Resume AI Scanner |
 | **4** | **Optical Scanning & Vision Engine (OCR)** | **7** | OCR Text & Layout, Scan to PDF, Image Enhancer, Image Converter, Image Compressor, Image Adjust & Manipulator, Image Resizer |
 | **5** | **Gamified Cognitive Retention Studio** | **1** | Cognitive Retention Studio |
@@ -275,7 +275,7 @@ graph TD
 | **9** | **Interactive Form Builder & Auto-Fill Engine** | **2** | Form Filler, Form Creator |
 | **10** | **Visual Mind Mapping & Diagram Studio** | **3** | Visual Mind Map Studio, Mind Map Generator, Presentation Generator | 
 | **11** | **Student Productivity & Dual-Pane Workspace** | **1** | Dual-Pane Workspace Hub |
-| **12** | **Offline P2P Mesh & Air-Share Workspace** | **1** | Offline P2P Air-Share |
+| **12** | **Social & Online Sharing Hub** | **1** | WhatsApp, Instagram, Telegram & Online Share |
 | **13** | **Data Analytics & Tabular Data Extractor** | **3** | Tabular Data Extractor, Extract Tables, Invoice AI Parser |
 | **14** | **Translation & Multi-Lingual Localization** | **2** | AI Translation, Translation & Localization Hub |
 | **15** | **Automated Publishing & e-Book Studio** | **1** | Automated Publishing Studio |
@@ -459,13 +459,12 @@ MASKERV/
             ├── home/             # Dashboard, quick actions, category carousels
             ├── image_media_tools/# Converter, Compressor, Resizer, Video Editor, Archive Studio
             ├── legal_audit/      # Contract clause risk analyzer
-            ├── p2p_share/        # AirShare P2P local mesh transfer
             ├── pdf_tools/        # Merge, Split, Compress, Convert, Rotate, Bates, Booklet
             ├── profile/          # User settings, dark mode toggle, cache manager
             ├── publishing/       # Publishing studio
             ├── qr_tools/         # QR Generator, QR Scanner, Barcode Generator
             ├── scanner/          # Camera document capture & perspective transformation
-            ├── security_tools/   # Protect, Redact, Sign, Metadata, Biometric Lock, Secure Share
+            ├── security_tools/   # Protect, Redact, Sign, Metadata, Secure Share
             ├── translation/      # Multi-language document translation hub
             ├── voice_podcast/    # Automated audio podcast generation & playback
             ├── welcome/          # Splash screen, Onboarding flow, Feature tour
@@ -728,10 +727,8 @@ Implemented in `maskerv_flutter/lib/features/qr_tools/` and `maskerv-web/src/scr
   Declarative route definitions with custom page transition animations (`CloudTransitionPage`), parameter parsing, and fallback error handling across 70+ routes.
 * **Comprehensive Internationalization (i18n)**:
   `app_dictionary.dart` (84KB) provides localized strings across 7 languages: English (en), Spanish (es), French (fr), German (de), Chinese (zh), Japanese (ja), and Hindi (hi).
-* **Biometric Security Integration (`local_auth`)**:
-  Protects application access using hardware biometric sensors (FaceID / Fingerprint).
-* **AirShare P2P Mesh Share**:
-  Local device-to-device file transfer over local networks without intermediate cloud storage.
+* **Social & Online Platform Sharing**:
+  Direct 1-tap document sharing to WhatsApp, Instagram, Telegram, Email, and native system share.
 
 ---
 

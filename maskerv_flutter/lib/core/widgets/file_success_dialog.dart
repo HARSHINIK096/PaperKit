@@ -1,12 +1,14 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:go_router/go_router.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
+
 import '../theme/app_colors.dart';
 import 'particle_background.dart';
+import 'social_platform_share_section.dart';
 
 class FileSuccessDialog extends StatelessWidget {
   final String title;
@@ -84,7 +86,10 @@ class FileSuccessDialog extends StatelessWidget {
                 children: [
                   // Reward Celebration Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
@@ -145,7 +150,9 @@ class FileSuccessDialog extends StatelessWidget {
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.4,
-                      color: isDark ? AppColors.textPrimaryDark : const Color(0xFF0F172A),
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : const Color(0xFF0F172A),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -154,7 +161,9 @@ class FileSuccessDialog extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13.5,
-                      color: isDark ? AppColors.textSecondaryDark : const Color(0xFF64748B),
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : const Color(0xFF64748B),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -169,7 +178,9 @@ class FileSuccessDialog extends StatelessWidget {
                           : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0),
+                        color: isDark
+                            ? AppColors.borderDark
+                            : const Color(0xFFE2E8F0),
                       ),
                     ),
                     child: Row(
@@ -177,7 +188,8 @@ class FileSuccessDialog extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+                            color: const Color(0xFF2563EB)
+                                .withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
@@ -231,7 +243,10 @@ class FileSuccessDialog extends StatelessWidget {
                       icon: const Icon(LucideIcons.externalLink, size: 18),
                       label: const Text(
                         'Open Downloaded File',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14.5,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
@@ -243,33 +258,11 @@ class FileSuccessDialog extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
-                  // AirShare via QR Beam Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 44,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        context.push('/airshare', extra: file);
-                      },
-                      icon: const Icon(LucideIcons.qrCode, size: 18),
-                      label: const Text(
-                        'AirShare P2P Beam via QR',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4F46E5), // Electric Indigo
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
+                  // Online Social Sharing Platforms Section
+                  SocialPlatformShareSection(file: file),
+                  const SizedBox(height: 12),
 
                   // Secondary Actions: Share & Close
                   Row(
@@ -282,9 +275,13 @@ class FileSuccessDialog extends StatelessWidget {
                           icon: const Icon(LucideIcons.share2, size: 16),
                           label: const Text('Share'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: isDark ? Colors.white : const Color(0xFF334155),
+                            foregroundColor: isDark
+                                ? Colors.white
+                                : const Color(0xFF334155),
                             side: BorderSide(
-                              color: isDark ? AppColors.borderDark : const Color(0xFFCBD5E1),
+                              color: isDark
+                                  ? AppColors.borderDark
+                                  : const Color(0xFFCBD5E1),
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

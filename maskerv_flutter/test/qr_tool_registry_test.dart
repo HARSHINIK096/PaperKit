@@ -18,14 +18,12 @@ void main() {
       final gen = ToolRegistry.getById('qr-generator')!;
       final scan = ToolRegistry.getById('qr-scanner')!;
 
-      // Must NOT belong to Domain 12 (Offline P2P Air-Share)
+      // Must belong to general utilities layer
       expect(gen.domainNumber, isNull);
       expect(gen.domainId, DomainId.utilities);
-      expect(gen.domainId != DomainId.p2pAirShare, isTrue);
 
       expect(scan.domainNumber, isNull);
       expect(scan.domainId, DomainId.utilities);
-      expect(scan.domainId != DomainId.p2pAirShare, isTrue);
 
       // Must belong to general utilities layer
       expect(ToolRegistry.generalUtilities.any((t) => t.id == 'qr-generator'), isTrue);

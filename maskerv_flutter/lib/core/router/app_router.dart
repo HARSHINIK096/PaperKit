@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:go_router/go_router.dart';
 
 import '../../features/welcome/splash_screen.dart';
@@ -37,13 +35,6 @@ import '../../features/security_tools/protect_pdf_screen.dart';
 import '../../features/security_tools/smart_redaction_screen.dart';
 import '../../features/security_tools/digital_signature_screen.dart';
 import '../../features/security_tools/metadata_screen.dart';
-import '../../features/security_tools/biometric_app_lock_screen.dart';
-
-// Biometric Vault
-import '../../features/biometric_vault/presentation/biometric_vault_page.dart';
-import '../../features/biometric_vault/presentation/upload_vault_page.dart';
-import '../../features/biometric_vault/presentation/encryption_progress_page.dart';
-import '../../features/biometric_vault/presentation/file_vault_page.dart';
 
 // Image & Media Tools
 import '../../features/image_media_tools/image_converter_screen.dart';
@@ -104,7 +95,6 @@ import '../../features/accessibility/accessibility_reader_screen.dart';
 import '../../features/legal_audit/legal_audit_screen.dart';
 import '../../features/diagram_studio/mind_map_diagram_screen.dart';
 import '../../features/workspace/dual_pane_workspace_screen.dart';
-import '../../features/p2p_share/p2p_mesh_share_screen.dart';
 import '../../features/analytics/tabular_extractor_screen.dart';
 import '../../features/translation/translation_hub_screen.dart';
 import '../../features/publishing/publishing_studio_screen.dart';
@@ -324,37 +314,6 @@ class AppRouter {
       GoRoute(
         path: '/tools/metadata-manager',
         builder: (context, state) => const MetadataScreen(),
-      ),
-      // Legacy route — redirects to new Biometric Vault via BiometricAppLockScreen
-      GoRoute(
-        path: '/security/biometric-lock',
-        builder: (context, state) => const BiometricAppLockScreen(),
-      ),
-      GoRoute(
-        path: '/security/app-lock',
-        builder: (context, state) => const BiometricAppLockScreen(),
-      ),
-
-      // Biometric Vault routes
-      GoRoute(
-        path: '/vault',
-        builder: (context, state) => const BiometricVaultPage(),
-      ),
-      GoRoute(
-        path: '/vault/upload',
-        builder: (context, state) => const UploadVaultPage(),
-      ),
-      GoRoute(
-        path: '/vault/encrypt',
-        builder: (context, state) {
-          final file = state.extra as File?;
-          if (file == null) return const BiometricVaultPage();
-          return EncryptionProgressPage(sourceFile: file);
-        },
-      ),
-      GoRoute(
-        path: '/vault/file-list',
-        builder: (context, state) => const FileVaultPage(),
       ),
 
       // Image & Media Tools
@@ -609,20 +568,6 @@ class AppRouter {
       GoRoute(
         path: '/workspace/dualpane',
         builder: (context, state) => const DualPaneWorkspaceScreen(),
-      ),
-      GoRoute(
-        path: '/p2p/meshshare',
-        pageBuilder: (context, state) => CloudTransitionPage(
-          child: P2PMeshShareScreen(initialFile: state.extra as File?),
-          key: state.pageKey,
-        ),
-      ),
-      GoRoute(
-        path: '/airshare',
-        pageBuilder: (context, state) => CloudTransitionPage(
-          child: P2PMeshShareScreen(initialFile: state.extra as File?),
-          key: state.pageKey,
-        ),
       ),
       GoRoute(
         path: '/analytics/tables',

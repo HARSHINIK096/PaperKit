@@ -3,17 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maskerv_flutter/core/constants/tool_registry.dart';
 import 'package:maskerv_flutter/core/widgets/compact_upload_container.dart';
-import 'package:maskerv_flutter/features/security_tools/biometric_app_lock_screen.dart';
 import 'package:maskerv_flutter/features/ai_tools/resume_scanner_screen.dart';
 
 void main() {
   group('CompactUploadContainer & New Feature Screens Tests', () {
     test('ToolRegistry routes for Biometric App Lock & Resume Scanner are authoritative', () {
-      final biometricTool = ToolRegistry.getById('biometric-app-lock');
-      expect(biometricTool, isNotNull);
-      expect(biometricTool!.route, equals('/security/biometric-lock'));
-      expect(biometricTool.domainNumber, equals(2));
-
       final resumeTool = ToolRegistry.getById('parse-cv');
       expect(resumeTool, isNotNull);
       expect(resumeTool!.route, equals('/ai/resume'));
@@ -60,21 +54,6 @@ void main() {
       expect(find.text('test_document.pdf'), findsOneWidget);
       expect(find.text('READY'), findsOneWidget);
       expect(find.text('Change'), findsOneWidget);
-    });
-
-    testWidgets('BiometricAppLockScreen renders all 5 pipeline stage tabs', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: BiometricAppLockScreen(),
-        ),
-      );
-
-      expect(find.text('1. Upload'), findsOneWidget);
-      expect(find.text('2. Encrypt'), findsOneWidget);
-      expect(find.text('3. Vault View'), findsOneWidget);
-      expect(find.text('4. Export'), findsOneWidget);
-      expect(find.text('5. Success'), findsOneWidget);
-      expect(find.text('Touch Sensor to Unlock Vault'), findsNothing);
     });
 
     testWidgets('ResumeScannerScreen renders ATS Diagnostic features and 5-stage bar', (tester) async {

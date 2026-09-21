@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maskerv_flutter/core/models/audit_ledger_model.dart';
 import 'package:maskerv_flutter/core/models/form_field_model.dart';
-import 'package:maskerv_flutter/core/models/p2p_share_model.dart';
 import 'package:maskerv_flutter/core/models/study_session_model.dart';
 import 'package:maskerv_flutter/features/accessibility/bionic_reading_engine.dart';
 import 'package:maskerv_flutter/features/cognitive_retention/cognitive_retention_service.dart';
@@ -66,53 +65,6 @@ void main() {
       final filled = service.autoFillFields(fields, profile);
       expect(filled[0].value, equals('Jane Doe'));
       expect(filled[1].value, equals('jane@example.com'));
-    });
-  });
-
-  group('Domain 12: P2P Project Bundle Serialization', () {
-    test('MaskerV Project Bundle manifest serialization', () {
-      final manifest = MaskerVProjectBundleManifest(
-        projectName: 'Test Project',
-        createdBy: 'Test User',
-        pdfFiles: ['doc1.pdf'],
-        noteFiles: ['note1.txt'],
-        flashcardsFiles: [],
-        mindMapFiles: [],
-        checksumSha256: 'abc123hash',
-      );
-
-      final json = manifest.toJson();
-      final decoded = MaskerVProjectBundleManifest.fromJson(json);
-
-      expect(decoded.projectName, equals('Test Project'));
-      expect(decoded.pdfFiles.length, equals(1));
-    });
-
-    test('PeerDevice model supports proximity radius, angle, and distance labeling', () {
-      final immediateDevice = PeerDevice(
-        id: 'p1',
-        deviceName: 'Pixel 8 Pro',
-        ipAddress: '192.168.1.100',
-        distanceMeters: 1.5,
-        deviceType: 'phone',
-        angleRadians: 1.2,
-      );
-      expect(immediateDevice.distanceLabel, contains('Immediate'));
-
-      final roomDevice = PeerDevice(
-        id: 'p2',
-        deviceName: 'MacBook Pro',
-        ipAddress: '192.168.1.101',
-        distanceMeters: 3.5,
-        deviceType: 'laptop',
-      );
-      expect(roomDevice.distanceLabel, contains('Same Room'));
-
-      final json = immediateDevice.toJson();
-      final fromJson = PeerDevice.fromJson(json);
-      expect(fromJson.distanceMeters, equals(1.5));
-      expect(fromJson.deviceType, equals('phone'));
-      expect(fromJson.deviceName, equals('Pixel 8 Pro'));
     });
   });
 }

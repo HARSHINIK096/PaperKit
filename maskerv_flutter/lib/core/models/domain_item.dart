@@ -111,7 +111,6 @@ class DomainRegistry {
         'smart-redaction',
         'digital-sign',
         'metadata-manager',
-        'biometric-app-lock',
       ],
     ),
 
@@ -316,24 +315,6 @@ class DomainRegistry {
         'study-notes',
         'ai-doc-chat',
       ],
-    ),
-
-    // ── Domain 12 ──
-    DomainItem(
-      number: 12,
-      id: DomainId.p2pAirShare,
-      slug: 'p2p-airshare',
-      name: 'Offline P2P Mesh & Air-Share Workspace',
-      shortName: 'P2P Air-Share',
-      description: 'Zero-internet offline device-to-device file transfer, QR pairing handshake, and real-time co-review.',
-      icon: LucideIcons.qrCode,
-      color: AppColors.toolGreen,
-      softColor: AppColors.toolGreenSoft,
-      route: '/domain/12',
-      primaryToolIds: [
-        'p2p-meshshare',
-      ],
-      crossDomainToolIds: [],
     ),
 
     // ── Domain 13 ──

@@ -407,9 +407,9 @@ class _LandingScreenState extends State<LandingScreen> {
                                   isDark: isDark,
                                 ),
                                 _buildPillarTile(
-                                  icon: LucideIcons.qrCode,
-                                  title: 'AirShare P2P Sync',
-                                  desc: 'QR encrypted file share',
+                                  icon: LucideIcons.share2,
+                                  title: 'Online Social Share',
+                                  desc: 'Instant WhatsApp & platform share',
                                   color: const Color(0xFFF59E0B),
                                   isDark: isDark,
                                 ),
@@ -477,7 +477,7 @@ class _LandingScreenState extends State<LandingScreen> {
                                 const SizedBox(height: 8),
                                 _buildStudioRow(
                                   title: 'Security & Compliance Studio',
-                                  sub: 'Regex PII Redaction, e-Sign & Biometric Lock',
+                                  sub: 'Regex PII Redaction, e-Sign & Encryption',
                                   icon: LucideIcons.lock,
                                   color: const Color(0xFFEF4444),
                                   route: '/security/protect',
