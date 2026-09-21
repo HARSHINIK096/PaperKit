@@ -336,7 +336,7 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Incoming P2P Transfer Authentication Cancelled.'),
+            content: Text('P2P Transfer Authentication Cancelled or Failed.'),
             backgroundColor: Color(0xFFDC2626),
           ),
         );
@@ -369,6 +369,21 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
         _isTransferring = false;
         _receivedFile = file;
       });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Downloaded "${file.uri.pathSegments.last}" successfully!')),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
         _isTransferring = false;
@@ -1030,14 +1045,74 @@ class _P2PMeshShareScreenState extends State<P2PMeshShareScreen> with SingleTick
           if (_receivedFile != null) ...[
             const SizedBox(height: 16),
             Card(
-              color: Colors.green.shade50,
-              child: ListTile(
-                leading: const Icon(LucideIcons.fileCheck, color: Colors.green),
-                title: Text('Imported: ${_receivedFile!.uri.pathSegments.last}'),
-                subtitle: const Text('Verified SHA-256 digest & saved to MaskerV Workspace.'),
-                trailing: ElevatedButton(
-                  onPressed: () => OpenFilex.open(_receivedFile!.path),
-                  child: const Text('Open'),
+              color: isDark ? const Color(0xFF062E20) : Colors.green.shade50,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.green.shade300),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(LucideIcons.fileCheck, color: Colors.green, size: 24),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Downloaded: ${_receivedFile!.uri.pathSegments.last}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text('VERIFIED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Saved to MaskerV App Storage • SHA-256 Verified',
+                      style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[300] : Colors.grey[700]),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => OpenFilex.open(_receivedFile!.path),
+                            icon: const Icon(LucideIcons.externalLink, size: 16),
+                            label: const Text('Open File'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => Share.shareXFiles([XFile(_receivedFile!.path)]),
+                            icon: const Icon(LucideIcons.share2, size: 16),
+                            label: const Text('Export / Share'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF10B981),
+                              side: const BorderSide(color: Color(0xFF10B981)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),

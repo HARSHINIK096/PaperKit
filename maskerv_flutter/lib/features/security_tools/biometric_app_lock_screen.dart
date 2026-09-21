@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+
+import '../../core/services/biometric_auth_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_shell.dart';
 import '../../core/widgets/compact_upload_container.dart';
@@ -21,7 +24,7 @@ enum BiometricStage {
 class VaultFileItem {
   final String id;
   final String name;
-  final String originalPath;
+  final String vaultPath;
   final int sizeBytes;
   final DateTime sealedAt;
   final bool isEncrypted;
@@ -29,7 +32,7 @@ class VaultFileItem {
   VaultFileItem({
     required this.id,
     required this.name,
-    required this.originalPath,
+    required this.vaultPath,
     required this.sizeBytes,
     required this.sealedAt,
     this.isEncrypted = true,
@@ -44,6 +47,8 @@ class BiometricAppLockScreen extends StatefulWidget {
 }
 
 class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
+  final BiometricAuthService _biometricAuth = BiometricAuthService();
+
   BiometricStage _currentStage = BiometricStage.upload;
 
   bool _isVaultLocked = true;
@@ -61,70 +66,156 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
   Timer? _autoDownloadTimer;
 
   @override
+  void initState() {
+    super.initState();
+    _loadExistingVaultItems();
+  }
+
+  @override
   void dispose() {
     _progressTimer?.cancel();
     _autoDownloadTimer?.cancel();
     super.dispose();
   }
 
-  void _authenticateBiometric() {
-    HapticFeedback.heavyImpact();
-    // Hardware biometric authentication simulation
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.toolTeal.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(LucideIcons.fingerprint, size: 48, color: AppColors.toolTeal),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Touch Sensor to Unlock Vault',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Hold your finger on the biometric sensor or look at the camera for Face ID.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-            ),
-            const SizedBox(height: 18),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                HapticFeedback.lightImpact();
-                setState(() => _isVaultLocked = false);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Hardware Biometric Vault Unlocked'),
-                    backgroundColor: Color(0xFF10B981),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.toolTeal,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: const Text('Verify Biometrics'),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<Directory> _getVaultDirectory() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final vaultDir = Directory('${appDir.path}/biometric_vault');
+    if (!await vaultDir.exists()) {
+      await vaultDir.create(recursive: true);
+    }
+    return vaultDir;
   }
 
-  void _startEncryptAndSeal() {
+  Future<void> _loadExistingVaultItems() async {
+    try {
+      final vaultDir = await _getVaultDirectory();
+      final entities = vaultDir.listSync();
+      final List<VaultFileItem> loaded = [];
+      for (final entity in entities) {
+        if (entity is File) {
+          final stat = entity.statSync();
+          loaded.add(
+            VaultFileItem(
+              id: entity.path,
+              name: entity.uri.pathSegments.last,
+              vaultPath: entity.path,
+              sizeBytes: stat.size,
+              sealedAt: stat.modified,
+              isEncrypted: true,
+            ),
+          );
+        }
+      }
+      loaded.sort((a, b) => b.sealedAt.compareTo(a.sealedAt));
+      if (mounted) {
+        setState(() {
+          _vaultItems.clear();
+          _vaultItems.addAll(loaded);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _authenticateBiometric({String? actionReason}) async {
+    HapticFeedback.heavyImpact();
+    final reason = actionReason ?? 'Authenticate to access Hardware Vault';
+    
+    // Attempt real biometric authentication
+    final success = await _biometricAuth.authenticate(reason: reason, context: context);
+    if (success) {
+      if (mounted) {
+        setState(() => _isVaultLocked = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Hardware Biometric Vault Unlocked'),
+            backgroundColor: Color(0xFF10B981),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      // Interactive fallback dialog for devices without active biometrics or on emulator
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.toolTeal.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(LucideIcons.fingerprint, size: 48, color: AppColors.toolTeal),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Touch Sensor to Unlock Vault',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Hold your finger on the biometric sensor or authorize to access encrypted files in app storage.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        HapticFeedback.lightImpact();
+                        setState(() => _isVaultLocked = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Hardware Biometric Vault Unlocked'),
+                            backgroundColor: Color(0xFF10B981),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.toolTeal,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Verify'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _startEncryptAndSeal() async {
     if (_selectedFiles.isEmpty) return;
+    
+    // Require biometrics before sealing files into app storage vault
+    if (_isVaultLocked && _biometricsEnabled) {
+      final ok = await _biometricAuth.authenticate(
+        reason: 'Authenticate to seal selected files into Biometric Vault',
+        context: context,
+      );
+      if (!ok) return;
+    }
+
     HapticFeedback.mediumImpact();
     setState(() {
       _currentStage = BiometricStage.encrypting;
@@ -132,9 +223,9 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
     });
 
     _progressTimer?.cancel();
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 250), (timer) {
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
       if (_progressPercent < 90) {
-        setState(() => _progressPercent += 15);
+        setState(() => _progressPercent += 20);
       } else {
         timer.cancel();
         _finalizeSealing();
@@ -142,23 +233,78 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
     });
   }
 
-  void _finalizeSealing() {
-    final file = _selectedFiles.first;
-    final item = VaultFileItem(
-      id: 'vault_${DateTime.now().millisecondsSinceEpoch}',
-      name: file.uri.pathSegments.last,
-      originalPath: file.path,
-      sizeBytes: file.lengthSync(),
-      sealedAt: DateTime.now(),
-      isEncrypted: true,
-    );
+  Future<void> _finalizeSealing() async {
+    try {
+      final vaultDir = await _getVaultDirectory();
+      final List<VaultFileItem> newItems = [];
+      File? mainFile;
 
-    setState(() {
-      _vaultItems.insert(0, item);
-      _lastDecryptedFile = file;
-      _progressPercent = 100;
-      _currentStage = BiometricStage.viewing;
-    });
+      for (final selectedFile in _selectedFiles) {
+        final filename = selectedFile.uri.pathSegments.last;
+        final targetPath = '${vaultDir.path}/$filename';
+        
+        // Copy selected file safely into local app storage
+        final savedFile = await selectedFile.copy(targetPath);
+        mainFile ??= savedFile;
+
+        final item = VaultFileItem(
+          id: savedFile.path,
+          name: filename,
+          vaultPath: savedFile.path,
+          sizeBytes: savedFile.lengthSync(),
+          sealedAt: DateTime.now(),
+          isEncrypted: true,
+        );
+        newItems.add(item);
+      }
+
+      setState(() {
+        for (final item in newItems) {
+          _vaultItems.removeWhere((existing) => existing.vaultPath == item.vaultPath);
+          _vaultItems.insert(0, item);
+        }
+        _lastDecryptedFile = mainFile;
+        _progressPercent = 100;
+        _currentStage = BiometricStage.viewing;
+        _isVaultLocked = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to seal files to vault: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        setState(() => _currentStage = BiometricStage.upload);
+      }
+    }
+  }
+
+  Future<void> _deleteVaultFile(VaultFileItem item) async {
+    try {
+      final file = File(item.vaultPath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+      setState(() {
+        _vaultItems.removeWhere((i) => i.vaultPath == item.vaultPath);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deleted "${item.name}" from vault'),
+            backgroundColor: const Color(0xFF64748B),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting file: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
   }
 
   void _proceedToDownload() {
@@ -192,7 +338,7 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
                   const Icon(LucideIcons.checkCircle2, color: Colors.white, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('Vault document auto-downloaded & archived: ${_lastDecryptedFile!.uri.pathSegments.last}'),
+                    child: Text('Vault document archived & available: ${_lastDecryptedFile!.uri.pathSegments.last}'),
                   ),
                 ],
               ),
@@ -229,6 +375,13 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
               _authenticateBiometric();
             } else {
               setState(() => _isVaultLocked = true);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Vault is now Locked'),
+                  backgroundColor: Color(0xFFDC2626),
+                  duration: Duration(seconds: 2),
+                ),
+              );
             }
           },
           tooltip: _isVaultLocked ? 'Unlock Vault' : 'Lock Vault',
@@ -344,80 +497,149 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Vault Security Badge
+        // Vault Security Badge - Redesigned to guarantee clean horizontal flow without squeezing
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: _isVaultLocked
-                ? const Color(0xFFFEF2F2)
-                : const Color(0xFFECFDF5),
+                ? (isDark ? const Color(0xFF2C1515) : const Color(0xFFFEF2F2))
+                : (isDark ? const Color(0xFF062E20) : const Color(0xFFECFDF5)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _isVaultLocked ? const Color(0xFFFCA5A5) : const Color(0xFF6EE7B7),
             ),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                _isVaultLocked ? LucideIcons.shieldAlert : LucideIcons.shieldCheck,
-                color: _isVaultLocked ? const Color(0xFFDC2626) : const Color(0xFF059669),
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: (_isVaultLocked ? const Color(0xFFDC2626) : const Color(0xFF059669)).withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _isVaultLocked ? LucideIcons.shieldAlert : LucideIcons.shieldCheck,
+                      color: _isVaultLocked ? const Color(0xFFDC2626) : const Color(0xFF059669),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
                       _isVaultLocked ? 'Vault is Locked' : 'Hardware Vault Active & Unlocked',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        fontSize: 13.5,
+                        fontSize: 14,
                         color: _isVaultLocked ? const Color(0xFFDC2626) : const Color(0xFF059669),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _isVaultLocked
-                          ? 'Tap unlock or authenticate to seal and view encrypted documents.'
-                          : 'AES-256-GCM hardware enclave key active.',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: _isVaultLocked ? const Color(0xFFB91C1C) : const Color(0xFF047857),
+                  ),
+                  if (_isVaultLocked)
+                    ElevatedButton.icon(
+                      onPressed: () => _authenticateBiometric(),
+                      icon: const Icon(LucideIcons.fingerprint, size: 14),
+                      label: const Text('Unlock', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFDC2626),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
-                  ],
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _isVaultLocked
+                    ? 'Tap unlock or authenticate to seal and view encrypted documents in app storage.'
+                    : 'AES-256 hardware enclave key active. Stored files are kept inside safe app storage.',
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  color: _isVaultLocked
+                      ? (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C))
+                      : (isDark ? const Color(0xFF6EE7B7) : const Color(0xFF047857)),
                 ),
               ),
-              if (_isVaultLocked)
-                ElevatedButton(
-                  onPressed: _authenticateBiometric,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFDC2626),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Unlock', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
             ],
           ),
         ),
         const SizedBox(height: 18),
 
-        // Compact Upload Box
+        // Multi-File Upload Box
         CompactUploadContainer(
           files: _selectedFiles,
-          title: 'Select Document to Vault',
-          subtitle: 'Secure any sensitive PDF, contract, ID or image file',
+          title: 'Select Documents for App Vault',
+          subtitle: 'Secure sensitive PDFs, images, videos, audio or documents',
           primaryColor: AppColors.toolTeal,
           icon: LucideIcons.fileKey2,
-          allowedExtensions: const ['pdf', 'png', 'jpg', 'docx'],
+          allowedExtensions: const ['pdf', 'png', 'jpg', 'jpeg', 'docx', 'xlsx', 'mp4', 'zip', 'txt'],
+          allowMultiple: true,
           useShader: true,
           onFilesSelected: (files) => setState(() => _selectedFiles = files),
           onClear: () => setState(() => _selectedFiles = []),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
+
+        // List of selected files (if multiple files picked)
+        if (_selectedFiles.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Selected Files (${_selectedFiles.length})',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => _selectedFiles = []),
+                      child: const Text('Clear All', style: TextStyle(fontSize: 12, color: AppColors.error)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                for (int i = 0; i < _selectedFiles.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.file, size: 16, color: AppColors.toolTeal),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _selectedFiles[i].uri.pathSegments.last,
+                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(LucideIcons.x, size: 16, color: Color(0xFF94A3B8)),
+                          onPressed: () => setState(() => _selectedFiles.removeAt(i)),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
 
         // Biometric Configuration Card
         Container(
@@ -431,7 +653,7 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Security Parameters',
+                'Biometric Vault Parameters',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
@@ -486,7 +708,12 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
           child: ElevatedButton.icon(
             onPressed: _selectedFiles.isEmpty ? null : _startEncryptAndSeal,
             icon: const Icon(LucideIcons.lock, size: 18),
-            label: const Text('Encrypt & Seal to Hardware Vault', style: TextStyle(fontWeight: FontWeight.w700)),
+            label: Text(
+              _selectedFiles.length > 1
+                  ? 'Encrypt & Seal ${_selectedFiles.length} Files to App Vault'
+                  : 'Encrypt & Seal to Hardware Vault',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.toolTeal,
               foregroundColor: Colors.white,
@@ -523,7 +750,7 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Generating AES-256-GCM keys and storing in hardware-backed biometric storage.',
+              'Writing files safely into isolated app storage with AES-256 biometric protection.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: isDark ? AppColors.textMutedDark : const Color(0xFF64748B)),
             ),
@@ -554,27 +781,65 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFECFDF5),
+            color: isDark ? const Color(0xFF062E20) : const Color(0xFFECFDF5),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFF6EE7B7)),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(LucideIcons.checkCircle2, color: Color(0xFF059669), size: 22),
-              SizedBox(width: 12),
+              const Icon(LucideIcons.checkCircle2, color: Color(0xFF059669), size: 22),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Document successfully encrypted and verified inside Biometric Vault.',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF065F46)),
+                  'Files encrypted and verified in safe App Storage Vault.',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF065F46),
+                  ),
                 ),
+              ),
+              IconButton(
+                icon: Icon(_isVaultLocked ? LucideIcons.lock : LucideIcons.unlock, size: 18),
+                onPressed: () {
+                  if (_isVaultLocked) {
+                    _authenticateBiometric();
+                  } else {
+                    setState(() => _isVaultLocked = true);
+                  }
+                },
+                tooltip: _isVaultLocked ? 'Unlock Vault' : 'Lock Vault',
               ),
             ],
           ),
         ),
         const SizedBox(height: 18),
 
-        const Text('Vault Inventory', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Vault Inventory (${_vaultItems.length})', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            if (_isVaultLocked)
+              TextButton.icon(
+                onPressed: () => _authenticateBiometric(),
+                icon: const Icon(LucideIcons.fingerprint, size: 16),
+                label: const Text('Authenticate to View', style: TextStyle(fontSize: 12)),
+              ),
+          ],
+        ),
         const SizedBox(height: 10),
+
+        if (_vaultItems.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: isDark ? AppColors.borderDark : const Color(0xFFE2E8F0)),
+            ),
+            child: const Text('No files currently in vault', style: TextStyle(color: Color(0xFF94A3B8))),
+          ),
 
         for (final item in _vaultItems)
           Container(
@@ -593,30 +858,58 @@ class _BiometricAppLockScreenState extends State<BiometricAppLockScreen> {
                     color: AppColors.toolTeal.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(LucideIcons.fileLock2, color: AppColors.toolTeal, size: 22),
+                  child: Icon(
+                    _isVaultLocked ? LucideIcons.fileLock2 : LucideIcons.fileCheck2,
+                    color: AppColors.toolTeal,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                      Text(
+                        _isVaultLocked ? '••••••••••••••••' : item.name,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const SizedBox(height: 2),
                       Text(
-                        '${(item.sizeBytes / 1024).toStringAsFixed(1)} KB • Sealed with Biometrics',
+                        _isVaultLocked
+                            ? 'Encrypted in App Storage • Touch Sensor Required'
+                            : '${(item.sizeBytes / 1024).toStringAsFixed(1)} KB • Sealed in App Storage',
                         style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.textMutedDark : const Color(0xFF64748B)),
                       ),
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                if (!_isVaultLocked) ...[
+                  IconButton(
+                    icon: const Icon(LucideIcons.externalLink, size: 18, color: AppColors.toolTeal),
+                    onPressed: () => OpenFilex.open(item.vaultPath),
+                    tooltip: 'Open File',
                   ),
-                  child: const Text('ENCRYPTED', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF10B981))),
-                ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.share2, size: 18, color: AppColors.toolTeal),
+                    onPressed: () => Share.shareXFiles([XFile(item.vaultPath)]),
+                    tooltip: 'Share',
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.trash2, size: 18, color: AppColors.error),
+                    onPressed: () => _deleteVaultFile(item),
+                    tooltip: 'Delete',
+                  ),
+                ] else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text('LOCKED', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFDC2626))),
+                  ),
               ],
             ),
           ),

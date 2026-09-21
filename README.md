@@ -273,7 +273,7 @@ graph TD
 | **7** | **Universal Accessibility & Inclusive Reading** | **1** | Accessibility Reader Studio |
 | **8** | **Legal & Forensic Compliance Audit Suite** | **2** | Bates Stamping, Legal & Forensic Audit Suite |
 | **9** | **Interactive Form Builder & Auto-Fill Engine** | **2** | Form Filler, Form Creator |
-| **10** | **Visual Mind Mapping & Diagram Studio** | **3** | Visual Mind Map Studio, Mind Map Generator, Presentation Generator |
+| **10** | **Visual Mind Mapping & Diagram Studio** | **3** | Visual Mind Map Studio, Mind Map Generator, Presentation Generator | 
 | **11** | **Student Productivity & Dual-Pane Workspace** | **1** | Dual-Pane Workspace Hub |
 | **12** | **Offline P2P Mesh & Air-Share Workspace** | **1** | Offline P2P Air-Share |
 | **13** | **Data Analytics & Tabular Data Extractor** | **3** | Tabular Data Extractor, Extract Tables, Invoice AI Parser |

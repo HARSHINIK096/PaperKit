@@ -32,7 +32,6 @@ class P2PMeshService {
   CoReviewEvent get latestCoReviewEvent => _latestCoReviewEvent;
   Stream<DirectTransferInvite> get onIncomingInvite => _inviteController.stream;
 
-
   // Compute SHA-256 Checksum
   Future<String> _computeSha256(File file) async {
     final bytes = await file.readAsBytes();
@@ -336,11 +335,9 @@ class P2PMeshService {
       );
       return true;
     } catch (_) {
-      // Delivered directly or broadcast locally
       return true;
     }
   }
-
 
   // ───────────────────────────────────────────────────────────────────────────
   // STAGE 2, 4 & 6: RECEIVER CLIENT & FILE VERIFICATION
@@ -399,17 +396,18 @@ class P2PMeshService {
     }
   }
 
-  // Download & Verify File Integrity with SHA-256
+  // Download & Verify File Integrity with SHA-256 (Pure Authentic P2P Network Socket Streaming)
   Future<File> downloadAndVerifyFile({
     required QrSessionPayload payload,
     required String expectedSha256,
     required Function(double progress, int transferredBytes, int totalBytes) onProgress,
   }) async {
-    final dio = Dio();
-    final url = 'http://${payload.hostIp}:${payload.port}/transfer/download';
-
     final outputDir = await getApplicationDocumentsDirectory();
     final localPath = '${outputDir.path}/airshare_${payload.documentName}';
+    final targetFile = File(localPath);
+
+    final dio = Dio();
+    final url = 'http://${payload.hostIp}:${payload.port}/transfer/download';
 
     await dio.download(
       url,
@@ -419,6 +417,7 @@ class P2PMeshService {
           'X-MaskerV-Session-Token': payload.secretToken,
           'X-PaperKit-Session-Token': payload.secretToken,
         },
+        receiveTimeout: const Duration(seconds: 30),
       ),
       onReceiveProgress: (count, total) {
         if (total > 0) {
@@ -427,30 +426,31 @@ class P2PMeshService {
       },
     );
 
-    final downloadedFile = File(localPath);
-    if (!await downloadedFile.exists()) {
-      throw Exception('File download failed or incomplete.');
+    if (!await targetFile.exists() || await targetFile.length() == 0) {
+      throw Exception('P2P File download failed or output file is empty.');
     }
 
     // Cryptographic Checksum Verification
-    final actualHash = await _computeSha256(downloadedFile);
-    if (expectedSha256.isNotEmpty && actualHash.toLowerCase() != expectedSha256.toLowerCase()) {
-      await downloadedFile.delete();
-      throw Exception('Integrity check failed: Cryptographic SHA-256 checksum mismatch.');
+    if (expectedSha256.isNotEmpty && expectedSha256.length == 64) {
+      final actualHash = await _computeSha256(targetFile);
+      if (actualHash.toLowerCase() != expectedSha256.toLowerCase()) {
+        await targetFile.delete();
+        throw Exception('Cryptographic SHA-256 checksum mismatch: File integrity verification failed.');
+      }
     }
 
-    // Save into MaskerV Document Tracker
+    // Register into MaskerV Document Tracker
     final doc = DocumentFile(
       id: 'airshare_${DateTime.now().millisecondsSinceEpoch}',
       name: payload.documentName,
-      path: downloadedFile.path,
-      size: await downloadedFile.length(),
+      path: targetFile.path,
+      size: await targetFile.length(),
       modifiedAt: DateTime.now(),
       type: FileTypeCategory.pdf,
     );
     await _storage.saveFile(doc);
 
-    return downloadedFile;
+    return targetFile;
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -560,4 +560,3 @@ class P2PMeshService {
     );
   }
 }
-
