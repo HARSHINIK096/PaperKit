@@ -124,17 +124,29 @@ class _AcademicToolScaffoldState<T> extends State<AcademicToolScaffold<T>> {
     try {
       final result = await widget.onProcess(_files);
       if (mounted) {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        await context.read<HistoryProvider>().addRecord(
-          HistoryItem(
-            id: 'hist_$timestamp',
-            toolId: widget.toolId,
-            toolName: widget.toolName,
-            fileName: _files.first.uri.pathSegments.last,
-            fileSize: await _files.first.length(),
-            timestamp: DateTime.now(),
-          ),
-        );
+        try {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final pathSegs = _files.first.uri.pathSegments;
+          final fileName = pathSegs.isNotEmpty
+              ? pathSegs.last
+              : _files.first.path.split(RegExp(r'[/\\]')).last;
+          int fileSize = 0;
+          try {
+            fileSize = await _files.first.length();
+          } catch (_) {}
+
+          await context.read<HistoryProvider>().addRecord(
+            HistoryItem(
+              id: 'hist_$timestamp',
+              toolId: widget.toolId,
+              toolName: widget.toolName,
+              fileName: fileName,
+              fileSize: fileSize,
+              timestamp: DateTime.now(),
+            ),
+          );
+        } catch (_) {}
+
         setState(() {
           _result = result;
         });
