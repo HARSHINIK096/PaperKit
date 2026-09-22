@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../theme/app_colors.dart';
 
-/// The 15 Authoritative Functional Domains of MaskerV
+/// The 14 Authoritative Functional Domains of MaskerV
 enum DomainId {
   fileManipulation,      // 1. File Manipulation & Document Tools
   securityVault,         // 2. Security, Cryptography & Compliance Vault
@@ -13,12 +13,11 @@ enum DomainId {
   accessibilityReader,   // 7. Universal Accessibility & Inclusive Reading Studio
   legalAuditSuite,       // 8. Legal & Forensic Compliance Audit Suite
   formBuilderEngine,     // 9. Interactive Form Builder & Auto-Fill Engine
-  mindMappingStudio,     // 10. Visual Mind Mapping & Diagram Studio
-  studentWorkspace,      // 11. Student Productivity & Dual-Pane Workspace Hub
-  mediaDevUtilities,     // 12. Media Utilities & Developer Tools Hub
-  dataAnalyticsTabular,  // 13. Data Analytics & Tabular Data Extractor
-  translationHub,        // 14. Translation & Multi-Lingual Localization Hub
-  publishingStudio,      // 15. Automated Publishing & e-Book Studio
+  studentWorkspace,      // 10. Student Productivity & Dual-Pane Workspace Hub
+  mediaDevUtilities,     // 11. Media Utilities & Developer Tools Hub
+  dataAnalyticsTabular,  // 12. Data Analytics & Tabular Data Extractor
+  translationHub,        // 13. Translation & Multi-Lingual Localization Hub
+  publishingStudio,      // 14. Automated Publishing & e-Book Studio
   utilities,             // Cross-domain general utilities layer
 }
 
@@ -53,7 +52,7 @@ class DomainItem {
   });
 }
 
-/// Canonical registry of the 15 Authoritative Functional Domains.
+/// Canonical registry of the 14 Authoritative Functional Domains.
 class DomainRegistry {
   DomainRegistry._();
 
@@ -148,8 +147,6 @@ class DomainRegistry {
         'parse-cv',
       ],
       crossDomainToolIds: [
-        'mind-map',
-        'presentation-generator',
         'cognitive-retention',
         'workspace-dualpane',
       ],
@@ -185,14 +182,13 @@ class DomainRegistry {
       slug: 'cognitive-retention',
       name: 'Gamified Cognitive Retention & Active Study Studio',
       shortName: 'Cognitive Studio',
-      description: 'Active recall blur-to-reveal reading, SM-2 / Leitner spaced repetition scheduling, and reading velocity tracking.',
+      description: 'Active recall blur-to-reveal reading, Leitner spaced repetition scheduling, and reading velocity tracking.',
       icon: LucideIcons.brain,
       color: AppColors.toolOrange,
       softColor: AppColors.toolOrangeSoft,
       route: '/domain/5',
       primaryToolIds: [
         'cognitive-retention',
-        'spaced-repetition',
         'speed-reader',
       ],
       crossDomainToolIds: [
@@ -279,35 +275,12 @@ class DomainRegistry {
       primaryToolIds: [
         'form-filler',
         'form-creator',
-        'form-data-extractor',
       ],
     ),
 
     // ── Domain 10 ──
     DomainItem(
       number: 10,
-      id: DomainId.mindMappingStudio,
-      slug: 'mind-mapping',
-      name: 'Visual Mind Mapping & Diagram Studio',
-      shortName: 'Diagram Studio',
-      description: 'Interactive node-graph visual canvas, document structure-to-mindmap conversion, and presentation slide deck generation.',
-      icon: LucideIcons.gitFork,
-      color: AppColors.toolPurple,
-      softColor: AppColors.toolPurpleSoft,
-      route: '/domain/10',
-      primaryToolIds: [
-        'diagram-mindmap',
-        'mind-map',
-        'presentation-generator',
-      ],
-      crossDomainToolIds: [
-        'research-analyzer',
-      ],
-    ),
-
-    // ── Domain 11 ──
-    DomainItem(
-      number: 11,
       id: DomainId.studentWorkspace,
       slug: 'student-workspace',
       name: 'Student Productivity & Dual-Pane Workspace Hub',
@@ -316,7 +289,7 @@ class DomainRegistry {
       icon: LucideIcons.layoutGrid,
       color: AppColors.toolIndigo,
       softColor: AppColors.toolIndigoSoft,
-      route: '/domain/11',
+      route: '/domain/10',
       primaryToolIds: [
         'workspace-dualpane',
         'focus-pomodoro',
@@ -328,9 +301,9 @@ class DomainRegistry {
       ],
     ),
 
-    // ── Domain 12 ──
+    // ── Domain 11 ──
     DomainItem(
-      number: 12,
+      number: 11,
       id: DomainId.mediaDevUtilities,
       slug: 'media-dev-utilities',
       name: 'Media Utilities & Developer Tools Hub',
@@ -339,7 +312,7 @@ class DomainRegistry {
       icon: LucideIcons.wrench,
       color: AppColors.toolTeal,
       softColor: AppColors.toolTealSoft,
-      route: '/domain/12',
+      route: '/domain/11',
       primaryToolIds: [
         'watermark-studio',
         'batch-image-converter',
@@ -349,9 +322,9 @@ class DomainRegistry {
       ],
     ),
 
-    // ── Domain 13 ──
+    // ── Domain 12 ──
     DomainItem(
-      number: 13,
+      number: 12,
       id: DomainId.dataAnalyticsTabular,
       slug: 'data-analytics',
       name: 'Data Analytics & Tabular Data Extractor',
@@ -360,7 +333,7 @@ class DomainRegistry {
       icon: LucideIcons.table,
       color: AppColors.toolBlue,
       softColor: AppColors.toolBlueSoft,
-      route: '/domain/13',
+      route: '/domain/12',
       primaryToolIds: [
         'analytics-tables',
         'extract-tables',
@@ -371,9 +344,9 @@ class DomainRegistry {
       ],
     ),
 
-    // ── Domain 14 ──
+    // ── Domain 13 ──
     DomainItem(
-      number: 14,
+      number: 13,
       id: DomainId.translationHub,
       slug: 'translation-hub',
       name: 'Translation & Multi-Lingual Localization Hub',
@@ -382,7 +355,7 @@ class DomainRegistry {
       icon: LucideIcons.languages,
       color: AppColors.toolPink,
       softColor: AppColors.toolPinkSoft,
-      route: '/domain/14',
+      route: '/domain/13',
       primaryToolIds: [
         'translate-doc',
         'translation-hub',
@@ -390,22 +363,21 @@ class DomainRegistry {
       ],
     ),
 
-    // ── Domain 15 ──
+    // ── Domain 14 ──
     DomainItem(
-      number: 15,
+      number: 14,
       id: DomainId.publishingStudio,
       slug: 'publishing-studio',
       name: 'Automated Publishing & e-Book Studio',
       shortName: 'Publishing Studio',
-      description: 'CMYK prepress validation, print preflight audit checklist, and automated reflowable ePub eBook generation.',
+      description: 'CMYK prepress validation, print preflight audit checklist, and automated Markdown to PDF publishing.',
       icon: LucideIcons.bookOpenCheck,
       color: AppColors.toolPurple,
       softColor: AppColors.toolPurpleSoft,
-      route: '/domain/15',
+      route: '/domain/14',
       primaryToolIds: [
         'publishing-studio',
-        'ebook-cover-designer',
-        'markdown-to-epub',
+        'markdown-to-pdf',
       ],
       crossDomainToolIds: [
         'pdf-to-pdfa',
@@ -413,7 +385,7 @@ class DomainRegistry {
     ),
   ];
 
-  /// Cross-domain general utilities layer (NOT a 16th functional domain).
+  /// Cross-domain general utilities layer.
   static const List<String> generalUtilityToolIds = [
     'qr-generator',
     'barcode-generator',
@@ -422,7 +394,7 @@ class DomainRegistry {
     'archive-studio',
   ];
 
-  /// Resolves a domain by its 1-indexed number (1..15).
+  /// Resolves a domain by its 1-indexed number (1..14).
   static DomainItem? getByNumber(int number) {
     if (number < 1 || number > domains.length) return null;
     return domains[number - 1];
@@ -432,7 +404,7 @@ class DomainRegistry {
   static DomainItem? resolve(String key) {
     final clean = key.toLowerCase().trim();
 
-    // Direct number check (e.g. "1", "8", "15")
+    // Direct number check (e.g. "1", "8", "14")
     final numVal = int.tryParse(clean);
     if (numVal != null && numVal >= 1 && numVal <= domains.length) {
       return domains[numVal - 1];
@@ -490,28 +462,28 @@ class DomainRegistry {
       case 'form':
       case 'filler':
         return getByNumber(9);
+      case 'workspace':
+      case 'dualpane':
       case 'diagram':
       case 'mindmap':
         return getByNumber(10);
-      case 'workspace':
-      case 'dualpane':
-        return getByNumber(11);
       case 'p2p':
       case 'airshare':
       case 'mesh':
-        return getByNumber(12);
+        return getByNumber(11);
       case 'analytics':
       case 'tables':
       case 'tabular':
-        return getByNumber(13);
+        return getByNumber(12);
       case 'translation':
       case 'translate':
-        return getByNumber(14);
+        return getByNumber(13);
       case 'publishing':
       case 'epub':
-        return getByNumber(15);
+        return getByNumber(14);
       default:
         return null;
     }
   }
 }
+

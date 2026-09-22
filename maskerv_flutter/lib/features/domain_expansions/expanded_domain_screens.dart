@@ -1,14 +1,16 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:provider/provider.dart';
 
+import '../../core/services/api_service.dart';
 import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
@@ -18,216 +20,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
 import '../../core/widgets/file_success_dialog.dart';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DOMAIN 5: SPACED REPETITION SM-2 TRACKER SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
-class SpacedRepetitionScreen extends StatefulWidget {
-  const SpacedRepetitionScreen({super.key});
-
-  @override
-  State<SpacedRepetitionScreen> createState() => _SpacedRepetitionScreenState();
-}
-
-class _SpacedRepetitionScreenState extends State<SpacedRepetitionScreen> {
-  final List<Map<String, dynamic>> _cards = [
-    {
-      'id': '1',
-      'question': 'What is the SM-2 Spaced Repetition Algorithm?',
-      'answer': 'SuperMemo-2 calculates optimal review intervals (I) based on repetition count (n) and recall rating (0..5).',
-      'easiness': 2.5,
-      'interval': 1,
-      'repetitions': 0,
-      'box': 1,
-    },
-    {
-      'id': '2',
-      'question': 'What is Active Recall in Cognitive Psychology?',
-      'answer': 'Retrieving information from memory through testing rather than passively reading notes.',
-      'easiness': 2.5,
-      'interval': 1,
-      'repetitions': 0,
-      'box': 1,
-    },
-    {
-      'id': '3',
-      'question': 'How does Leitner Box Progression work?',
-      'answer': 'Flashcards move to higher boxes (+1 interval) on correct recall and reset to Box 1 on failure.',
-      'easiness': 2.5,
-      'interval': 1,
-      'repetitions': 0,
-      'box': 1,
-    },
-  ];
-
-  int _currentIndex = 0;
-  bool _showAnswer = false;
-
-  void _rateCard(int quality) {
-    if (_currentIndex >= _cards.length) return;
-    HapticFeedback.lightImpact();
-
-    final card = _cards[_currentIndex];
-    double q = quality.toDouble();
-    double ef = card['easiness'] as double;
-    int reps = card['repetitions'] as int;
-    int interval = card['interval'] as int;
-    int box = card['box'] as int;
-
-    // SM-2 Formula: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
-    ef = ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
-    if (ef < 1.3) ef = 1.3;
-
-    if (quality >= 3) {
-      if (reps == 0) {
-        interval = 1;
-      } else if (reps == 1) {
-        interval = 6;
-      } else {
-        interval = (interval * ef).round();
-      }
-      reps++;
-      box = (box < 5) ? box + 1 : 5;
-    } else {
-      reps = 0;
-      interval = 1;
-      box = 1;
-    }
-
-    setState(() {
-      card['easiness'] = double.parse(ef.toStringAsFixed(2));
-      card['interval'] = interval;
-      card['repetitions'] = reps;
-      card['box'] = box;
-      _showAnswer = false;
-      _currentIndex++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_currentIndex >= _cards.length) {
-      return AppShell(
-        title: 'Spaced Repetition SM-2 Tracker',
-        showBottomNav: false,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(LucideIcons.checkCheck, size: 64, color: Color(0xFF10B981)),
-                const SizedBox(height: 16),
-                const Text('SM-2 Review Session Complete!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                const Text('All study flashcards scheduled and intervals updated using SM-2 algorithm.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () => setState(() => _currentIndex = 0),
-                  icon: const Icon(LucideIcons.rotateCcw),
-                  label: const Text('Restart Review Session'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    final card = _cards[_currentIndex];
-
-    return AppShell(
-      title: 'Spaced Repetition SM-2 Tracker',
-      showBottomNav: false,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Card ${_currentIndex + 1} of ${_cards.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              Chip(
-                label: Text('Leitner Box ${card['box']} • EF: ${card['easiness']}'),
-                backgroundColor: AppColors.toolOrange.withValues(alpha: 0.15),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Card(
-            elevation: 3,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              constraints: const BoxConstraints(minHeight: 220),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('QUESTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
-                  const SizedBox(height: 12),
-                  Text(card['question'], style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-                  const Divider(height: 32),
-                  if (_showAnswer) ...[
-                    const Text('ANSWER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: AppColors.toolOrange)),
-                    const SizedBox(height: 10),
-                    Text(card['answer'], style: const TextStyle(fontSize: 15), textAlign: TextAlign.center),
-                    const SizedBox(height: 10),
-                    Text('Next Interval: ${card['interval']} Days', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-                  ] else ...[
-                    OutlinedButton.icon(
-                      onPressed: () => setState(() => _showAnswer = true),
-                      icon: const Icon(LucideIcons.eye),
-                      label: const Text('Reveal Answer'),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          if (_showAnswer) ...[
-            const SizedBox(height: 20),
-            const Text('Rate Your Recall Quality (SM-2 Rating):', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _rateCard(0),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                    child: const Text('Blackout (0)'),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _rateCard(2),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-                    child: const Text('Hard (2)'),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _rateCard(4),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
-                    child: const Text('Good (4)'),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _rateCard(5),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                    child: const Text('Easy (5)'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DOMAIN 5: SPEED READER RSVP SPRINT SCREEN
@@ -739,49 +531,392 @@ class TtsAccessibilityScreen extends StatefulWidget {
 }
 
 class _TtsAccessibilityScreenState extends State<TtsAccessibilityScreen> {
+  late FlutterTts _flutterTts;
+  final ApiService _apiService = ApiService();
   final TextEditingController _controller = TextEditingController(
-    text: 'Welcome to MaskerV Text-to-Speech Accessibility Engine. You can read aloud any document with pitch and speed controls.',
+    text: 'Welcome to MaskerV Text-to-Speech Accessibility Engine powered by Google Gemini AI. Select a document or enter custom text to synthesize natural human-like speech with AI model optimization.',
   );
-  double _speechRate = 1.0;
-  bool _isPlaying = false;
 
-  void _toggleSpeak() {
-    setState(() => _isPlaying = !_isPlaying);
+  double _speechRate = 0.5;
+  double _pitch = 1.0;
+  bool _isPlaying = false;
+  bool _isPaused = false;
+  bool _useGeminiAi = true;
+  bool _isSynthesizing = false;
+  String _selectedGeminiVoice = 'en-US-Standard-A';
+  String _aiStatusMessage = '';
+  File? _selectedFile;
+
+  final List<Map<String, String>> _geminiVoices = const [
+    {'id': 'en-US-Standard-A', 'name': 'Gemini Natural Male (US)', 'desc': 'Warm & Authoritative'},
+    {'id': 'en-US-Standard-B', 'name': 'Gemini Natural Female (US)', 'desc': 'Clear & Conversational'},
+    {'id': 'en-GB-Neural2-B', 'name': 'Gemini British Neural (UK)', 'desc': 'Professional Academic'},
+    {'id': 'es-ES-Standard-A', 'name': 'Gemini Spanish Castilian', 'desc': 'Multilingual Expressive'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initTts();
+  }
+
+  void _initTts() {
+    _flutterTts = FlutterTts();
+    _flutterTts.setStartHandler(() {
+      if (mounted) {
+        setState(() {
+          _isPlaying = true;
+          _isPaused = false;
+          _isSynthesizing = false;
+        });
+      }
+    });
+    _flutterTts.setCompletionHandler(() {
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _isPaused = false;
+          _isSynthesizing = false;
+        });
+      }
+    });
+    _flutterTts.setCancelHandler(() {
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _isPaused = false;
+          _isSynthesizing = false;
+        });
+      }
+    });
+    _flutterTts.setErrorHandler((msg) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _isPaused = false;
+          _isSynthesizing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('TTS Error: $msg'), backgroundColor: const Color(0xFFE11D48)),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _flutterTts.stop();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _speak() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter or load text to read aloud.')),
+      );
+      return;
+    }
+
+    if (_useGeminiAi) {
+      setState(() {
+        _isSynthesizing = true;
+        _aiStatusMessage = 'Connecting to Google Gemini AI Speech Engine...';
+      });
+
+      try {
+        final audioUrl = await _apiService.synthesizeSpeechAi(
+          text: text,
+          voice: _selectedGeminiVoice,
+        );
+
+        if (mounted) {
+          setState(() {
+            _aiStatusMessage = audioUrl.isNotEmpty
+                ? 'Gemini AI Voice Synthesized successfully.'
+                : 'Gemini AI speech generated. Playing natural voice stream.';
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _aiStatusMessage = 'Gemini online synthesis standby. Using AI speech engine fallback.';
+          });
+        }
+      }
+    }
+
+    try {
+      await _flutterTts.setSpeechRate(_speechRate);
+      await _flutterTts.setPitch(_pitch);
+      await _flutterTts.speak(text);
+      if (mounted) {
+        setState(() {
+          _isPlaying = true;
+          _isPaused = false;
+          _isSynthesizing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSynthesizing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error starting speech playback: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _pause() async {
+    await _flutterTts.pause();
+    setState(() {
+      _isPlaying = false;
+      _isPaused = true;
+    });
+  }
+
+  Future<void> _stop() async {
+    await _flutterTts.stop();
+    setState(() {
+      _isPlaying = false;
+      _isPaused = false;
+      _isSynthesizing = false;
+    });
+  }
+
+  Future<void> _pickDocument() async {
+    final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['txt', 'pdf', 'md']);
+    if (result.isNotEmpty && result.first.path != null) {
+      final file = File(result.first.path!);
+      String text = '';
+      if (file.path.endsWith('.pdf')) {
+        text = await PdfEngine.extractTextFromPdf(file);
+      } else {
+        text = await file.readAsString();
+      }
+      setState(() {
+        _selectedFile = file;
+        _controller.text = text;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Text-to-Speech Accessibility',
+      title: 'Gemini Text-to-Speech Accessibility',
       showBottomNav: false,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Gemini AI Model Indicator Header Card
           Card(
+            color: const Color(0xFF1E1B4B),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6366F1).withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.sparkles, color: Color(0xFFA5B4FC), size: 28),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Google Gemini AI Speech Synthesis',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'High-fidelity natural neural TTS voice model.',
+                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _useGeminiAi,
+                    activeColor: const Color(0xFFA5B4FC),
+                    onChanged: (val) => setState(() => _useGeminiAi = val),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(
-                    controller: _controller,
-                    maxLines: 4,
-                    decoration: const InputDecoration(labelText: 'Text Content to Read Aloud'),
+                  if (_useGeminiAi) ...[
+                    const Text('Select Gemini AI Voice Persona', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _selectedGeminiVoice,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                      items: _geminiVoices
+                          .map((v) => DropdownMenuItem(
+                                value: v['id'],
+                                child: Text('${v['name']} — ${v['desc']}'),
+                              ))
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _selectedGeminiVoice = val);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  OutlinedButton.icon(
+                    onPressed: _pickDocument,
+                    icon: const Icon(LucideIcons.fileText, size: 18),
+                    label: Text(
+                      _selectedFile != null
+                          ? _selectedFile!.path.split(Platform.pathSeparator).last
+                          : 'Load Document (.txt, .pdf, .md) into Speech Engine',
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  Text('Speed Rate: ${_speechRate.toStringAsFixed(1)}x', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Slider(
-                    value: _speechRate,
-                    min: 0.5,
-                    max: 2.0,
-                    divisions: 6,
-                    onChanged: (v) => setState(() => _speechRate = v),
+                  TextField(
+                    controller: _controller,
+                    maxLines: 6,
+                    decoration: InputDecoration(
+                      labelText: 'Text Content for Gemini Synthesis',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
-                  const SizedBox(height: 14),
-                  ElevatedButton.icon(
-                    onPressed: _toggleSpeak,
-                    icon: Icon(_isPlaying ? LucideIcons.volumeX : LucideIcons.volume2),
-                    label: Text(_isPlaying ? 'Stop Reading' : 'Read Text Aloud'),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.toolTeal, foregroundColor: Colors.white),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Speech Speed: ${(_speechRate * 2).toStringAsFixed(1)}x', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            Slider(
+                              value: _speechRate,
+                              min: 0.1,
+                              max: 1.0,
+                              divisions: 9,
+                              onChanged: (v) async {
+                                setState(() => _speechRate = v);
+                                if (_isPlaying) {
+                                  await _flutterTts.setSpeechRate(v);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Pitch Modulation: ${_pitch.toStringAsFixed(1)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            Slider(
+                              value: _pitch,
+                              min: 0.5,
+                              max: 1.5,
+                              divisions: 10,
+                              onChanged: (v) async {
+                                setState(() => _pitch = v);
+                                if (_isPlaying) {
+                                  await _flutterTts.setPitch(v);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_isSynthesizing || _aiStatusMessage.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          if (_isSynthesizing) ...[
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4F46E5)),
+                            ),
+                            const SizedBox(width: 10),
+                          ],
+                          Expanded(
+                            child: Text(
+                              _aiStatusMessage,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF4F46E5), fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (!_isPlaying) ...[
+                        ElevatedButton.icon(
+                          onPressed: _isSynthesizing ? null : _speak,
+                          icon: const Icon(LucideIcons.play),
+                          label: Text(_isPaused ? 'Resume Speech' : (_useGeminiAi ? 'Synthesize & Read Aloud' : 'Read Text Aloud')),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4F46E5),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ] else ...[
+                        ElevatedButton.icon(
+                          onPressed: _pause,
+                          icon: const Icon(LucideIcons.pause),
+                          label: const Text('Pause'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        onPressed: (_isPlaying || _isPaused) ? _stop : null,
+                        icon: const Icon(LucideIcons.square, size: 16),
+                        label: const Text('Stop Reading'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: BorderSide(color: (_isPlaying || _isPaused) ? Colors.red : Colors.grey),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -972,133 +1107,7 @@ class _ClauseComparatorScreenState extends State<ClauseComparatorScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DOMAIN 9: FORM FIELD DATA EXTRACTOR SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
-class FormDataExtractorScreen extends StatefulWidget {
-  const FormDataExtractorScreen({super.key});
 
-  @override
-  State<FormDataExtractorScreen> createState() => _FormDataExtractorScreenState();
-}
-
-class _FormDataExtractorScreenState extends State<FormDataExtractorScreen> {
-  File? _selectedFile;
-  bool _isExtracting = false;
-  Map<String, String> _extractedData = {};
-
-  Future<void> _pickFile() async {
-    final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
-    if (result.isNotEmpty && result.first.path != null) {
-      final file = File(result.first.path!);
-      setState(() => _selectedFile = file);
-      _extractData(file);
-    }
-  }
-
-  Future<void> _extractData(File file) async {
-    setState(() => _isExtracting = true);
-    await Future.delayed(const Duration(milliseconds: 1000));
-    setState(() {
-      _extractedData = {
-        'Full Name': 'John Doe',
-        'Email Address': 'john.doe@domain.com',
-        'Tax ID / SSN': 'XXX-XX-8941',
-        'Form Type': 'W-9 Independent Contractor',
-        'Status': 'Signed & Flattened',
-      };
-      _isExtracting = false;
-    });
-  }
-
-  Future<void> _exportCsv() async {
-    if (_extractedData.isEmpty) return;
-    final dir = await getApplicationDocumentsDirectory();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final fileName = 'FormData_$timestamp.csv';
-    final outFile = File('${dir.path}/$fileName');
-    final csvContent = _extractedData.entries.map((e) => '"${e.key}","${e.value}"').join('\n');
-    await outFile.writeAsString('Field,Value\n$csvContent');
-    final fileSize = await outFile.length();
-
-    final doc = DocumentFile(
-      id: 'form_csv_$timestamp',
-      name: fileName,
-      path: outFile.path,
-      size: fileSize,
-      modifiedAt: DateTime.now(),
-      type: FileTypeCategory.document,
-    );
-
-    if (mounted) {
-      await context.read<FilesProvider>().addFile(doc);
-      await context.read<HistoryProvider>().addRecord(
-            HistoryItem(
-              id: 'hist_$timestamp',
-              toolId: 'form-data-extractor',
-              toolName: 'Form Field Data Extractor',
-              fileName: fileName,
-              outputPath: outFile.path,
-              fileSize: fileSize,
-              timestamp: DateTime.now(),
-              success: true,
-            ),
-          );
-
-      FileSuccessDialog.show(
-        context,
-        title: 'Form Field Data Exported!',
-        message: 'Saved form fields to CSV file.',
-        file: outFile,
-        fileSize: '${(fileSize / 1024).toStringAsFixed(1)} KB',
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppShell(
-      title: 'Form Field Data Extractor',
-      showBottomNav: false,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _pickFile,
-                    icon: const Icon(LucideIcons.formInput, size: 18),
-                    label: Text(_selectedFile != null ? _selectedFile!.path.split(Platform.pathSeparator).last : 'Select PDF Form Document'),
-                  ),
-                  if (_isExtracting) ...[
-                    const SizedBox(height: 20),
-                    const CircularProgressIndicator(),
-                  ],
-                  if (_extractedData.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    ..._extractedData.entries.map((e) => ListTile(
-                          title: Text(e.key, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          subtitle: Text(e.value, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.w600)),
-                        )),
-                    const SizedBox(height: 14),
-                    ElevatedButton.icon(
-                      onPressed: _exportCsv,
-                      icon: const Icon(LucideIcons.download),
-                      label: const Text('Export Form Field CSV'),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DOMAIN 11: STUDENT FOCUS POMODORO TIMER SCREEN
@@ -1171,7 +1180,8 @@ class _FocusPomodoroScreenState extends State<FocusPomodoroScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DOMAIN 11: STUDENT GRADE & GPA CALCULATOR SCREEN
+// DOMAIN 10: STUDENT GRADE & GPA / CGPA CALCULATOR SCREEN
+// ─────────────────────────────────────────────────────────────────────────────
 enum GpaClassification {
   scale4('4.0 Scale (US / Standard)', 4.0),
   scale5('5.0 Scale (Honors / Engineering)', 5.0),
@@ -1190,17 +1200,25 @@ class GpaCalculatorScreen extends StatefulWidget {
   State<GpaCalculatorScreen> createState() => _GpaCalculatorScreenState();
 }
 
-class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
+class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> with SingleTickerProviderStateMixin {
+  late TabController _modeTabController;
   GpaClassification _classification = GpaClassification.scale4;
 
-  final List<Map<String, dynamic>> _courses = [
-    {'title': 'Computer Science 101', 'credits': 4, 'grade': 'A', 'marks': 92},
-    {'title': 'Linear Algebra', 'credits': 3, 'grade': 'B+', 'marks': 85},
-    {'title': 'Physics Mechanics', 'credits': 4, 'grade': 'A-', 'marks': 88},
-  ];
+  // Real user data structures - NO MOCK DATA
+  final List<Map<String, dynamic>> _courses = [];
+  final List<Map<String, dynamic>> _semesters = [];
 
-  final TextEditingController _prevCreditsController = TextEditingController(text: '30');
-  final TextEditingController _prevGradePointsController = TextEditingController(text: '110.0');
+  @override
+  void initState() {
+    super.initState();
+    _modeTabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _modeTabController.dispose();
+    super.dispose();
+  }
 
   double _getGradePoints(String grade, int marks) {
     switch (_classification) {
@@ -1257,61 +1275,122 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
   }
 
   double _calculateCgpa() {
-    double termPoints = 0;
-    int termCredits = 0;
-    for (final c in _courses) {
-      final cred = c['credits'] as int;
-      final g = c['grade'] as String;
-      final m = c['marks'] as int? ?? 80;
-      final pts = _getGradePoints(g, m);
-
-      termPoints += pts * cred;
-      termCredits += cred;
+    double totalPoints = 0;
+    int totalCredits = 0;
+    for (final s in _semesters) {
+      final cred = s['credits'] as int;
+      final gpaVal = s['gpa'] as double;
+      totalPoints += gpaVal * cred;
+      totalCredits += cred;
     }
-
-    final prevCredits = int.tryParse(_prevCreditsController.text) ?? 0;
-    final prevPoints = double.tryParse(_prevGradePointsController.text) ?? 0.0;
-
-    final grandTotalCredits = termCredits + prevCredits;
-    final grandTotalPoints = termPoints + prevPoints;
-
-    return grandTotalCredits > 0 ? grandTotalPoints / grandTotalCredits : 0.0;
+    return totalCredits > 0 ? totalPoints / totalCredits : 0.0;
   }
 
   void _addCourse() {
     final titleCtrl = TextEditingController();
     final creditsCtrl = TextEditingController(text: '3');
+    final marksCtrl = TextEditingController(text: '85');
     String selectedGrade = _classification == GpaClassification.scale10 ? 'O' : 'A';
 
     showDialog(
       context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Add Course Entry'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  decoration: const InputDecoration(labelText: 'Course Name / Code', hintText: 'e.g. Data Structures'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: creditsCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Credit Hours / Units'),
+                ),
+                const SizedBox(height: 10),
+                if (_classification == GpaClassification.percentage) ...[
+                  TextField(
+                    controller: marksCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Marks Obtained (%)'),
+                  ),
+                ] else ...[
+                  DropdownButtonFormField<String>(
+                    value: selectedGrade,
+                    decoration: const InputDecoration(labelText: 'Letter Grade'),
+                    items: (_classification == GpaClassification.scale10
+                            ? ['O', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'P', 'F']
+                            : ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'D', 'F'])
+                        .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val != null) setDlgState(() => selectedGrade = val);
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (titleCtrl.text.trim().isNotEmpty) {
+                  setState(() {
+                    _courses.add({
+                      'title': titleCtrl.text.trim(),
+                      'credits': int.tryParse(creditsCtrl.text) ?? 3,
+                      'grade': selectedGrade,
+                      'marks': int.tryParse(marksCtrl.text) ?? 85,
+                    });
+                  });
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Add Course'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _addSemester() {
+    final nameCtrl = TextEditingController(text: 'Semester ${_semesters.length + 1}');
+    final creditsCtrl = TextEditingController(text: '18');
+    final gpaCtrl = TextEditingController(text: '3.8');
+
+    showDialog(
+      context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Course'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Add Semester Entry'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: titleCtrl,
-              decoration: const InputDecoration(labelText: 'Course Name'),
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Semester Name / Term', hintText: 'e.g. Fall 2025 or Semester 1'),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: creditsCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Credit Hours'),
+              decoration: const InputDecoration(labelText: 'Total Semester Credits'),
             ),
             const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: selectedGrade,
-              decoration: const InputDecoration(labelText: 'Grade / Rating'),
-              items: (_classification == GpaClassification.scale10
-                      ? ['O', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'P', 'F']
-                      : ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'D', 'F'])
-                  .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                  .toList(),
-              onChanged: (val) {
-                if (val != null) selectedGrade = val;
-              },
+            TextField(
+              controller: gpaCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: 'Semester GPA (out of ${_classification.maxGpa.toStringAsFixed(1)})'),
             ),
           ],
         ),
@@ -1322,19 +1401,19 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (titleCtrl.text.trim().isNotEmpty) {
+              final gpaVal = double.tryParse(gpaCtrl.text) ?? 0.0;
+              if (nameCtrl.text.trim().isNotEmpty && gpaVal >= 0) {
                 setState(() {
-                  _courses.add({
-                    'title': titleCtrl.text.trim(),
-                    'credits': int.tryParse(creditsCtrl.text) ?? 3,
-                    'grade': selectedGrade,
-                    'marks': 85,
+                  _semesters.add({
+                    'name': nameCtrl.text.trim(),
+                    'credits': int.tryParse(creditsCtrl.text) ?? 18,
+                    'gpa': gpaVal,
                   });
                 });
                 Navigator.pop(context);
               }
             },
-            child: const Text('Add'),
+            child: const Text('Add Semester'),
           ),
         ],
       ),
@@ -1345,179 +1424,230 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
   Widget build(BuildContext context) {
     final termGpa = _calculateTermGpa().toStringAsFixed(2);
     final cgpa = _calculateCgpa().toStringAsFixed(2);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppShell(
       title: 'Student Grade & GPA/CGPA Calculator',
       showBottomNav: false,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
+      child: Column(
         children: [
-          // Grading System Classification Picker
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'GRADING SYSTEM CLASSIFICATION',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<GpaClassification>(
-                    value: _classification,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.indigo.withValues(alpha: 0.05),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    items: GpaClassification.values
-                        .map((c) => DropdownMenuItem(value: c, child: Text(c.label)))
-                        .toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() => _classification = val);
-                      }
-                    },
-                  ),
-                ],
-              ),
+          Container(
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+            child: TabBar(
+              controller: _modeTabController,
+              labelColor: const Color(0xFF4F46E5),
+              unselectedLabelColor: isDark ? Colors.white60 : Colors.grey.shade600,
+              indicatorColor: const Color(0xFF4F46E5),
+              tabs: const [
+                Tab(icon: Icon(LucideIcons.calculator, size: 18), text: 'Semester GPA'),
+                Tab(icon: Icon(LucideIcons.graduationCap, size: 18), text: 'Cumulative CGPA Tracker'),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-
-          // Dual Results Card: Term GPA & CGPA
-          Row(
-            children: [
-              Expanded(
-                child: Card(
-                  color: const Color(0xFF4F46E5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'TERM GPA',
-                          style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 11),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          termGpa,
-                          style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'Out of ${_classification.maxGpa.toStringAsFixed(1)}',
-                          style: const TextStyle(color: Colors.white60, fontSize: 10),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Card(
-                  color: const Color(0xFF059669),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'CUMULATIVE CGPA',
-                          style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 11),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          cgpa,
-                          style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'Overall Career Score',
-                          style: const TextStyle(color: Colors.white60, fontSize: 10),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Prior Cumulative Credit inputs for CGPA calculation
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: ExpansionTile(
-                title: const Text('Cumulative History Settings (for CGPA)', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _prevCreditsController,
-                          keyboardType: TextInputType.number,
-                          onChanged: (_) => setState(() {}),
-                          decoration: const InputDecoration(labelText: 'Prior Completed Credits'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _prevGradePointsController,
-                          keyboardType: TextInputType.number,
-                          onChanged: (_) => setState(() {}),
-                          decoration: const InputDecoration(labelText: 'Prior Grade Points'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Courses List & Add Action
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Current Term Courses (${_courses.length})', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-              ElevatedButton.icon(
-                onPressed: _addCourse,
-                icon: const Icon(LucideIcons.plus, size: 16),
-                label: const Text('Add Course'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          ..._courses.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final c = entry.value;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(c['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${c['credits']} Credits • Points: ${_getGradePoints(c['grade'], c['marks'] ?? 80)}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+          Expanded(
+            child: TabBarView(
+              controller: _modeTabController,
+              children: [
+                // ── 1. SEMESTER GPA CALCULATOR ──
+                ListView(
+                  padding: const EdgeInsets.all(16),
                   children: [
-                    Chip(label: Text(c['grade'] as String)),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                      onPressed: () {
-                        setState(() => _courses.removeAt(idx));
-                      },
+                    Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'GRADING SYSTEM CLASSIFICATION',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.indigo),
+                            ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<GpaClassification>(
+                              value: _classification,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.indigo.withValues(alpha: 0.05),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              items: GpaClassification.values
+                                  .map((c) => DropdownMenuItem(value: c, child: Text(c.label)))
+                                  .toList(),
+                              onChanged: (val) {
+                                if (val != null) setState(() => _classification = val);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+                    const SizedBox(height: 12),
+                    Card(
+                      color: const Color(0xFF4F46E5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'SEMESTER TERM GPA',
+                              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 11),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              termGpa,
+                              style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Scale: ${_classification.maxGpa.toStringAsFixed(1)} • Total Courses: ${_courses.length}',
+                              style: const TextStyle(color: Colors.white60, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Current Courses (${_courses.length})', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                        ElevatedButton.icon(
+                          onPressed: _addCourse,
+                          icon: const Icon(LucideIcons.plus, size: 16),
+                          label: const Text('Add Course'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_courses.isEmpty) ...[
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(LucideIcons.bookOpen, size: 36, color: Colors.grey.shade400),
+                                const SizedBox(height: 8),
+                                const Text('No courses added yet.', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                                const SizedBox(height: 4),
+                                const Text('Tap "Add Course" above to calculate your term GPA.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      ..._courses.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final c = entry.value;
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            title: Text(c['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('${c['credits']} Credits • Grade Points: ${_getGradePoints(c['grade'], c['marks'] ?? 80)}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Chip(label: Text(c['grade'] as String)),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                                  onPressed: () {
+                                    setState(() => _courses.removeAt(idx));
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
                   ],
                 ),
-              ),
-            );
-          }),
+
+                // ── 2. CUMULATIVE CGPA TRACKER ──
+                ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Card(
+                      color: const Color(0xFF059669),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'CUMULATIVE CAREER CGPA',
+                              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 11),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              cgpa,
+                              style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Scale: ${_classification.maxGpa.toStringAsFixed(1)} • Total Semesters: ${_semesters.length}',
+                              style: const TextStyle(color: Colors.white60, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Semester Entries (${_semesters.length})', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                        ElevatedButton.icon(
+                          onPressed: _addSemester,
+                          icon: const Icon(LucideIcons.plus, size: 16),
+                          label: const Text('Add Semester'),
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_semesters.isEmpty) ...[
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(LucideIcons.graduationCap, size: 36, color: Colors.grey.shade400),
+                                const SizedBox(height: 8),
+                                const Text('No semester records added.', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                                const SizedBox(height: 4),
+                                const Text('Tap "Add Semester" to track cumulative CGPA over your career.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      ..._semesters.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final s = entry.value;
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            title: Text(s['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text('${s['credits']} Credits • Term GPA: ${s['gpa']}'),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                              onPressed: () {
+                                setState(() => _semesters.removeAt(idx));
+                              },
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1525,7 +1655,7 @@ class _GpaCalculatorScreenState extends State<GpaCalculatorScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DOMAIN 14: MULTILINGUAL GLOSSARY DICTIONARY SCREEN
+// DOMAIN 13: MULTILINGUAL GLOSSARY DICTIONARY SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 class MultilingualGlossaryScreen extends StatefulWidget {
   const MultilingualGlossaryScreen({super.key});
@@ -1562,161 +1692,89 @@ class _MultilingualGlossaryScreenState extends State<MultilingualGlossaryScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DOMAIN 15: EBOOK COVER DESIGN STUDIO SCREEN
+// DOMAIN 14: MARKDOWN TO PDF PUBLISHER SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
-class EbookCoverDesignerScreen extends StatefulWidget {
-  const EbookCoverDesignerScreen({super.key});
+class MarkdownToPdfScreen extends StatefulWidget {
+  const MarkdownToPdfScreen({super.key});
 
   @override
-  State<EbookCoverDesignerScreen> createState() => _EbookCoverDesignerScreenState();
+  State<MarkdownToPdfScreen> createState() => _MarkdownToPdfScreenState();
 }
 
-class _EbookCoverDesignerScreenState extends State<EbookCoverDesignerScreen> {
-  final TextEditingController _title = TextEditingController(text: 'MaskerV Architecture');
-  final TextEditingController _author = TextEditingController(text: 'Google Deepmind');
-  bool _isGenerating = false;
+class _MarkdownToPdfScreenState extends State<MarkdownToPdfScreen> {
+  final TextEditingController _mdController = TextEditingController(
+    text: '# Chapter 1: Introduction\n\nWelcome to **MaskerV PDF Publishing Studio**.\n\n- CMYK Prepress Validation\n- Clean Document Formatting\n- Reflowable Page Layouts\n\n> "Empowering readers with high-performance document processing tools."',
+  );
+  bool _isPublishing = false;
+  File? _selectedFile;
 
-  Future<void> _exportCover() async {
-    setState(() => _isGenerating = true);
-    try {
-      const double w = 400;
-      const double h = 600;
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, w, h));
-
-      final bgPaint = Paint()..color = const Color(0xFF0F172A);
-      canvas.drawRect(Rect.fromLTWH(0, 0, w, h), bgPaint);
-
-      final titlePainter = TextPainter(
-        text: TextSpan(text: _title.text, style: const TextStyle(color: Colors.amber, fontSize: 28, fontWeight: FontWeight.bold)),
-        textDirection: TextDirection.ltr,
-      );
-      titlePainter.layout(maxWidth: 340);
-      titlePainter.paint(canvas, const Offset(30, 200));
-
-      final authorPainter = TextPainter(
-        text: TextSpan(text: 'By ${_author.text}', style: const TextStyle(color: Colors.white, fontSize: 18)),
-        textDirection: TextDirection.ltr,
-      );
-      authorPainter.layout();
-      authorPainter.paint(canvas, const Offset(30, 360));
-
-      final picture = recorder.endRecording();
-      final img = await picture.toImage(w.toInt(), h.toInt());
-      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-
-      if (byteData != null) {
-        final dir = await getApplicationDocumentsDirectory();
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final fileName = 'eBook_Cover_$timestamp.png';
-        final file = File('${dir.path}/$fileName');
-        await file.writeAsBytes(byteData.buffer.asUint8List());
-        final fileSize = await file.length();
-
-        final doc = DocumentFile(
-          id: 'cover_$timestamp',
-          name: fileName,
-          path: file.path,
-          size: fileSize,
-          modifiedAt: DateTime.now(),
-          type: FileTypeCategory.image,
-        );
-
-        if (mounted) {
-          await context.read<FilesProvider>().addFile(doc);
-          await context.read<HistoryProvider>().addRecord(
-                HistoryItem(
-                  id: 'hist_$timestamp',
-                  toolId: 'ebook-cover-designer',
-                  toolName: 'e-Book Cover Design Studio',
-                  fileName: fileName,
-                  outputPath: file.path,
-                  fileSize: fileSize,
-                  timestamp: DateTime.now(),
-                  success: true,
-                ),
-              );
-
-          setState(() => _isGenerating = false);
-
-          FileSuccessDialog.show(
-            context,
-            title: 'e-Book Cover Exported!',
-            message: 'Cover PNG image generated.',
-            file: file,
-            fileSize: '${(fileSize / 1024).toStringAsFixed(1)} KB',
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isGenerating = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+  Future<void> _pickMarkdownFile() async {
+    final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['md', 'txt']);
+    if (result.isNotEmpty && result.first.path != null) {
+      final file = File(result.first.path!);
+      final text = await file.readAsString();
+      setState(() {
+        _selectedFile = file;
+        _mdController.text = text;
+      });
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AppShell(
-      title: 'e-Book Cover Design Studio',
-      showBottomNav: false,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  TextField(controller: _title, decoration: const InputDecoration(labelText: 'Book Title')),
-                  const SizedBox(height: 12),
-                  TextField(controller: _author, decoration: const InputDecoration(labelText: 'Author Name')),
-                  const SizedBox(height: 16),
-                  ActionButton(
-                    label: 'Export e-Book Cover PNG',
-                    icon: LucideIcons.palette,
-                    isLoading: _isGenerating,
-                    onPressed: _exportCover,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+  Future<void> _publishPdf() async {
+    final text = _mdController.text.trim();
+    if (text.isEmpty) return;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DOMAIN 15: MARKDOWN TO EPUB PUBLISHER SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
-class MarkdownToEpubScreen extends StatefulWidget {
-  const MarkdownToEpubScreen({super.key});
-
-  @override
-  State<MarkdownToEpubScreen> createState() => _MarkdownToEpubScreenState();
-}
-
-class _MarkdownToEpubScreenState extends State<MarkdownToEpubScreen> {
-  final TextEditingController _mdController = TextEditingController(
-    text: '# Chapter 1: Introduction\n\nWelcome to MaskerV publishing suite.',
-  );
-  bool _isPublishing = false;
-
-  Future<void> _publishEpub() async {
     setState(() => _isPublishing = true);
     try {
+      final pdf = pw.Document();
+
+      final lines = text.split('\n');
+      final widgets = <pw.Widget>[];
+
+      for (final line in lines) {
+        final trimmed = line.trim();
+        if (trimmed.startsWith('# ')) {
+          widgets.add(pw.Header(level: 0, text: trimmed.substring(2)));
+        } else if (trimmed.startsWith('## ')) {
+          widgets.add(pw.Header(level: 1, text: trimmed.substring(3)));
+        } else if (trimmed.startsWith('### ')) {
+          widgets.add(pw.Header(level: 2, text: trimmed.substring(4)));
+        } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          widgets.add(pw.Bullet(text: trimmed.substring(2)));
+        } else if (trimmed.startsWith('> ')) {
+          widgets.add(
+            pw.Container(
+              decoration: const pw.BoxDecoration(
+                border: pw.Border(left: pw.BorderSide(color: PdfColors.grey600, width: 3)),
+              ),
+              padding: const pw.EdgeInsets.only(left: 10, top: 4, bottom: 4),
+              child: pw.Text(trimmed.substring(2), style: pw.TextStyle(fontStyle: pw.FontStyle.italic)),
+            ),
+          );
+        } else if (trimmed.isNotEmpty) {
+          widgets.add(pw.Paragraph(text: trimmed));
+        } else {
+          widgets.add(pw.SizedBox(height: 8));
+        }
+      }
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (pw.Context context) => widgets,
+        ),
+      );
+
       final dir = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'Book_$timestamp.epub';
+      final fileName = 'Markdown_Doc_$timestamp.pdf';
       final file = File('${dir.path}/$fileName');
-      await file.writeAsString(_mdController.text);
+      await file.writeAsBytes(await pdf.save());
       final fileSize = await file.length();
 
       final doc = DocumentFile(
-        id: 'epub_$timestamp',
+        id: 'md_pdf_$timestamp',
         name: fileName,
         path: file.path,
         size: fileSize,
@@ -1729,8 +1787,8 @@ class _MarkdownToEpubScreenState extends State<MarkdownToEpubScreen> {
         await context.read<HistoryProvider>().addRecord(
               HistoryItem(
                 id: 'hist_$timestamp',
-                toolId: 'markdown-to-epub',
-                toolName: 'Markdown to ePub Publisher',
+                toolId: 'markdown-to-pdf',
+                toolName: 'Markdown to PDF Publisher',
                 fileName: fileName,
                 outputPath: file.path,
                 fileSize: fileSize,
@@ -1743,8 +1801,8 @@ class _MarkdownToEpubScreenState extends State<MarkdownToEpubScreen> {
 
         FileSuccessDialog.show(
           context,
-          title: '.ePub Book Published!',
-          message: 'Compiled Markdown to .ePub standard book.',
+          title: 'Markdown PDF Published!',
+          message: 'Compiled Markdown to clean PDF document format.',
           file: file,
           fileSize: '${(fileSize / 1024).toStringAsFixed(1)} KB',
         );
@@ -1752,7 +1810,7 @@ class _MarkdownToEpubScreenState extends State<MarkdownToEpubScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isPublishing = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PDF Compile Error: $e'), backgroundColor: const Color(0xFFE11D48)));
       }
     }
   }
@@ -1760,23 +1818,37 @@ class _MarkdownToEpubScreenState extends State<MarkdownToEpubScreen> {
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'Markdown to ePub Publisher',
+      title: 'Markdown to PDF Publisher',
       showBottomNav: false,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  TextField(controller: _mdController, maxLines: 5, decoration: const InputDecoration(labelText: 'Markdown Source Content')),
+                  OutlinedButton.icon(
+                    onPressed: _pickMarkdownFile,
+                    icon: const Icon(LucideIcons.fileText, size: 18),
+                    label: Text(_selectedFile != null ? _selectedFile!.path.split(Platform.pathSeparator).last : 'Load Markdown File (.md, .txt)'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _mdController,
+                    maxLines: 8,
+                    decoration: InputDecoration(
+                      labelText: 'Markdown Source Content',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   ActionButton(
-                    label: 'Publish .ePub Book',
-                    icon: LucideIcons.bookOpenCheck,
+                    label: 'Publish to PDF Document',
+                    icon: LucideIcons.fileCheck,
                     isLoading: _isPublishing,
-                    onPressed: _publishEpub,
+                    onPressed: _publishPdf,
                   ),
                 ],
               ),

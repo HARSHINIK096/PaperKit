@@ -118,6 +118,146 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
     }
   }
 
+  void _showImageOptionsBottomSheet(BuildContext context) {
+    if (_formattedPayload.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter valid content to generate QR code.')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'QR Code Image Options',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(LucideIcons.eye, color: Color(0xFF2563EB)),
+              title: const Text('View Image'),
+              subtitle: const Text('Preview full-size high resolution QR image'),
+              onTap: () {
+                Navigator.pop(context);
+                _showViewImageDialog();
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(LucideIcons.download, color: Color(0xFF10B981)),
+              title: const Text('Download Image'),
+              subtitle: const Text('Save QR code image file to local phone storage'),
+              onTap: () {
+                Navigator.pop(context);
+                _exportQrCode();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showViewImageDialog() {
+    QrImage? qrImage;
+    if (_formattedPayload.isNotEmpty) {
+      try {
+        final qrCode = QrCode.fromData(
+          data: _formattedPayload,
+          errorCorrectLevel: _config.recommendedErrorCorrectionLevel,
+        );
+        qrImage = QrImage(qrCode);
+      } catch (_) {
+        qrImage = null;
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('QR Code Image View', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  IconButton(
+                    icon: const Icon(LucideIcons.x),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  color: _config.transparentBackground
+                      ? Colors.grey.withValues(alpha: 0.1)
+                      : _config.backgroundColor,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: qrImage != null
+                    ? CustomPaint(
+                        painter: QrCustomPainter(
+                          qrImage: qrImage,
+                          config: _config,
+                        ),
+                      )
+                    : const Center(child: Text('No QR Code Data')),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(LucideIcons.check),
+                    label: const Text('Close'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _exportQrCode();
+                    },
+                    icon: const Icon(LucideIcons.download, size: 16),
+                    label: const Text('Download Image'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -255,7 +395,14 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('3. Download & Export Generated Image', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2563EB))),
+              const Expanded(
+                child: Text(
+                  '3. Download & Export Generated Image',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Color(0xFF2563EB)),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
               QrReadabilityBadge(config: _config),
             ],
           ),
@@ -272,37 +419,48 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // Canvas Preview
-                  Container(
-                    width: 240,
-                    height: 240,
-                    decoration: BoxDecoration(
-                      color: _config.transparentBackground
-                          ? Colors.grey.withValues(alpha: 0.1)
-                          : _config.backgroundColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
+                  // Canvas Preview with Long Press Action
+                  GestureDetector(
+                    onLongPress: () => _showImageOptionsBottomSheet(context),
+                    child: Tooltip(
+                      message: 'Long press for View & Download options',
+                      child: Container(
+                        width: 240,
+                        height: 240,
+                        decoration: BoxDecoration(
+                          color: _config.transparentBackground
+                              ? Colors.grey.withValues(alpha: 0.1)
+                              : _config.backgroundColor,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: qrImage != null
+                            ? CustomPaint(
+                                painter: QrCustomPainter(
+                                  qrImage: qrImage,
+                                  config: _config,
+                                ),
+                              )
+                            : const Center(
+                                child: Text(
+                                  'Enter content above\nto render QR Code',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                                ),
+                              ),
+                      ),
                     ),
-                    child: qrImage != null
-                        ? CustomPaint(
-                            painter: QrCustomPainter(
-                              qrImage: qrImage,
-                              config: _config,
-                            ),
-                          )
-                        : const Center(
-                            child: Text(
-                              'Enter content above\nto render QR Code',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey, fontSize: 12),
-                            ),
-                          ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Tip: Long press QR preview to View or Download image',
+                    style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.grey.shade600),
                   ),
                   const SizedBox(height: 18),
 

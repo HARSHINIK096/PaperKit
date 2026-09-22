@@ -55,7 +55,7 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
                 child: TextField(
                   onChanged: (val) => setState(() => _searchQuery = val),
                   decoration: InputDecoration(
-                    hintText: 'Search 50+ tools across 15 domains (e.g. Bates, citation, table, QR)...',
+                    hintText: 'Search 50+ tools across 14 domains (e.g. Bates, citation, table, QR)...',
                     hintStyle: TextStyle(
                       fontSize: 13.5,
                       color: isDark
@@ -295,7 +295,7 @@ class _AllToolsScreenState extends State<AllToolsScreen> {
     );
   }
 
-  /// Builds a functional domain card for each of the 15 Authoritative Domains
+  /// Builds a functional domain card for each of the 14 Authoritative Domains
   Widget _buildDomainCard(
     BuildContext context, {
     required DomainItem domain,

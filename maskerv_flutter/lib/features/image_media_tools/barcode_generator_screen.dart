@@ -142,6 +142,136 @@ class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
     }
   }
 
+  void _showBarcodeOptionsBottomSheet(BuildContext context) {
+    final text = _codeController.text.trim();
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid barcode code / SKU.')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Barcode Image Options',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(LucideIcons.eye, color: Color(0xFF2563EB)),
+              title: const Text('View Image'),
+              subtitle: const Text('View generated barcode image preview'),
+              onTap: () {
+                Navigator.pop(context);
+                _showViewBarcodeDialog();
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(LucideIcons.download, color: Color(0xFF10B981)),
+              title: const Text('Download Image'),
+              subtitle: const Text('Download barcode PNG to local storage'),
+              onTap: () {
+                Navigator.pop(context);
+                _generateBarcode();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showViewBarcodeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('$_symbology Barcode', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  IconButton(
+                    icon: const Icon(LucideIcons.x),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (_barcodeFile != null)
+                Image.file(_barcodeFile!, height: 160)
+              else
+                Container(
+                  height: 140,
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(LucideIcons.barcode, size: 40, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      Text('Barcode: ${_codeController.text.trim()}'),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(LucideIcons.check),
+                    label: const Text('Close'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _generateBarcode();
+                    },
+                    icon: const Icon(LucideIcons.download, size: 16),
+                    label: const Text('Download Image'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -235,21 +365,24 @@ class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  if (_barcodeFile != null) ...[
-                    Image.file(_barcodeFile!, height: 120),
-                    const SizedBox(height: 16),
-                  ] else ...[
-                    Container(
-                      height: 100,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text('Barcode Image Preview Area', style: TextStyle(color: Colors.grey)),
+                  GestureDetector(
+                    onLongPress: () => _showBarcodeOptionsBottomSheet(context),
+                    child: Tooltip(
+                      message: 'Long press for View & Download options',
+                      child: _barcodeFile != null
+                          ? Image.file(_barcodeFile!, height: 120)
+                          : Container(
+                              height: 100,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text('Barcode Image Preview Area\n(Long press for Options)', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 12)),
+                            ),
                     ),
-                    const SizedBox(height: 16),
-                  ],
+                  ),
+                  const SizedBox(height: 16),
                   ActionButton(
                     label: 'Download Barcode PNG Image',
                     icon: LucideIcons.download,

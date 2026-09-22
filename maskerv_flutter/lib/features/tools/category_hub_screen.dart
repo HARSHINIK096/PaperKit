@@ -288,7 +288,7 @@ class _CategoryHubScreenState extends State<CategoryHubScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  'DOMAIN ${domain.number} OF 15',
+                                  'DOMAIN ${domain.number} OF 14',
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w800,

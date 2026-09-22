@@ -699,7 +699,7 @@ class _HomeScreenState extends State<HomeScreen> {
               context.push('/tools');
             },
             icon: const Icon(LucideIcons.grid, size: 16),
-            label: const Text('Browse All 15 Domain Suites (50+ Tools)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+            label: const Text('Browse All 14 Domain Suites (50+ Tools)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

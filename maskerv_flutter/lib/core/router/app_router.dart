@@ -93,7 +93,6 @@ import '../../features/cognitive_retention/cognitive_retention_screen.dart';
 import '../../features/voice_podcast/voice_podcast_screen.dart';
 import '../../features/accessibility/accessibility_reader_screen.dart';
 import '../../features/legal_audit/legal_audit_screen.dart';
-import '../../features/diagram_studio/mind_map_diagram_screen.dart';
 import '../../features/workspace/dual_pane_workspace_screen.dart';
 import '../../features/analytics/tabular_extractor_screen.dart';
 import '../../features/translation/translation_hub_screen.dart';
@@ -566,10 +565,6 @@ class AppRouter {
         builder: (context, state) => const LegalAuditScreen(),
       ),
       GoRoute(
-        path: '/diagram/mindmap',
-        builder: (context, state) => const MindMapDiagramScreen(),
-      ),
-      GoRoute(
         path: '/workspace/dualpane',
         builder: (context, state) => const DualPaneWorkspaceScreen(),
       ),
@@ -586,33 +581,29 @@ class AppRouter {
         builder: (context, state) => const PublishingStudioScreen(),
       ),
 
-      // Domain 12 Routes
+      // Domain 11 Routes
       GoRoute(
-        path: '/domain12/watermark-studio',
+        path: '/domain11/watermark-studio',
         builder: (context, state) => const WatermarkStudioScreen(),
       ),
       GoRoute(
-        path: '/domain12/batch-image-converter',
+        path: '/domain11/batch-image-converter',
         builder: (context, state) => const BatchImageConverterScreen(),
       ),
       GoRoute(
-        path: '/domain12/hash-generator',
+        path: '/domain11/hash-generator',
         builder: (context, state) => const HashGeneratorScreen(),
       ),
       GoRoute(
-        path: '/domain12/text-beautifier',
+        path: '/domain11/text-beautifier',
         builder: (context, state) => const CodeBeautifierScreen(),
       ),
       GoRoute(
-        path: '/domain12/exif-stripper',
+        path: '/domain11/exif-stripper',
         builder: (context, state) => const ExifStripperScreen(),
       ),
 
       // Domain Expansions Routes
-      GoRoute(
-        path: '/cognitive/spaced-repetition',
-        builder: (context, state) => const SpacedRepetitionScreen(),
-      ),
       GoRoute(
         path: '/cognitive/speed-reader',
         builder: (context, state) => const SpeedReaderScreen(),
@@ -642,10 +633,6 @@ class AppRouter {
         builder: (context, state) => const ClauseComparatorScreen(),
       ),
       GoRoute(
-        path: '/forms/data-extractor',
-        builder: (context, state) => const FormDataExtractorScreen(),
-      ),
-      GoRoute(
         path: '/workspace/pomodoro',
         builder: (context, state) => const FocusPomodoroScreen(),
       ),
@@ -658,12 +645,8 @@ class AppRouter {
         builder: (context, state) => const MultilingualGlossaryScreen(),
       ),
       GoRoute(
-        path: '/publishing/cover-designer',
-        builder: (context, state) => const EbookCoverDesignerScreen(),
-      ),
-      GoRoute(
-        path: '/publishing/markdown-epub',
-        builder: (context, state) => const MarkdownToEpubScreen(),
+        path: '/publishing/markdown-pdf',
+        builder: (context, state) => const MarkdownToPdfScreen(),
       ),
     ],
     errorBuilder: (context, state) => const AllToolsScreen(),

@@ -828,22 +828,6 @@ class ToolRegistry {
     tags: ['active recall', 'flashcard', 'study', 'retention', 'blur', 'wpm'],
   );
 
-  static const ToolItem spacedRepetition = ToolItem(
-    id: 'spaced-repetition',
-    label: 'Spaced Repetition SM-2 Tracker',
-    description: 'SM-2 / Leitner box flashcard interval calculator',
-    route: '/cognitive/spaced-repetition',
-    icon: LucideIcons.calendarCheck,
-    color: AppColors.toolOrange,
-    softColor: AppColors.toolOrangeSoft,
-    category: ToolCategory.cognitive,
-    domainNumber: 5,
-    domainName: 'Gamified Cognitive Retention & Active Study Studio',
-    domainId: DomainId.cognitiveRetention,
-    isNew: true,
-    tags: ['spaced repetition', 'leitner', 'sm-2', 'study', 'flashcard'],
-  );
-
   static const ToolItem speedReader = ToolItem(
     id: 'speed-reader',
     label: 'Speed Reading RSVP Trainer',
@@ -1096,60 +1080,7 @@ class ToolRegistry {
   );
 
   // ──────────────────────────────────────────────────────────────────────────
-  // DOMAIN 10: Visual Mind Mapping & Diagram Studio
-  // ──────────────────────────────────────────────────────────────────────────
-
-  static const ToolItem mindMapDiagram = ToolItem(
-    id: 'diagram-mindmap',
-    label: 'Visual Mind Map Studio',
-    description: 'Outline-to-mindmap node graph & visual canvas',
-    route: '/diagram/mindmap',
-    icon: LucideIcons.gitFork,
-    color: AppColors.toolBlue,
-    softColor: AppColors.toolBlueSoft,
-    category: ToolCategory.diagram,
-    domainNumber: 10,
-    domainName: 'Visual Mind Mapping & Diagram Studio',
-    domainId: DomainId.mindMappingStudio,
-    tags: ['mindmap', 'diagram', 'visual', 'nodes', 'canvas', 'graph'],
-  );
-
-  static const ToolItem mindMap = ToolItem(
-    id: 'mind-map',
-    label: 'Mind Map Generator',
-    description: 'Convert document structure to interactive knowledge graph',
-    route: '/academic/mind-map',
-    icon: LucideIcons.network,
-    color: AppColors.toolIndigo,
-    softColor: AppColors.toolIndigoSoft,
-    category: ToolCategory.diagram,
-    domainNumber: 10,
-    domainName: 'Visual Mind Mapping & Diagram Studio',
-    domainId: DomainId.mindMappingStudio,
-    isAi: true,
-    isNew: true,
-    tags: ['mind map', 'concept', 'graph', 'knowledge', 'visual', 'study'],
-  );
-
-  static const ToolItem presentationGenerator = ToolItem(
-    id: 'presentation-generator',
-    label: 'Presentation Generator',
-    description: 'Generate slide structure & content from documents',
-    route: '/academic/presentation-generator',
-    icon: LucideIcons.presentation,
-    color: AppColors.toolOrange,
-    softColor: AppColors.toolOrangeSoft,
-    category: ToolCategory.diagram,
-    domainNumber: 10,
-    domainName: 'Visual Mind Mapping & Diagram Studio',
-    domainId: DomainId.mindMappingStudio,
-    isAi: true,
-    isNew: true,
-    tags: ['presentation', 'slides', 'ppt', 'academic', 'generate'],
-  );
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // DOMAIN 11: Student Productivity & Dual-Pane Workspace Hub
+  // DOMAIN 10: Student Productivity & Dual-Pane Workspace Hub
   // ──────────────────────────────────────────────────────────────────────────
 
   static const ToolItem dualPaneWorkspace = ToolItem(
@@ -1161,7 +1092,7 @@ class ToolRegistry {
     color: AppColors.toolIndigo,
     softColor: AppColors.toolIndigoSoft,
     category: ToolCategory.workspace,
-    domainNumber: 11,
+    domainNumber: 10,
     domainName: 'Student Productivity & Dual-Pane Workspace Hub',
     domainId: DomainId.studentWorkspace,
     tags: ['dualpane', 'workspace', 'split', 'notes', 'markdown', 'study'],
@@ -1176,7 +1107,7 @@ class ToolRegistry {
     color: AppColors.toolIndigo,
     softColor: AppColors.toolIndigoSoft,
     category: ToolCategory.workspace,
-    domainNumber: 11,
+    domainNumber: 10,
     domainName: 'Student Productivity & Dual-Pane Workspace Hub',
     domainId: DomainId.studentWorkspace,
     isNew: true,
@@ -1185,34 +1116,34 @@ class ToolRegistry {
 
   static const ToolItem gpaCalculator = ToolItem(
     id: 'gpa-calculator',
-    label: 'Student Grade & GPA Calculator',
-    description: 'Calculate course grades & GPA target predictions',
+    label: 'Student Grade & GPA/CGPA Calculator',
+    description: 'Calculate course GPA and cumulative CGPA across semesters',
     route: '/workspace/gpa-calculator',
     icon: LucideIcons.calculator,
     color: AppColors.toolIndigo,
     softColor: AppColors.toolIndigoSoft,
     category: ToolCategory.workspace,
-    domainNumber: 11,
+    domainNumber: 10,
     domainName: 'Student Productivity & Dual-Pane Workspace Hub',
     domainId: DomainId.studentWorkspace,
     isNew: true,
-    tags: ['gpa', 'grade', 'calculator', 'student', 'course'],
+    tags: ['gpa', 'cgpa', 'grade', 'calculator', 'student', 'course'],
   );
 
   // ──────────────────────────────────────────────────────────────────────────
-  // DOMAIN 12: Media Utilities & Developer Tools Hub
+  // DOMAIN 11: Media Utilities & Developer Tools Hub
   // ──────────────────────────────────────────────────────────────────────────
 
   static const ToolItem watermarkStudio = ToolItem(
     id: 'watermark-studio',
     label: 'Image & Doc Watermark Studio',
     description: 'Add custom text or image watermarks, position & opacity',
-    route: '/domain12/watermark-studio',
+    route: '/domain11/watermark-studio',
     icon: LucideIcons.stamp,
     color: AppColors.toolTeal,
     softColor: AppColors.toolTealSoft,
     category: ToolCategory.image,
-    domainNumber: 12,
+    domainNumber: 11,
     domainName: 'Media Utilities & Developer Tools Hub',
     domainId: DomainId.mediaDevUtilities,
     isNew: true,
@@ -1223,12 +1154,12 @@ class ToolRegistry {
     id: 'batch-image-converter',
     label: 'Batch Image Converter',
     description: 'Convert multiple images simultaneously to PNG, JPG, WEBP',
-    route: '/domain12/batch-image-converter',
+    route: '/domain11/batch-image-converter',
     icon: LucideIcons.images,
     color: AppColors.toolBlue,
     softColor: AppColors.toolBlueSoft,
     category: ToolCategory.image,
-    domainNumber: 12,
+    domainNumber: 11,
     domainName: 'Media Utilities & Developer Tools Hub',
     domainId: DomainId.mediaDevUtilities,
     isNew: true,
@@ -1239,12 +1170,12 @@ class ToolRegistry {
     id: 'hash-generator',
     label: 'File Checksum & Hash Studio',
     description: 'Compute MD5, SHA-1 & SHA-256 cryptographic checksums',
-    route: '/domain12/hash-generator',
+    route: '/domain11/hash-generator',
     icon: LucideIcons.binary,
     color: AppColors.toolPurple,
     softColor: AppColors.toolPurpleSoft,
     category: ToolCategory.utilities,
-    domainNumber: 12,
+    domainNumber: 11,
     domainName: 'Media Utilities & Developer Tools Hub',
     domainId: DomainId.mediaDevUtilities,
     isNew: true,
@@ -1255,12 +1186,12 @@ class ToolRegistry {
     id: 'text-beautifier',
     label: 'Text & Code Beautifier',
     description: 'Format JSON/XML, convert text cases (camelCase), Base64',
-    route: '/domain12/text-beautifier',
+    route: '/domain11/text-beautifier',
     icon: LucideIcons.code,
     color: AppColors.toolIndigo,
     softColor: AppColors.toolIndigoSoft,
     category: ToolCategory.utilities,
-    domainNumber: 12,
+    domainNumber: 11,
     domainName: 'Media Utilities & Developer Tools Hub',
     domainId: DomainId.mediaDevUtilities,
     isNew: true,
@@ -1271,12 +1202,12 @@ class ToolRegistry {
     id: 'exif-stripper',
     label: 'EXIF & Metadata Stripper',
     description: 'Inspect & sanitize image EXIF tags & GPS locations',
-    route: '/domain12/exif-stripper',
+    route: '/domain11/exif-stripper',
     icon: LucideIcons.shieldAlert,
     color: AppColors.toolRed,
     softColor: AppColors.toolRedSoft,
     category: ToolCategory.image,
-    domainNumber: 12,
+    domainNumber: 11,
     domainName: 'Media Utilities & Developer Tools Hub',
     domainId: DomainId.mediaDevUtilities,
     isNew: true,
@@ -1284,7 +1215,7 @@ class ToolRegistry {
   );
 
   // ──────────────────────────────────────────────────────────────────────────
-  // DOMAIN 13: Data Analytics & Tabular Data Extractor
+  // DOMAIN 12: Data Analytics & Tabular Data Extractor
   // ──────────────────────────────────────────────────────────────────────────
 
   static const ToolItem tabularExtractor = ToolItem(
@@ -1296,7 +1227,7 @@ class ToolRegistry {
     color: AppColors.toolBlue,
     softColor: AppColors.toolBlueSoft,
     category: ToolCategory.analytics,
-    domainNumber: 13,
+    domainNumber: 12,
     domainName: 'Data Analytics & Tabular Data Extractor',
     domainId: DomainId.dataAnalyticsTabular,
     tags: ['table', 'csv', 'excel', 'extract', 'data', 'tabular'],
@@ -1311,7 +1242,7 @@ class ToolRegistry {
     color: AppColors.toolGreen,
     softColor: AppColors.toolGreenSoft,
     category: ToolCategory.analytics,
-    domainNumber: 13,
+    domainNumber: 12,
     domainName: 'Data Analytics & Tabular Data Extractor',
     domainId: DomainId.dataAnalyticsTabular,
     isAi: true,
@@ -1327,7 +1258,7 @@ class ToolRegistry {
     color: AppColors.toolGreen,
     softColor: AppColors.toolGreenSoft,
     category: ToolCategory.analytics,
-    domainNumber: 13,
+    domainNumber: 12,
     domainName: 'Data Analytics & Tabular Data Extractor',
     domainId: DomainId.dataAnalyticsTabular,
     isAi: true,
@@ -1335,7 +1266,7 @@ class ToolRegistry {
   );
 
   // ──────────────────────────────────────────────────────────────────────────
-  // DOMAIN 14: Translation & Multi-Lingual Localization Hub
+  // DOMAIN 13: Translation & Multi-Lingual Localization Hub
   // ──────────────────────────────────────────────────────────────────────────
 
   static const ToolItem translateDoc = ToolItem(
@@ -1347,7 +1278,7 @@ class ToolRegistry {
     color: AppColors.toolGreen,
     softColor: AppColors.toolGreenSoft,
     category: ToolCategory.translation,
-    domainNumber: 14,
+    domainNumber: 13,
     domainName: 'Translation & Multi-Lingual Localization Hub',
     domainId: DomainId.translationHub,
     isAi: true,
@@ -1363,7 +1294,7 @@ class ToolRegistry {
     color: AppColors.toolPink,
     softColor: AppColors.toolPinkSoft,
     category: ToolCategory.translation,
-    domainNumber: 14,
+    domainNumber: 13,
     domainName: 'Translation & Multi-Lingual Localization Hub',
     domainId: DomainId.translationHub,
     tags: ['translate', 'languages', 'spanish', 'french', 'german', 'localization'],
@@ -1404,36 +1335,20 @@ class ToolRegistry {
     tags: ['publishing', 'epub', 'cmyk', 'preflight', 'book', 'cover'],
   );
 
-  static const ToolItem ebookCoverDesigner = ToolItem(
-    id: 'ebook-cover-designer',
-    label: 'e-Book Cover Design Studio',
-    description: 'Design e-book cover front & back layouts with themes',
-    route: '/publishing/cover-designer',
-    icon: LucideIcons.bookOpen,
-    color: AppColors.toolPurple,
-    softColor: AppColors.toolPurpleSoft,
-    category: ToolCategory.publishing,
-    domainNumber: 15,
-    domainName: 'Automated Publishing & e-Book Studio',
-    domainId: DomainId.publishingStudio,
-    isNew: true,
-    tags: ['cover', 'ebook', 'design', 'epub', 'publishing'],
-  );
-
-  static const ToolItem markdownToEpub = ToolItem(
-    id: 'markdown-to-epub',
-    label: 'Markdown to ePub Publisher',
-    description: 'Compile markdown files into standard .epub e-books',
-    route: '/publishing/markdown-epub',
+  static const ToolItem markdownToPdf = ToolItem(
+    id: 'markdown-to-pdf',
+    label: 'Markdown to PDF Publisher',
+    description: 'Compile markdown files into clean PDF documents',
+    route: '/publishing/markdown-pdf',
     icon: LucideIcons.fileCheck,
     color: AppColors.toolPurple,
     softColor: AppColors.toolPurpleSoft,
     category: ToolCategory.publishing,
-    domainNumber: 15,
+    domainNumber: 14,
     domainName: 'Automated Publishing & e-Book Studio',
     domainId: DomainId.publishingStudio,
     isNew: true,
-    tags: ['markdown', 'epub', 'ebook', 'publish'],
+    tags: ['markdown', 'pdf', 'document', 'publish'],
   );
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -1686,7 +1601,6 @@ class ToolRegistry {
 
     // Domain 5
     cognitiveRetention.id: cognitiveRetention,
-    spacedRepetition.id: spacedRepetition,
     speedReader.id: speedReader,
 
     // Domain 6
@@ -1709,39 +1623,32 @@ class ToolRegistry {
     // Domain 9
     formFiller.id: formFiller,
     formCreator.id: formCreator,
-    formDataExtractor.id: formDataExtractor,
 
     // Domain 10
-    mindMapDiagram.id: mindMapDiagram,
-    mindMap.id: mindMap,
-    presentationGenerator.id: presentationGenerator,
-
-    // Domain 11
     dualPaneWorkspace.id: dualPaneWorkspace,
     focusPomodoro.id: focusPomodoro,
     gpaCalculator.id: gpaCalculator,
 
-    // Domain 12
+    // Domain 11
     watermarkStudio.id: watermarkStudio,
     batchImageConverter.id: batchImageConverter,
     hashGenerator.id: hashGenerator,
     textBeautifier.id: textBeautifier,
     exifStripper.id: exifStripper,
 
-    // Domain 13
+    // Domain 12
     tabularExtractor.id: tabularExtractor,
     extractTables.id: extractTables,
     parseInvoice.id: parseInvoice,
 
-    // Domain 14
+    // Domain 13
     translateDoc.id: translateDoc,
     translationHub.id: translationHub,
     multilingualGlossary.id: multilingualGlossary,
 
-    // Domain 15
+    // Domain 14
     publishingStudio.id: publishingStudio,
-    ebookCoverDesigner.id: ebookCoverDesigner,
-    markdownToEpub.id: markdownToEpub,
+    markdownToPdf.id: markdownToPdf,
 
     // General Utilities
     qrGenerator.id: qrGenerator,
