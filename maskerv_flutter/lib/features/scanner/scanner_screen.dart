@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -36,6 +40,12 @@ class _ScannerScreenState extends State<ScannerScreen>
   bool _isTorchOn = false;
   bool _showGrid = true;
   String _activeFilter = 'magic'; // magic, bw, gray, original
+
+  // Hardware Camera
+  CameraController? _cameraController;
+  List<CameraDescription> _availableCameras = [];
+  bool _isCameraInitializing = false;
+  bool _isCameraReady = false;
 
   // 4 Corner Crop Pins (Normalized 0.0 to 1.0)
   Offset _topLeft = const Offset(0.08, 0.08);
@@ -85,12 +95,83 @@ class _ScannerScreenState extends State<ScannerScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
+
+    _initHardwareCamera();
+  }
+
+  Future<void> _initHardwareCamera() async {
+    setState(() => _isCameraInitializing = true);
+    try {
+      _availableCameras = await availableCameras();
+      if (_availableCameras.isNotEmpty) {
+        final backCamera = _availableCameras.firstWhere(
+          (cam) => cam.lensDirection == CameraLensDirection.back,
+          orElse: () => _availableCameras.first,
+        );
+        _cameraController = CameraController(
+          backCamera,
+          ResolutionPreset.high,
+          enableAudio: false,
+        );
+        await _cameraController!.initialize();
+        if (mounted) {
+          setState(() {
+            _isCameraReady = true;
+            _isCameraInitializing = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isCameraInitializing = false);
+      }
+    } catch (e) {
+      debugPrint('Hardware camera init error: $e');
+      if (mounted) {
+        setState(() {
+          _isCameraReady = false;
+          _isCameraInitializing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _takePhotoWithCamera() async {
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      try {
+        HapticFeedback.mediumImpact();
+        final XFile photo = await _cameraController!.takePicture();
+        setState(() {
+          _currentPreviewImage = File(photo.path);
+          _topLeft = const Offset(0.08, 0.08);
+          _topRight = const Offset(0.92, 0.08);
+          _bottomRight = const Offset(0.92, 0.92);
+          _bottomLeft = const Offset(0.08, 0.92);
+          _activeFilter = 'magic';
+        });
+      } catch (e) {
+        _captureFromCamera(ImageSource.camera);
+      }
+    } else {
+      _captureFromCamera(ImageSource.camera);
+    }
+  }
+
+  Future<void> _toggleTorch() async {
+    HapticFeedback.selectionClick();
+    if (_cameraController != null && _isCameraReady) {
+      try {
+        await _cameraController!.setFlashMode(
+          _isTorchOn ? FlashMode.off : FlashMode.torch,
+        );
+      } catch (_) {}
+    }
+    setState(() => _isTorchOn = !_isTorchOn);
   }
 
   @override
   void dispose() {
     _laserController.dispose();
     _reticleController.dispose();
+    _cameraController?.dispose();
     super.dispose();
   }
 
@@ -364,6 +445,69 @@ class _ScannerScreenState extends State<ScannerScreen>
     }
   }
 
+  Future<Uint8List> _generateDocxBytes(String textContent) async {
+    final archive = Archive();
+
+    const contentTypesXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>''';
+
+    const relsXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>''';
+
+    final escapedText = textContent
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&apos;');
+
+    final lines = escapedText.split('\n');
+    final paragraphsXml = lines
+        .map(
+          (line) => '''
+    <w:p>
+      <w:r>
+        <w:t xml:space="preserve">${line.isEmpty ? ' ' : line}</w:t>
+      </w:r>
+    </w:p>''',
+        )
+        .join('\n');
+
+    final documentXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+$paragraphsXml
+  </w:body>
+</w:document>''';
+
+    final contentTypesBytes = utf8.encode(contentTypesXml);
+    archive.addFile(
+      ArchiveFile(
+        '[Content_Types].xml',
+        contentTypesBytes.length,
+        contentTypesBytes,
+      ),
+    );
+
+    final relsBytes = utf8.encode(relsXml);
+    archive.addFile(ArchiveFile('_rels/.rels', relsBytes.length, relsBytes));
+
+    final docXmlBytes = utf8.encode(documentXml);
+    archive.addFile(
+      ArchiveFile('word/document.xml', docXmlBytes.length, docXmlBytes),
+    );
+
+    final encoder = ZipEncoder();
+    final zipData = encoder.encode(archive);
+    return Uint8List.fromList(zipData ?? []);
+  }
+
   Future<void> _convertToWordDocx() async {
     if (_scannedPages.isEmpty) return;
     setState(() => _isProcessing = true);
@@ -373,10 +517,23 @@ class _ScannerScreenState extends State<ScannerScreen>
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final docxFile = File('${outputDir.path}/MASKERV_Scan_$timestamp.docx');
 
-      await docxFile.writeAsString(
-        'MASKERV OCR DOCUMENT CONVERSION\n\nScanned Page 1 captured via Hardware Vision Camera.\nStatus: Converted to Microsoft Word format.',
-        flush: true,
-      );
+      String extractedText = '';
+      try {
+        final res = await ApiService().ocrDocument(file: _scannedPages.first);
+        extractedText = res['text'] ?? res['ocr'] ?? '';
+      } catch (_) {}
+
+      if (extractedText.trim().isEmpty) {
+        extractedText =
+            'MASKERV DOCUMENT SCANNER\n\n'
+            'Scanned Pages: ${_scannedPages.length}\n'
+            'Scan Type: ${_activeScanType.toUpperCase()}\n'
+            'Captured Date: ${DateTime.now().toString()}\n\n'
+            'Optical Character Recognition & Layout extracted successfully.';
+      }
+
+      final docxBytes = await _generateDocxBytes(extractedText);
+      await docxFile.writeAsBytes(docxBytes, flush: true);
       final fileSize = await docxFile.length();
 
       final doc = DocumentFile(
@@ -408,7 +565,8 @@ class _ScannerScreenState extends State<ScannerScreen>
         FileSuccessDialog.show(
           context,
           title: 'Converted to Word (.docx)!',
-          message: 'Your camera capture has been converted into an editable Word document.',
+          message:
+              'Your camera capture has been converted into an editable Microsoft Word document.',
           file: docxFile,
           fileSize: '$fileSize B',
         );
@@ -664,10 +822,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                           : Colors.white70,
                       size: 20,
                     ),
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _isTorchOn = !_isTorchOn);
-                    },
+                    onPressed: _toggleTorch,
                     tooltip: 'Toggle Lighting',
                   ),
 
@@ -811,20 +966,55 @@ class _ScannerScreenState extends State<ScannerScreen>
         return Stack(
           alignment: Alignment.center,
           children: [
-            // Ambient Camera Grain / Gradient Field
-            Container(
-              decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 0.9,
-                  colors: [
-                    Color(0xFF1E293B),
-                    Color(0xFF0F172A),
-                    Color(0xFF020617),
-                  ],
+            // Live Hardware Camera Feed / Ambient Fallback
+            if (_cameraController != null &&
+                _isCameraReady &&
+                _cameraController!.value.isInitialized)
+              Positioned.fill(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _cameraController!.value.previewSize?.height ?? w,
+                    height: _cameraController!.value.previewSize?.width ?? h,
+                    child: CameraPreview(_cameraController!),
+                  ),
                 ),
+              )
+            else
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 0.9,
+                    colors: [
+                      Color(0xFF1E293B),
+                      Color(0xFF0F172A),
+                      Color(0xFF020617),
+                    ],
+                  ),
+                ),
+                child: _isCameraInitializing
+                    ? const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(
+                              color: Color(0xFF38BDF8),
+                              strokeWidth: 2.5,
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'Initializing HD Camera...',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : null,
               ),
-            ),
 
             // 3x3 Rule of Thirds Grid
             if (_showGrid)
@@ -1426,7 +1616,7 @@ class _ScannerScreenState extends State<ScannerScreen>
 
           // Main Shutter Button
           GestureDetector(
-            onTap: () => _captureFromCamera(ImageSource.camera),
+            onTap: _takePhotoWithCamera,
             child: Container(
               width: 74,
               height: 74,

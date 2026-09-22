@@ -828,6 +828,38 @@ class ToolRegistry {
     tags: ['active recall', 'flashcard', 'study', 'retention', 'blur', 'wpm'],
   );
 
+  static const ToolItem spacedRepetition = ToolItem(
+    id: 'spaced-repetition',
+    label: 'Spaced Repetition SM-2 Tracker',
+    description: 'SM-2 / Leitner box flashcard interval calculator',
+    route: '/cognitive/spaced-repetition',
+    icon: LucideIcons.calendarCheck,
+    color: AppColors.toolOrange,
+    softColor: AppColors.toolOrangeSoft,
+    category: ToolCategory.cognitive,
+    domainNumber: 5,
+    domainName: 'Gamified Cognitive Retention & Active Study Studio',
+    domainId: DomainId.cognitiveRetention,
+    isNew: true,
+    tags: ['spaced repetition', 'leitner', 'sm-2', 'study', 'flashcard'],
+  );
+
+  static const ToolItem speedReader = ToolItem(
+    id: 'speed-reader',
+    label: 'Speed Reading RSVP Trainer',
+    description: 'RSVP rapid serial visual presentation reading velocity trainer',
+    route: '/cognitive/speed-reader',
+    icon: LucideIcons.zap,
+    color: AppColors.toolOrange,
+    softColor: AppColors.toolOrangeSoft,
+    category: ToolCategory.cognitive,
+    domainNumber: 5,
+    domainName: 'Gamified Cognitive Retention & Active Study Studio',
+    domainId: DomainId.cognitiveRetention,
+    isNew: true,
+    tags: ['speed reading', 'rsvp', 'wpm', 'reading', 'focus'],
+  );
+
   // ──────────────────────────────────────────────────────────────────────────
   // DOMAIN 6: Multi-Modal Voice & Podcast Audio Studio
   // ──────────────────────────────────────────────────────────────────────────
@@ -862,6 +894,38 @@ class ToolRegistry {
     tags: ['audio', 'convert', 'mp3', 'wav', 'ogg'],
   );
 
+  static const ToolItem audioTrimmer = ToolItem(
+    id: 'audio-trimmer',
+    label: 'Audio Trimmer & Cutter',
+    description: 'Trim start & end timestamps from audio files',
+    route: '/voice/audio-trimmer',
+    icon: LucideIcons.scissors,
+    color: AppColors.toolIndigo,
+    softColor: AppColors.toolIndigoSoft,
+    category: ToolCategory.audio,
+    domainNumber: 6,
+    domainName: 'Multi-Modal Voice & Podcast Audio Studio',
+    domainId: DomainId.voicePodcastStudio,
+    isNew: true,
+    tags: ['audio', 'trim', 'cut', 'mp3', 'wav'],
+  );
+
+  static const ToolItem voiceTranscriber = ToolItem(
+    id: 'voice-transcriber',
+    label: 'Voice Note Transcriber',
+    description: 'Convert voice recordings into clean transcript text',
+    route: '/voice/transcriber',
+    icon: LucideIcons.mic,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.audio,
+    domainNumber: 6,
+    domainName: 'Multi-Modal Voice & Podcast Audio Studio',
+    domainId: DomainId.voicePodcastStudio,
+    isNew: true,
+    tags: ['voice', 'transcribe', 'speech to text', 'audio'],
+  );
+
   // ──────────────────────────────────────────────────────────────────────────
   // DOMAIN 7: Universal Accessibility & Inclusive Reading Studio
   // ──────────────────────────────────────────────────────────────────────────
@@ -879,6 +943,38 @@ class ToolRegistry {
     domainName: 'Universal Accessibility & Inclusive Reading Studio',
     domainId: DomainId.accessibilityReader,
     tags: ['bionic', 'dyslexia', 'accessibility', 'contrast', 'reading'],
+  );
+
+  static const ToolItem highContrastReader = ToolItem(
+    id: 'high-contrast-reader',
+    label: 'High Contrast Reader',
+    description: 'Low-vision & color-blind inclusive reading themes',
+    route: '/accessibility/high-contrast',
+    icon: LucideIcons.sun,
+    color: AppColors.toolTeal,
+    softColor: AppColors.toolTealSoft,
+    category: ToolCategory.accessibility,
+    domainNumber: 7,
+    domainName: 'Universal Accessibility & Inclusive Reading Studio',
+    domainId: DomainId.accessibilityReader,
+    isNew: true,
+    tags: ['accessibility', 'contrast', 'low vision', 'color blind'],
+  );
+
+  static const ToolItem ttsAccessibility = ToolItem(
+    id: 'tts-accessibility',
+    label: 'Text-to-Speech Accessibility',
+    description: 'Read text aloud with speed & pitch controls',
+    route: '/accessibility/tts',
+    icon: LucideIcons.volume2,
+    color: AppColors.toolTeal,
+    softColor: AppColors.toolTealSoft,
+    category: ToolCategory.accessibility,
+    domainNumber: 7,
+    domainName: 'Universal Accessibility & Inclusive Reading Studio',
+    domainId: DomainId.accessibilityReader,
+    isNew: true,
+    tags: ['tts', 'speech', 'read aloud', 'voice'],
   );
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -915,6 +1011,38 @@ class ToolRegistry {
     tags: ['legal', 'forensic', 'sha256', 'hash', 'bates', 'clause', 'contract'],
   );
 
+  static const ToolItem legalRedactionCertifier = ToolItem(
+    id: 'legal-redaction-certifier',
+    label: 'Legal Redaction Certifier',
+    description: 'Generate SHA-256 audit certificate for redacted documents',
+    route: '/legal/redaction-certifier',
+    icon: LucideIcons.shieldCheck,
+    color: AppColors.toolRed,
+    softColor: AppColors.toolRedSoft,
+    category: ToolCategory.legal,
+    domainNumber: 8,
+    domainName: 'Legal & Forensic Compliance Audit Suite',
+    domainId: DomainId.legalAuditSuite,
+    isNew: true,
+    tags: ['legal', 'redaction', 'certificate', 'sha256', 'audit'],
+  );
+
+  static const ToolItem clauseComparator = ToolItem(
+    id: 'clause-comparator',
+    label: 'Contract Clause Comparator',
+    description: 'Side-by-side legal clause diff and risk analyzer',
+    route: '/legal/clause-comparator',
+    icon: LucideIcons.gitCompare,
+    color: AppColors.toolRed,
+    softColor: AppColors.toolRedSoft,
+    category: ToolCategory.legal,
+    domainNumber: 8,
+    domainName: 'Legal & Forensic Compliance Audit Suite',
+    domainId: DomainId.legalAuditSuite,
+    isNew: true,
+    tags: ['contract', 'clause', 'compare', 'diff', 'legal'],
+  );
+
   // ──────────────────────────────────────────────────────────────────────────
   // DOMAIN 9: Interactive Form Builder & Auto-Fill Engine
   // ──────────────────────────────────────────────────────────────────────────
@@ -949,6 +1077,22 @@ class ToolRegistry {
     domainId: DomainId.formBuilderEngine,
     isNew: true,
     tags: ['form', 'create', 'build', 'pdf', 'field', 'design'],
+  );
+
+  static const ToolItem formDataExtractor = ToolItem(
+    id: 'form-data-extractor',
+    label: 'Form Field Data Extractor',
+    description: 'Export filled form field data to JSON & CSV',
+    route: '/forms/data-extractor',
+    icon: LucideIcons.fileSpreadsheet,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.forms,
+    domainNumber: 9,
+    domainName: 'Interactive Form Builder & Auto-Fill Engine',
+    domainId: DomainId.formBuilderEngine,
+    isNew: true,
+    tags: ['form', 'extract', 'data', 'json', 'csv'],
   );
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -1021,6 +1165,122 @@ class ToolRegistry {
     domainName: 'Student Productivity & Dual-Pane Workspace Hub',
     domainId: DomainId.studentWorkspace,
     tags: ['dualpane', 'workspace', 'split', 'notes', 'markdown', 'study'],
+  );
+
+  static const ToolItem focusPomodoro = ToolItem(
+    id: 'focus-pomodoro',
+    label: 'Focus Pomodoro Timer',
+    description: 'Study focus timer with 25-minute break cycles',
+    route: '/workspace/pomodoro',
+    icon: LucideIcons.timer,
+    color: AppColors.toolIndigo,
+    softColor: AppColors.toolIndigoSoft,
+    category: ToolCategory.workspace,
+    domainNumber: 11,
+    domainName: 'Student Productivity & Dual-Pane Workspace Hub',
+    domainId: DomainId.studentWorkspace,
+    isNew: true,
+    tags: ['pomodoro', 'timer', 'study', 'focus'],
+  );
+
+  static const ToolItem gpaCalculator = ToolItem(
+    id: 'gpa-calculator',
+    label: 'Student Grade & GPA Calculator',
+    description: 'Calculate course grades & GPA target predictions',
+    route: '/workspace/gpa-calculator',
+    icon: LucideIcons.calculator,
+    color: AppColors.toolIndigo,
+    softColor: AppColors.toolIndigoSoft,
+    category: ToolCategory.workspace,
+    domainNumber: 11,
+    domainName: 'Student Productivity & Dual-Pane Workspace Hub',
+    domainId: DomainId.studentWorkspace,
+    isNew: true,
+    tags: ['gpa', 'grade', 'calculator', 'student', 'course'],
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // DOMAIN 12: Media Utilities & Developer Tools Hub
+  // ──────────────────────────────────────────────────────────────────────────
+
+  static const ToolItem watermarkStudio = ToolItem(
+    id: 'watermark-studio',
+    label: 'Image & Doc Watermark Studio',
+    description: 'Add custom text or image watermarks, position & opacity',
+    route: '/domain12/watermark-studio',
+    icon: LucideIcons.stamp,
+    color: AppColors.toolTeal,
+    softColor: AppColors.toolTealSoft,
+    category: ToolCategory.image,
+    domainNumber: 12,
+    domainName: 'Media Utilities & Developer Tools Hub',
+    domainId: DomainId.mediaDevUtilities,
+    isNew: true,
+    tags: ['watermark', 'stamp', 'image', 'brand', 'pdf'],
+  );
+
+  static const ToolItem batchImageConverter = ToolItem(
+    id: 'batch-image-converter',
+    label: 'Batch Image Converter',
+    description: 'Convert multiple images simultaneously to PNG, JPG, WEBP',
+    route: '/domain12/batch-image-converter',
+    icon: LucideIcons.images,
+    color: AppColors.toolBlue,
+    softColor: AppColors.toolBlueSoft,
+    category: ToolCategory.image,
+    domainNumber: 12,
+    domainName: 'Media Utilities & Developer Tools Hub',
+    domainId: DomainId.mediaDevUtilities,
+    isNew: true,
+    tags: ['batch', 'image', 'convert', 'png', 'jpg', 'webp'],
+  );
+
+  static const ToolItem hashGenerator = ToolItem(
+    id: 'hash-generator',
+    label: 'File Checksum & Hash Studio',
+    description: 'Compute MD5, SHA-1 & SHA-256 cryptographic checksums',
+    route: '/domain12/hash-generator',
+    icon: LucideIcons.binary,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.utilities,
+    domainNumber: 12,
+    domainName: 'Media Utilities & Developer Tools Hub',
+    domainId: DomainId.mediaDevUtilities,
+    isNew: true,
+    tags: ['hash', 'md5', 'sha256', 'checksum', 'integrity'],
+  );
+
+  static const ToolItem textBeautifier = ToolItem(
+    id: 'text-beautifier',
+    label: 'Text & Code Beautifier',
+    description: 'Format JSON/XML, convert text cases (camelCase), Base64',
+    route: '/domain12/text-beautifier',
+    icon: LucideIcons.code,
+    color: AppColors.toolIndigo,
+    softColor: AppColors.toolIndigoSoft,
+    category: ToolCategory.utilities,
+    domainNumber: 12,
+    domainName: 'Media Utilities & Developer Tools Hub',
+    domainId: DomainId.mediaDevUtilities,
+    isNew: true,
+    tags: ['code', 'json', 'beautify', 'camelcase', 'base64'],
+  );
+
+  static const ToolItem exifStripper = ToolItem(
+    id: 'exif-stripper',
+    label: 'EXIF & Metadata Stripper',
+    description: 'Inspect & sanitize image EXIF tags & GPS locations',
+    route: '/domain12/exif-stripper',
+    icon: LucideIcons.shieldAlert,
+    color: AppColors.toolRed,
+    softColor: AppColors.toolRedSoft,
+    category: ToolCategory.image,
+    domainNumber: 12,
+    domainName: 'Media Utilities & Developer Tools Hub',
+    domainId: DomainId.mediaDevUtilities,
+    isNew: true,
+    tags: ['exif', 'metadata', 'gps', 'privacy', 'sanitize'],
   );
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -1109,6 +1369,22 @@ class ToolRegistry {
     tags: ['translate', 'languages', 'spanish', 'french', 'german', 'localization'],
   );
 
+  static const ToolItem multilingualGlossary = ToolItem(
+    id: 'multilingual-glossary',
+    label: 'Multilingual Dictionary & Glossary',
+    description: 'Build domain term dictionaries & translation lookups',
+    route: '/translation/glossary',
+    icon: LucideIcons.bookMarked,
+    color: AppColors.toolPink,
+    softColor: AppColors.toolPinkSoft,
+    category: ToolCategory.translation,
+    domainNumber: 14,
+    domainName: 'Translation & Multi-Lingual Localization Hub',
+    domainId: DomainId.translationHub,
+    isNew: true,
+    tags: ['glossary', 'dictionary', 'translation', 'multilingual'],
+  );
+
   // ──────────────────────────────────────────────────────────────────────────
   // DOMAIN 15: Automated Publishing & e-Book Studio
   // ──────────────────────────────────────────────────────────────────────────
@@ -1126,6 +1402,38 @@ class ToolRegistry {
     domainName: 'Automated Publishing & e-Book Studio',
     domainId: DomainId.publishingStudio,
     tags: ['publishing', 'epub', 'cmyk', 'preflight', 'book', 'cover'],
+  );
+
+  static const ToolItem ebookCoverDesigner = ToolItem(
+    id: 'ebook-cover-designer',
+    label: 'e-Book Cover Design Studio',
+    description: 'Design e-book cover front & back layouts with themes',
+    route: '/publishing/cover-designer',
+    icon: LucideIcons.bookOpen,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.publishing,
+    domainNumber: 15,
+    domainName: 'Automated Publishing & e-Book Studio',
+    domainId: DomainId.publishingStudio,
+    isNew: true,
+    tags: ['cover', 'ebook', 'design', 'epub', 'publishing'],
+  );
+
+  static const ToolItem markdownToEpub = ToolItem(
+    id: 'markdown-to-epub',
+    label: 'Markdown to ePub Publisher',
+    description: 'Compile markdown files into standard .epub e-books',
+    route: '/publishing/markdown-epub',
+    icon: LucideIcons.fileCheck,
+    color: AppColors.toolPurple,
+    softColor: AppColors.toolPurpleSoft,
+    category: ToolCategory.publishing,
+    domainNumber: 15,
+    domainName: 'Automated Publishing & e-Book Studio',
+    domainId: DomainId.publishingStudio,
+    isNew: true,
+    tags: ['markdown', 'epub', 'ebook', 'publish'],
   );
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -1378,21 +1686,30 @@ class ToolRegistry {
 
     // Domain 5
     cognitiveRetention.id: cognitiveRetention,
+    spacedRepetition.id: spacedRepetition,
+    speedReader.id: speedReader,
 
     // Domain 6
     voicePodcast.id: voicePodcast,
     audioConverter.id: audioConverter,
+    audioTrimmer.id: audioTrimmer,
+    voiceTranscriber.id: voiceTranscriber,
 
     // Domain 7
     accessibilityReader.id: accessibilityReader,
+    highContrastReader.id: highContrastReader,
+    ttsAccessibility.id: ttsAccessibility,
 
     // Domain 8
     batesStamping.id: batesStamping,
     legalAudit.id: legalAudit,
+    legalRedactionCertifier.id: legalRedactionCertifier,
+    clauseComparator.id: clauseComparator,
 
     // Domain 9
     formFiller.id: formFiller,
     formCreator.id: formCreator,
+    formDataExtractor.id: formDataExtractor,
 
     // Domain 10
     mindMapDiagram.id: mindMapDiagram,
@@ -1401,6 +1718,15 @@ class ToolRegistry {
 
     // Domain 11
     dualPaneWorkspace.id: dualPaneWorkspace,
+    focusPomodoro.id: focusPomodoro,
+    gpaCalculator.id: gpaCalculator,
+
+    // Domain 12
+    watermarkStudio.id: watermarkStudio,
+    batchImageConverter.id: batchImageConverter,
+    hashGenerator.id: hashGenerator,
+    textBeautifier.id: textBeautifier,
+    exifStripper.id: exifStripper,
 
     // Domain 13
     tabularExtractor.id: tabularExtractor,
@@ -1410,9 +1736,12 @@ class ToolRegistry {
     // Domain 14
     translateDoc.id: translateDoc,
     translationHub.id: translationHub,
+    multilingualGlossary.id: multilingualGlossary,
 
     // Domain 15
     publishingStudio.id: publishingStudio,
+    ebookCoverDesigner.id: ebookCoverDesigner,
+    markdownToEpub.id: markdownToEpub,
 
     // General Utilities
     qrGenerator.id: qrGenerator,

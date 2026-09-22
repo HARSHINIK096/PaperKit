@@ -5,10 +5,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
 import 'package:qr/qr.dart';
+import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
+import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
 import '../../core/services/share_service.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/file_success_dialog.dart';
 import 'models/qr_content_type.dart';
 import 'models/qr_design_config.dart';
 import 'services/qr_export_service.dart';
@@ -61,15 +64,26 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
       );
 
       final fileSize = await file.length();
+      final fileName = file.uri.pathSegments.last;
 
-      // Log to global MaskerV History
+      final doc = DocumentFile(
+        id: 'qr_${DateTime.now().millisecondsSinceEpoch}',
+        name: fileName,
+        path: file.path,
+        size: fileSize,
+        modifiedAt: DateTime.now(),
+        type: FileTypeCategory.image,
+      );
+
+      // Log to global MaskerV Files & History
       if (mounted) {
+        await context.read<FilesProvider>().addFile(doc);
         await context.read<HistoryProvider>().addRecord(
               HistoryItem(
                 id: 'qr_gen_${DateTime.now().millisecondsSinceEpoch}',
                 toolId: 'qr-generator',
                 toolName: 'QR Code Generator',
-                fileName: file.uri.pathSegments.last,
+                fileName: fileName,
                 outputPath: file.path,
                 fileSize: fileSize,
                 timestamp: DateTime.now(),
@@ -86,14 +100,12 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
 
       if (mounted) {
         HapticFeedback.mediumImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('QR Code saved to Phone Storage: ${file.path.split('/').last} (Downloads/MaskerV)'),
-            action: SnackBarAction(
-              label: 'Open',
-              onPressed: () => OpenFilex.open(file.path),
-            ),
-          ),
+        FileSuccessDialog.show(
+          context,
+          title: 'QR Code Downloaded!',
+          message: 'Your custom QR Code image (${_selectedExportFormat.name.toUpperCase()}) has been generated and saved.',
+          file: file,
+          fileSize: '${(fileSize / 1024).toStringAsFixed(1)} KB',
         );
       }
     } catch (e) {

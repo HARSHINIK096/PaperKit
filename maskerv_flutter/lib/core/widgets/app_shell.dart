@@ -118,13 +118,44 @@ class AppShell extends StatelessWidget {
                 title ?? 'MaskerV',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18.5, letterSpacing: -0.3),
               ),
-              leading: Builder(
-                builder: (scaffoldContext) => IconButton(
-                  icon: const Icon(LucideIcons.menu, size: 22),
-                  onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
-                  tooltip: 'Open Menu',
-                ),
-              ),
+              leading: () {
+                bool canPopAny = false;
+                try {
+                  canPopAny = context.canPop() || Navigator.canPop(context);
+                } catch (_) {
+                  canPopAny = Navigator.canPop(context);
+                }
+                final showBack = canPopAny || isTool || (location != '/' && location != '/welcome' && location != '/splash');
+                if (!showBack) {
+                  return Builder(
+                    builder: (scaffoldContext) => IconButton(
+                      icon: const Icon(LucideIcons.menu, size: 22),
+                      onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+                      tooltip: 'Open Menu',
+                    ),
+                  );
+                }
+                return IconButton(
+                  icon: const Icon(LucideIcons.arrowLeft, size: 22),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    try {
+                      if (context.canPop()) {
+                        context.pop();
+                        return;
+                      }
+                    } catch (_) {}
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
+                      try {
+                        context.go('/');
+                      } catch (_) {}
+                    }
+                  },
+                  tooltip: 'Back to Previous Screen',
+                );
+              }(),
               actions: actions,
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1.0),

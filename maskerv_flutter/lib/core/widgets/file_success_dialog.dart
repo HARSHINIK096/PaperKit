@@ -207,9 +207,12 @@ class FileSuccessDialog extends StatelessWidget {
                                 fileName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13,
+                                  color: isDark
+                                      ? AppColors.textPrimaryDark
+                                      : const Color(0xFF0F172A),
                                 ),
                               ),
                               if (fileSize != null) ...[

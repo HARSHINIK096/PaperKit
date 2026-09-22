@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Interactive section for sharing processed files directly to online social platforms
 /// (WhatsApp, Telegram, Instagram, Email, and System Share Sheet).
@@ -23,38 +24,75 @@ class SocialPlatformShareSection extends StatelessWidget {
 
   Future<void> _shareToWhatsApp(BuildContext context) async {
     HapticFeedback.lightImpact();
-    final message = text ?? 'Check out this document processed with MaskerV!';
+    final msg = text ?? 'Check out this document processed with MaskerV!';
+    final encodedMsg = Uri.encodeComponent(msg);
+    final whatsappUri = Uri.parse('whatsapp://send?text=$encodedMsg');
+    
+    try {
+      if (await canLaunchUrl(whatsappUri)) {
+        await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback if direct app scheme is unavailable
     if (file != null) {
       await Share.shareXFiles(
         [XFile(file!.path)],
-        text: message,
+        text: msg,
         subject: subject ?? 'MaskerV Document',
       );
-    } else if (text != null) {
-      await Share.share(text!, subject: subject ?? 'MaskerV Text');
+    } else {
+      await Share.share(msg, subject: subject ?? 'MaskerV Text');
     }
   }
 
   Future<void> _shareToTelegram(BuildContext context) async {
     HapticFeedback.lightImpact();
-    final message = text ?? 'Document processed with MaskerV';
+    final msg = text ?? 'Document processed with MaskerV';
+    final encodedMsg = Uri.encodeComponent(msg);
+    final telegramUri = Uri.parse('tg://msg?text=$encodedMsg');
+
+    try {
+      if (await canLaunchUrl(telegramUri)) {
+        await launchUrl(telegramUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    final webTelegramUri = Uri.parse('https://t.me/share/url?url=$encodedMsg');
+    try {
+      if (await canLaunchUrl(webTelegramUri)) {
+        await launchUrl(webTelegramUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback
     if (file != null) {
       await Share.shareXFiles(
         [XFile(file!.path)],
-        text: message,
+        text: msg,
         subject: subject ?? 'MaskerV Document',
       );
-    } else if (text != null) {
-      await Share.share(text!, subject: subject ?? 'MaskerV Text');
+    } else {
+      await Share.share(msg, subject: subject ?? 'MaskerV Text');
     }
   }
 
   Future<void> _shareToInstagram(BuildContext context) async {
     HapticFeedback.lightImpact();
+    final instagramUri = Uri.parse('instagram://');
+    try {
+      if (await canLaunchUrl(instagramUri)) {
+        await launchUrl(instagramUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback
     if (file != null) {
-      await Share.shareXFiles([
-        XFile(file!.path),
-      ], text: text ?? 'MaskerV Document Share');
+      await Share.shareXFiles([XFile(file!.path)], text: text ?? 'MaskerV Document Share');
     } else if (text != null) {
       await Share.share(text!);
     }
@@ -62,6 +100,18 @@ class SocialPlatformShareSection extends StatelessWidget {
 
   Future<void> _shareToEmail(BuildContext context) async {
     HapticFeedback.lightImpact();
+    final sub = Uri.encodeComponent(subject ?? 'Exported Document - MaskerV');
+    final body = Uri.encodeComponent(text ?? 'Attached is your document processed with MaskerV.');
+    final mailtoUri = Uri.parse('mailto:?subject=$sub&body=$body');
+
+    try {
+      if (await canLaunchUrl(mailtoUri)) {
+        await launchUrl(mailtoUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback
     if (file != null) {
       await Share.shareXFiles(
         [XFile(file!.path)],
@@ -69,10 +119,7 @@ class SocialPlatformShareSection extends StatelessWidget {
         text: text ?? 'Attached is your document processed with MaskerV.',
       );
     } else if (text != null) {
-      await Share.share(
-        text!,
-        subject: subject ?? 'Exported Content - MaskerV',
-      );
+      await Share.share(text!, subject: subject ?? 'Exported Content - MaskerV');
     }
   }
 

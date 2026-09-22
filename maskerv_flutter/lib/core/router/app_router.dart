@@ -88,7 +88,7 @@ import '../../features/academic/presentation_generator_screen.dart';
 import '../../features/forms/form_filler_screen.dart';
 import '../../features/forms/form_creator_screen.dart';
 
-// New Multi-Domain Expansion Screens
+// New// Multi-Domain Expansion Screens
 import '../../features/cognitive_retention/cognitive_retention_screen.dart';
 import '../../features/voice_podcast/voice_podcast_screen.dart';
 import '../../features/accessibility/accessibility_reader_screen.dart';
@@ -98,6 +98,10 @@ import '../../features/workspace/dual_pane_workspace_screen.dart';
 import '../../features/analytics/tabular_extractor_screen.dart';
 import '../../features/translation/translation_hub_screen.dart';
 import '../../features/publishing/publishing_studio_screen.dart';
+
+// Domain 12 & Expansion Screens
+import '../../features/domain12/domain12_tools_screens.dart';
+import '../../features/domain_expansions/expanded_domain_screens.dart';
 import '../widgets/cloud_transition_route.dart';
 
 class AppRouter {
@@ -580,6 +584,86 @@ class AppRouter {
       GoRoute(
         path: '/publishing/studio',
         builder: (context, state) => const PublishingStudioScreen(),
+      ),
+
+      // Domain 12 Routes
+      GoRoute(
+        path: '/domain12/watermark-studio',
+        builder: (context, state) => const WatermarkStudioScreen(),
+      ),
+      GoRoute(
+        path: '/domain12/batch-image-converter',
+        builder: (context, state) => const BatchImageConverterScreen(),
+      ),
+      GoRoute(
+        path: '/domain12/hash-generator',
+        builder: (context, state) => const HashGeneratorScreen(),
+      ),
+      GoRoute(
+        path: '/domain12/text-beautifier',
+        builder: (context, state) => const CodeBeautifierScreen(),
+      ),
+      GoRoute(
+        path: '/domain12/exif-stripper',
+        builder: (context, state) => const ExifStripperScreen(),
+      ),
+
+      // Domain Expansions Routes
+      GoRoute(
+        path: '/cognitive/spaced-repetition',
+        builder: (context, state) => const SpacedRepetitionScreen(),
+      ),
+      GoRoute(
+        path: '/cognitive/speed-reader',
+        builder: (context, state) => const SpeedReaderScreen(),
+      ),
+      GoRoute(
+        path: '/voice/audio-trimmer',
+        builder: (context, state) => const AudioTrimmerScreen(),
+      ),
+      GoRoute(
+        path: '/voice/transcriber',
+        builder: (context, state) => const VoiceTranscriberScreen(),
+      ),
+      GoRoute(
+        path: '/accessibility/high-contrast',
+        builder: (context, state) => const HighContrastReaderScreen(),
+      ),
+      GoRoute(
+        path: '/accessibility/tts',
+        builder: (context, state) => const TtsAccessibilityScreen(),
+      ),
+      GoRoute(
+        path: '/legal/redaction-certifier',
+        builder: (context, state) => const RedactionCertifierScreen(),
+      ),
+      GoRoute(
+        path: '/legal/clause-comparator',
+        builder: (context, state) => const ClauseComparatorScreen(),
+      ),
+      GoRoute(
+        path: '/forms/data-extractor',
+        builder: (context, state) => const FormDataExtractorScreen(),
+      ),
+      GoRoute(
+        path: '/workspace/pomodoro',
+        builder: (context, state) => const FocusPomodoroScreen(),
+      ),
+      GoRoute(
+        path: '/workspace/gpa-calculator',
+        builder: (context, state) => const GpaCalculatorScreen(),
+      ),
+      GoRoute(
+        path: '/translation/glossary',
+        builder: (context, state) => const MultilingualGlossaryScreen(),
+      ),
+      GoRoute(
+        path: '/publishing/cover-designer',
+        builder: (context, state) => const EbookCoverDesignerScreen(),
+      ),
+      GoRoute(
+        path: '/publishing/markdown-epub',
+        builder: (context, state) => const MarkdownToEpubScreen(),
       ),
     ],
     errorBuilder: (context, state) => const AllToolsScreen(),

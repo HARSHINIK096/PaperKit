@@ -15,7 +15,7 @@ enum DomainId {
   formBuilderEngine,     // 9. Interactive Form Builder & Auto-Fill Engine
   mindMappingStudio,     // 10. Visual Mind Mapping & Diagram Studio
   studentWorkspace,      // 11. Student Productivity & Dual-Pane Workspace Hub
-  p2pAirShare,           // 12. Offline P2P Mesh & Air-Share Workspace
+  mediaDevUtilities,     // 12. Media Utilities & Developer Tools Hub
   dataAnalyticsTabular,  // 13. Data Analytics & Tabular Data Extractor
   translationHub,        // 14. Translation & Multi-Lingual Localization Hub
   publishingStudio,      // 15. Automated Publishing & e-Book Studio
@@ -192,6 +192,8 @@ class DomainRegistry {
       route: '/domain/5',
       primaryToolIds: [
         'cognitive-retention',
+        'spaced-repetition',
+        'speed-reader',
       ],
       crossDomainToolIds: [
         'flashcards',
@@ -214,6 +216,8 @@ class DomainRegistry {
       primaryToolIds: [
         'voice-podcast',
         'audio-converter',
+        'audio-trimmer',
+        'voice-transcriber',
       ],
     ),
 
@@ -231,6 +235,8 @@ class DomainRegistry {
       route: '/domain/7',
       primaryToolIds: [
         'accessibility-reader',
+        'high-contrast-reader',
+        'tts-accessibility',
       ],
     ),
 
@@ -249,6 +255,8 @@ class DomainRegistry {
       primaryToolIds: [
         'bates-stamping',
         'legal-audit',
+        'legal-redaction-certifier',
+        'clause-comparator',
       ],
       crossDomainToolIds: [
         'smart-redaction',
@@ -271,6 +279,7 @@ class DomainRegistry {
       primaryToolIds: [
         'form-filler',
         'form-creator',
+        'form-data-extractor',
       ],
     ),
 
@@ -310,10 +319,33 @@ class DomainRegistry {
       route: '/domain/11',
       primaryToolIds: [
         'workspace-dualpane',
+        'focus-pomodoro',
+        'gpa-calculator',
       ],
       crossDomainToolIds: [
         'study-notes',
         'ai-doc-chat',
+      ],
+    ),
+
+    // ── Domain 12 ──
+    DomainItem(
+      number: 12,
+      id: DomainId.mediaDevUtilities,
+      slug: 'media-dev-utilities',
+      name: 'Media Utilities & Developer Tools Hub',
+      shortName: 'Media & Dev Tools',
+      description: 'Watermarking studio, batch image conversion, cryptographic checksum generation, code formatting, and EXIF metadata stripping.',
+      icon: LucideIcons.wrench,
+      color: AppColors.toolTeal,
+      softColor: AppColors.toolTealSoft,
+      route: '/domain/12',
+      primaryToolIds: [
+        'watermark-studio',
+        'batch-image-converter',
+        'hash-generator',
+        'text-beautifier',
+        'exif-stripper',
       ],
     ),
 
@@ -354,6 +386,7 @@ class DomainRegistry {
       primaryToolIds: [
         'translate-doc',
         'translation-hub',
+        'multilingual-glossary',
       ],
     ),
 
@@ -371,6 +404,8 @@ class DomainRegistry {
       route: '/domain/15',
       primaryToolIds: [
         'publishing-studio',
+        'ebook-cover-designer',
+        'markdown-to-epub',
       ],
       crossDomainToolIds: [
         'pdf-to-pdfa',

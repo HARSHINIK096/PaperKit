@@ -4,9 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import '../../core/models/document_file.dart';
+import '../../core/models/history_item.dart';
+import '../../core/providers/files_provider.dart';
+import '../../core/providers/history_provider.dart';
 import '../../core/services/share_service.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
+import '../../core/widgets/file_success_dialog.dart';
+import '../../core/widgets/social_platform_share_section.dart';
 
 class BarcodeGeneratorScreen extends StatefulWidget {
   const BarcodeGeneratorScreen({super.key});
@@ -80,17 +87,46 @@ class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
         final bytes = byteData.buffer.asUint8List();
         final tempDir = await getApplicationDocumentsDirectory();
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final file = File('${tempDir.path}/barcode_$timestamp.png');
+        final fileName = 'MASKERV_Barcode_$timestamp.png';
+        final file = File('${tempDir.path}/$fileName');
         await file.writeAsBytes(bytes);
+        final fileSize = await file.length();
 
-        setState(() {
-          _barcodeFile = file;
-          _isGenerating = false;
-        });
+        final doc = DocumentFile(
+          id: 'barcode_$timestamp',
+          name: fileName,
+          path: file.path,
+          size: fileSize,
+          modifiedAt: DateTime.now(),
+          type: FileTypeCategory.image,
+        );
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Barcode generated successfully!')),
+          await context.read<FilesProvider>().addFile(doc);
+          await context.read<HistoryProvider>().addRecord(
+            HistoryItem(
+              id: 'hist_$timestamp',
+              toolId: 'barcode-generator',
+              toolName: 'Barcode Generator',
+              fileName: fileName,
+              outputPath: file.path,
+              fileSize: fileSize,
+              timestamp: DateTime.now(),
+              success: true,
+            ),
+          );
+
+          setState(() {
+            _barcodeFile = file;
+            _isGenerating = false;
+          });
+
+          FileSuccessDialog.show(
+            context,
+            title: 'Barcode Image Downloaded!',
+            message: 'Your barcode PNG image has been generated & saved to phone storage.',
+            file: file,
+            fileSize: '${(fileSize / 1024).toStringAsFixed(1)} KB',
           );
         }
       }
@@ -125,8 +161,8 @@ class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
                   ),
                   const SizedBox(height: 16),
                   ActionButton(
-                    label: 'Generate Barcode PNG',
-                    icon: LucideIcons.barcode,
+                    label: 'Generate & Download Barcode PNG',
+                    icon: LucideIcons.download,
                     isLoading: _isGenerating,
                     onPressed: _generateBarcode,
                   ),
@@ -146,19 +182,28 @@ class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        OutlinedButton.icon(
-                          onPressed: () => ShareService.shareFile(filePath: _barcodeFile!.path),
-                          icon: const Icon(LucideIcons.share2),
-                          label: const Text('Share Barcode'),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            FileSuccessDialog.show(
+                              context,
+                              title: 'Barcode Image Ready!',
+                              message: 'Saved in PNG format. Choose an app below to share or open.',
+                              file: _barcodeFile!,
+                            );
+                          },
+                          icon: const Icon(LucideIcons.download),
+                          label: const Text('Download / Share Options'),
                         ),
                         const SizedBox(width: 12),
-                        ElevatedButton.icon(
+                        OutlinedButton.icon(
                           onPressed: () => OpenFilex.open(_barcodeFile!.path),
                           icon: const Icon(LucideIcons.externalLink),
-                          label: const Text('Open Image'),
+                          label: const Text('Open'),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    SocialPlatformShareSection(file: _barcodeFile!),
                   ],
                 ),
               ),
