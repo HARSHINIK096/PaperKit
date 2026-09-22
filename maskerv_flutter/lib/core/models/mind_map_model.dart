@@ -3,38 +3,65 @@ class MindMapNode {
   String title;
   String? parentId;
   final List<String> childrenIds;
+  final List<MindMapNode> children;
   double x;
   double y;
   int colorHex;
+  bool isExpanded;
+  String? sourceRef;
 
   MindMapNode({
     required this.id,
     required this.title,
     this.parentId,
     List<String>? childrenIds,
+    List<MindMapNode>? children,
     this.x = 0.0,
     this.y = 0.0,
     this.colorHex = 0xFF4A90E2,
-  }) : childrenIds = childrenIds ?? [];
+    this.isExpanded = true,
+    this.sourceRef,
+  })  : childrenIds = childrenIds ?? [],
+        children = children ?? [];
 
-  factory MindMapNode.fromJson(Map<String, dynamic> json) => MindMapNode(
-        id: json['id'] as String,
-        title: json['title'] as String? ?? 'New Node',
-        parentId: json['parentId'] as String?,
-        childrenIds: (json['childrenIds'] as List? ?? []).cast<String>(),
-        x: (json['x'] as num? ?? 0.0).toDouble(),
-        y: (json['y'] as num? ?? 0.0).toDouble(),
-        colorHex: json['colorHex'] as int? ?? 0xFF4A90E2,
-      );
+  String get label => title;
+  set label(String val) => title = val;
+
+  factory MindMapNode.fromJson(Map<String, dynamic> json) {
+    final rawChildren = json['children'];
+    final children = rawChildren is List
+        ? rawChildren
+            .whereType<Map<String, dynamic>>()
+            .map(MindMapNode.fromJson)
+            .toList()
+        : <MindMapNode>[];
+
+    return MindMapNode(
+      id: json['id'] as String? ?? json['label'] ?? 'node',
+      title: json['title'] as String? ?? json['label'] as String? ?? 'New Node',
+      parentId: json['parentId'] as String? ?? json['parent_id'] as String?,
+      childrenIds: (json['childrenIds'] as List? ?? []).cast<String>(),
+      children: children,
+      x: (json['x'] as num? ?? 0.0).toDouble(),
+      y: (json['y'] as num? ?? 0.0).toDouble(),
+      colorHex: json['colorHex'] as int? ?? 0xFF4A90E2,
+      isExpanded: json['isExpanded'] as bool? ?? true,
+      sourceRef: json['source_ref'] as String?,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,
+        'label': title,
         'parentId': parentId,
         'childrenIds': childrenIds,
+        'children': children.map((c) => c.toJson()).toList(),
         'x': x,
         'y': y,
         'colorHex': colorHex,
+        'isExpanded': isExpanded,
+        'source_ref': sourceRef,
       };
 }
 

@@ -37,10 +37,10 @@ void main() {
       expect(fallback.code, equals('en'));
     });
 
-    test('AppDictionary contains 176 translation keys per language', () {
+    test('AppDictionary contains 181 translation keys per language', () {
       for (final lang in ['en', 'es', 'fr', 'de', 'zh', 'ja', 'hi']) {
         expect(AppDictionary.dictionary.containsKey(lang), isTrue);
-        expect(AppDictionary.dictionary[lang]!.length, equals(176));
+        expect(AppDictionary.dictionary[lang]!.length, equals(181));
       }
 
       // Check specific translations

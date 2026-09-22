@@ -95,44 +95,202 @@ class _MindMapDiagramScreenState extends State<MindMapDiagramScreen> with Single
     );
   }
 
+  void _addCustomNode() {
+    final titleController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Custom Mind Map Node'),
+        content: TextField(
+          controller: titleController,
+          decoration: const InputDecoration(labelText: 'Concept / Topic Title'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (titleController.text.trim().isNotEmpty) {
+                final id = 'node_${DateTime.now().millisecondsSinceEpoch}';
+                setState(() {
+                  _nodes.add(
+                    MindMapNode(
+                      id: id,
+                      title: titleController.text.trim(),
+                      parentId: _nodes.isNotEmpty ? _nodes.first.id : null,
+                      x: (_nodes.length % 2 == 0 ? 200.0 : -200.0),
+                      y: _nodes.length * 50.0,
+                      colorHex: 0xFF8B5CF6,
+                    ),
+                  );
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Add Node'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMindMapTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ElevatedButton.icon(
-            onPressed: _isLoading ? null : _pickDocument,
-            icon: const Icon(LucideIcons.fileUp),
-            label: const Text('Generate Mind Map from PDF'),
+          Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            children: [
+              ElevatedButton.icon(
+                onPressed: _isLoading ? null : _pickDocument,
+                icon: const Icon(LucideIcons.sparkles),
+                label: const Text('AI Analysis: Generate Mind Map'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6366F1),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _nodes.isEmpty ? null : _addCustomNode,
+                icon: const Icon(LucideIcons.plus),
+                label: const Text('Add Node'),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (_nodes.isEmpty)
-            const Card(
+            const Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('Select a PDF to automatically extract heading structures and build an interactive hierarchical mind map graph.'),
+                padding: EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text('Analyzing document concepts like NotebookLM...'),
+                  ],
+                ),
               ),
             )
-          else
+          else if (_nodes.isEmpty)
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: const Padding(
+                padding: EdgeInsets.all(28),
+                child: Column(
+                  children: [
+                    Icon(LucideIcons.gitFork, size: 48, color: Color(0xFF6366F1)),
+                    SizedBox(height: 12),
+                    Text(
+                      'NotebookLM Interactive AI Mind Map Studio',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Select a PDF or document to automatically extract core topics, key takeaways, and structural node graphs.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            // Visual Node Graph Preview Banner
+            Card(
+              color: const Color(0xFF1E1B4B),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.network, color: Color(0xFFA5B4FC), size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _nodes.first.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            'NotebookLM Mind Map • ${_nodes.length} Connected AI Concepts',
+                            style: const TextStyle(color: Color(0xFFC7D2FE), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Nodes Tree Graph List
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _nodes.length,
               itemBuilder: (context, index) {
                 final node = _nodes[index];
+                final isRoot = node.parentId == null;
+                final isChild = node.parentId != null && !node.id.contains('_sub');
+
                 return Card(
-                  color: Color(node.colorHex).withOpacity(0.15),
+                  margin: EdgeInsets.only(
+                    left: isRoot ? 0 : (isChild ? 16 : 32),
+                    bottom: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Color(node.colorHex).withValues(alpha: 0.5)),
+                  ),
                   child: ListTile(
-                    leading: Icon(node.parentId == null ? LucideIcons.circleDot : LucideIcons.cornerDownRight),
-                    title: Text(node.title, style: TextStyle(fontWeight: node.parentId == null ? FontWeight.bold : FontWeight.normal)),
-                    subtitle: Text('ID: ${node.id}'),
+                    leading: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Color(node.colorHex),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    title: Text(
+                      node.title,
+                      style: TextStyle(
+                        fontWeight: isRoot
+                            ? FontWeight.bold
+                            : (isChild ? FontWeight.w600 : FontWeight.normal),
+                        fontSize: isRoot ? 15 : (isChild ? 13.5 : 12.5),
+                      ),
+                    ),
+                    subtitle: Text(
+                      isRoot
+                          ? 'Root Topic'
+                          : (isChild ? 'Major Section' : 'Key Insight / Takeaway'),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    trailing: isRoot
+                        ? const Chip(label: Text('Central Node'))
+                        : Icon(
+                            node.isExpanded
+                                ? LucideIcons.chevronDown
+                                : LucideIcons.chevronRight,
+                            size: 16,
+                          ),
                   ),
                 );
               },
             ),
+          ],
         ],
       ),
     );

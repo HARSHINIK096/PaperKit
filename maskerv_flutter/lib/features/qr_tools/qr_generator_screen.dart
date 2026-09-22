@@ -142,126 +142,8 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          // ── LIVE PREVIEW & READABILITY CARD ──────────────────────────────
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(LucideIcons.sparkles, size: 18, color: Color(0xFF2563EB)),
-                          SizedBox(width: 8),
-                          Text('Live Preview', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        ],
-                      ),
-                      QrReadabilityBadge(config: _config),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-
-                  // The Interactive Canvas Preview
-                  Container(
-                    width: 240,
-                    height: 240,
-                    decoration: BoxDecoration(
-                      color: _config.transparentBackground
-                          ? Colors.grey.withValues(alpha: 0.1)
-                          : _config.backgroundColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: qrImage != null
-                        ? CustomPaint(
-                            painter: QrCustomPainter(
-                              qrImage: qrImage,
-                              config: _config,
-                            ),
-                          )
-                        : const Center(
-                            child: Text(
-                              'Enter content below\nto render QR Code',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey, fontSize: 12),
-                            ),
-                          ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Quick Action Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: _isExporting ? null : _exportQrCode,
-                        icon: _isExporting
-                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(LucideIcons.download, size: 16),
-                        label: Text(_isExporting ? 'Exporting...' : 'Export File'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      if (_lastExportedFile != null) ...[
-                        OutlinedButton.icon(
-                          onPressed: () => ShareService.shareFile(filePath: _lastExportedFile!.path),
-                          icon: const Icon(LucideIcons.share2, size: 16),
-                          label: const Text('Share'),
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        IconButton.outlined(
-                          onPressed: () => OpenFilex.open(_lastExportedFile!.path),
-                          icon: const Icon(LucideIcons.externalLink, size: 16),
-                          tooltip: 'Open in Viewer',
-                        ),
-                      ],
-                    ],
-                  ),
-
-                  // Format Selector Pills
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    children: QrExportFormat.values.map((format) {
-                      final isSelected = _selectedExportFormat == format;
-                      return ChoiceChip(
-                        label: Text(format.name.toUpperCase()),
-                        selected: isSelected,
-                        onSelected: (_) => setState(() => _selectedExportFormat = format),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── CONTENT TYPE SELECTOR ─────────────────────────────────────────
-          const Text('1. Select Content Type', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          // ── 1. CONTENT TYPE & FORM CONFIGURATION ──────────────────────────
+          const Text('1. Select Content Type & Input Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           const SizedBox(height: 8),
 
           // Basic Content Types
@@ -316,9 +198,9 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          // ── CONTENT INPUT FORM ────────────────────────────────────────────
+          // Content Form
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -347,10 +229,10 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // ── VISUAL CUSTOMIZATION & DESIGN CONTROLS ────────────────────────
-          const Text('2. Customize Visual Design', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          // ── 2. VISUAL CUSTOMIZATION & DESIGN CONTROLS ────────────────────────
+          const Text('2. Customize Visual Design & Colors', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           const SizedBox(height: 8),
           Card(
             elevation: 0,
@@ -363,6 +245,126 @@ class _QrGeneratorScreenState extends State<QrGeneratorScreen> {
               child: QrDesignControls(
                 config: _config,
                 onChanged: (newConfig) => setState(() => _config = newConfig),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── 3. DOWNLOAD & EXPORT GENERATED IMAGE SECTION ────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('3. Download & Export Generated Image', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2563EB))),
+              QrReadabilityBadge(config: _config),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  // Canvas Preview
+                  Container(
+                    width: 240,
+                    height: 240,
+                    decoration: BoxDecoration(
+                      color: _config.transparentBackground
+                          ? Colors.grey.withValues(alpha: 0.1)
+                          : _config.backgroundColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: qrImage != null
+                        ? CustomPaint(
+                            painter: QrCustomPainter(
+                              qrImage: qrImage,
+                              config: _config,
+                            ),
+                          )
+                        : const Center(
+                            child: Text(
+                              'Enter content above\nto render QR Code',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey, fontSize: 12),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Format Selector Pills
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Export Format: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      const SizedBox(width: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: QrExportFormat.values.map((format) {
+                          final isSelected = _selectedExportFormat == format;
+                          return ChoiceChip(
+                            label: Text(format.name.toUpperCase()),
+                            selected: isSelected,
+                            onSelected: (_) => setState(() => _selectedExportFormat = format),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Download Action Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _isExporting ? null : _exportQrCode,
+                        icon: _isExporting
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(LucideIcons.download, size: 18),
+                        label: Text(_isExporting ? 'Exporting...' : 'Download QR Image (${_selectedExportFormat.name.toUpperCase()})'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      if (_lastExportedFile != null) ...[
+                        const SizedBox(width: 10),
+                        OutlinedButton.icon(
+                          onPressed: () => ShareService.shareFile(filePath: _lastExportedFile!.path),
+                          icon: const Icon(LucideIcons.share2, size: 16),
+                          label: const Text('Share'),
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        IconButton.outlined(
+                          onPressed: () => OpenFilex.open(_lastExportedFile!.path),
+                          icon: const Icon(LucideIcons.externalLink, size: 16),
+                          tooltip: 'Open in Viewer',
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
               ),
             ),
           ),

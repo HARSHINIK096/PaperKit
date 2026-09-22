@@ -180,7 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: 'Avg Speed',
                     color: AppColors.toolGreen,
                     isDark: isDark,
-                    onTap: () {},
+                    onTap: () => context.push('/history'),
                   ),
                 ],
               ),
@@ -226,7 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     iconColor: AppColors.toolOrange,
                     title: 'Interface Theme',
                     subtitle: 'Pure Light Studio (Offline First)',
-                    onTap: () {},
+                    onTap: _showLanguageDialog,
                   ),
                   _buildSettingsTile(
                     icon: LucideIcons.globe,

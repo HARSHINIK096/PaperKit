@@ -9,6 +9,7 @@ import '../../core/models/document_file.dart';
 import '../../core/models/history_item.dart';
 import '../../core/providers/files_provider.dart';
 import '../../core/providers/history_provider.dart';
+import '../../core/services/share_service.dart';
 import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
 import '../../core/widgets/file_success_dialog.dart';
@@ -23,6 +24,7 @@ class BarcodeGeneratorScreen extends StatefulWidget {
 
 class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
   final TextEditingController _codeController = TextEditingController(text: 'MASKERV-89412');
+  String _symbology = 'Code 128';
   bool _isGenerating = false;
   File? _barcodeFile;
 
@@ -72,7 +74,10 @@ class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
 
       // Draw label text beneath barcode
       final textPainter = TextPainter(
-        text: TextSpan(text: text, style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2.0)),
+        text: TextSpan(
+          text: '$_symbology: $text',
+          style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+        ),
         textDirection: TextDirection.ltr,
       );
       textPainter.layout();
@@ -103,17 +108,17 @@ class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
         if (mounted) {
           await context.read<FilesProvider>().addFile(doc);
           await context.read<HistoryProvider>().addRecord(
-            HistoryItem(
-              id: 'hist_$timestamp',
-              toolId: 'barcode-generator',
-              toolName: 'Barcode Generator',
-              fileName: fileName,
-              outputPath: file.path,
-              fileSize: fileSize,
-              timestamp: DateTime.now(),
-              success: true,
-            ),
-          );
+                HistoryItem(
+                  id: 'hist_$timestamp',
+                  toolId: 'barcode-generator',
+                  toolName: 'Barcode Generator',
+                  fileName: fileName,
+                  outputPath: file.path,
+                  fileSize: fileSize,
+                  timestamp: DateTime.now(),
+                  success: true,
+                ),
+              );
 
           setState(() {
             _barcodeFile = file;
@@ -139,13 +144,23 @@ class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AppShell(
       title: 'Barcode Studio',
       showBottomNav: false,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // ── 1. SELECT BARCODE SYMBOLOGY & CODE ─────────────────────────────
+          const Text('1. Select Barcode Symbology & Code SKU', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 8),
           Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -158,56 +173,116 @@ class _BarcodeGeneratorScreenState extends State<BarcodeGeneratorScreen> {
                       prefixIcon: Icon(LucideIcons.barcode, size: 20),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  ActionButton(
-                    label: 'Generate & Download Barcode PNG',
-                    icon: LucideIcons.download,
-                    isLoading: _isGenerating,
-                    onPressed: _generateBarcode,
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: _symbology,
+                    decoration: const InputDecoration(labelText: 'Barcode Symbology Standard'),
+                    items: ['Code 128', 'EAN-13', 'UPC-A', 'Code 39', 'ITF-14'].map((s) {
+                      return DropdownMenuItem(value: s, child: Text(s));
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => _symbology = val);
+                    },
                   ),
                 ],
               ),
             ),
           ),
-          if (_barcodeFile != null) ...[
-            const SizedBox(height: 20),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
+
+          const SizedBox(height: 20),
+
+          // ── 2. CUSTOMIZE VISUAL PROPERTIES ──────────────────────────────────
+          const Text('2. Customize Visual Properties', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 8),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Bar Color & High Contrast', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: const [
+                      Chip(label: Text('Black on White')),
+                      Chip(label: Text('High Resolution (300 DPI)')),
+                      Chip(label: Text('Vector Ready')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── 3. DOWNLOAD & EXPORT BARCODE IMAGE SECTION ──────────────────────
+          const Text('3. Download & Export Barcode Image', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2563EB))),
+          const SizedBox(height: 8),
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  if (_barcodeFile != null) ...[
                     Image.file(_barcodeFile!, height: 120),
+                    const SizedBox(height: 16),
+                  ] else ...[
+                    Container(
+                      height: 100,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text('Barcode Image Preview Area', style: TextStyle(color: Colors.grey)),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  ActionButton(
+                    label: 'Download Barcode PNG Image',
+                    icon: LucideIcons.download,
+                    isLoading: _isGenerating,
+                    onPressed: _generateBarcode,
+                  ),
+                  if (_barcodeFile != null) ...[
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            FileSuccessDialog.show(
-                              context,
-                              title: 'Barcode Image Ready!',
-                              message: 'Saved in PNG format. Choose an app below to share or open.',
-                              file: _barcodeFile!,
-                            );
-                          },
-                          icon: const Icon(LucideIcons.download),
-                          label: const Text('Download / Share Options'),
+                        OutlinedButton.icon(
+                          onPressed: () => ShareService.shareFile(filePath: _barcodeFile!.path),
+                          icon: const Icon(LucideIcons.share2, size: 16),
+                          label: const Text('Share'),
                         ),
                         const SizedBox(width: 12),
                         OutlinedButton.icon(
                           onPressed: () => OpenFilex.open(_barcodeFile!.path),
-                          icon: const Icon(LucideIcons.externalLink),
-                          label: const Text('Open'),
+                          icon: const Icon(LucideIcons.externalLink, size: 16),
+                          label: const Text('Open File'),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     SocialPlatformShareSection(file: _barcodeFile!),
                   ],
-                ),
+                ],
               ),
             ),
-          ],
+          ),
+
+          const SizedBox(height: 30),
         ],
       ),
     );

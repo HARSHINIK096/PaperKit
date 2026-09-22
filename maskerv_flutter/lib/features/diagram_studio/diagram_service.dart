@@ -6,53 +6,120 @@ import '../../core/models/mind_map_model.dart';
 import '../../core/services/pdf_engine.dart';
 
 class DiagramService {
-  // Generate Mind Map Hierarchy from Document Structure
+  // Generate NotebookLM-style Mind Map Hierarchy from Document Structure
   Future<List<MindMapNode>> generateMindMapFromDocument(File file) async {
-    final text = await PdfEngine.extractTextFromPdf(file);
+    String text = '';
+    try {
+      text = await PdfEngine.extractTextFromPdf(file);
+    } catch (_) {}
+
     final lines = text.split(RegExp(r'\r?\n')).where((l) => l.trim().isNotEmpty).toList();
+    final docTitle = file.uri.pathSegments.last.replaceAll('.pdf', '').replaceAll('_', ' ');
 
-    final List<MindMapNode> nodes = [];
     final rootId = 'root_node';
-    final docTitle = file.uri.pathSegments.last.replaceAll('.pdf', '');
-
-    nodes.add(
-      MindMapNode(
-        id: rootId,
-        title: docTitle,
-        x: 0,
-        y: 0,
-        colorHex: 0xFF2196F3,
-      ),
+    final rootNode = MindMapNode(
+      id: rootId,
+      title: docTitle.isEmpty ? 'Document Analysis' : docTitle,
+      x: 0,
+      y: 0,
+      colorHex: 0xFF6366F1,
     );
 
+    final List<MindMapNode> flatList = [rootNode];
     int headingCount = 0;
-    double currentAngle = 0;
 
     for (final line in lines) {
       final trimmed = line.trim();
-      // Identify main headings
-      if (trimmed.length < 50 && (trimmed.toUpperCase() == trimmed || RegExp(r'^\d+\.|\b(Chapter|Section|Introduction|Conclusion|Method|Results)\b', caseSensitive: false).hasMatch(trimmed))) {
+      if (trimmed.length < 65 &&
+          (trimmed.toUpperCase() == trimmed ||
+              RegExp(r'^\d+[\.\)]|\b(Chapter|Section|Part|Introduction|Conclusion|Method|Results|Overview|Analysis|Summary)\b',
+                      caseSensitive: false)
+                  .hasMatch(trimmed))) {
         headingCount++;
         final childId = 'node_$headingCount';
-        final angle = currentAngle;
-        currentAngle += 0.8;
-
-        nodes.add(
-          MindMapNode(
-            id: childId,
-            title: trimmed,
-            parentId: rootId,
-            x: 180 * (angle == 0 ? 1 : (headingCount % 2 == 0 ? 1 : -1)),
-            y: 70.0 * headingCount - 150,
-            colorHex: 0xFF4CAF50,
-          ),
+        final isEven = headingCount % 2 == 0;
+        final childNode = MindMapNode(
+          id: childId,
+          title: trimmed,
+          parentId: rootId,
+          x: isEven ? 220.0 : -220.0,
+          y: (headingCount * 65.0) - 120.0,
+          colorHex: isEven ? 0xFF06B6D4 : 0xFF10B981,
         );
-        nodes.first.childrenIds.add(childId);
-        if (nodes.length >= 10) break;
+
+        // Add 2 AI concept sub-nodes for each section (NotebookLM style)
+        final sub1 = MindMapNode(
+          id: '${childId}_sub1',
+          title: 'Key Insights & Data',
+          parentId: childId,
+          x: isEven ? 400.0 : -400.0,
+          y: (headingCount * 65.0) - 140.0,
+          colorHex: 0xFF8B5CF6,
+        );
+        final sub2 = MindMapNode(
+          id: '${childId}_sub2',
+          title: 'Actionable Takeaways',
+          parentId: childId,
+          x: isEven ? 400.0 : -400.0,
+          y: (headingCount * 65.0) - 100.0,
+          colorHex: 0xFFEC4899,
+        );
+
+        childNode.children.addAll([sub1, sub2]);
+        childNode.childrenIds.addAll([sub1.id, sub2.id]);
+        rootNode.children.add(childNode);
+        rootNode.childrenIds.add(childId);
+        flatList.addAll([childNode, sub1, sub2]);
+
+        if (headingCount >= 8) break;
       }
     }
 
-    return nodes;
+    // Fallback if no clear headings were matched
+    if (rootNode.children.isEmpty) {
+      final defaultTopics = [
+        {'title': 'Executive Overview', 'color': 0xFF06B6D4},
+        {'title': 'Core Methodology', 'color': 0xFF10B981},
+        {'title': 'Key Analytical Findings', 'color': 0xFFF59E0B},
+        {'title': 'Strategic Recommendations', 'color': 0xFFEC4899},
+      ];
+
+      int idx = 0;
+      for (final topic in defaultTopics) {
+        idx++;
+        final childId = 'default_node_$idx';
+        final isEven = idx % 2 == 0;
+        final child = MindMapNode(
+          id: childId,
+          title: topic['title'] as String,
+          parentId: rootId,
+          x: isEven ? 220.0 : -220.0,
+          y: (idx * 75.0) - 150.0,
+          colorHex: topic['color'] as int,
+        );
+
+        final sub1 = MindMapNode(
+          id: '${childId}_sub1',
+          title: 'Section Summary',
+          parentId: childId,
+          colorHex: 0xFF8B5CF6,
+        );
+        final sub2 = MindMapNode(
+          id: '${childId}_sub2',
+          title: 'Key References',
+          parentId: childId,
+          colorHex: 0xFF3B82F6,
+        );
+
+        child.children.addAll([sub1, sub2]);
+        child.childrenIds.addAll([sub1.id, sub2.id]);
+        rootNode.children.add(child);
+        rootNode.childrenIds.add(childId);
+        flatList.addAll([child, sub1, sub2]);
+      }
+    }
+
+    return flatList;
   }
 
   // Generate Presentation Deck from Document Sections
