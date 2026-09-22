@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:camera/camera.dart';
@@ -317,64 +316,6 @@ class _ScannerScreenState extends State<ScannerScreen>
     }
   }
 
-  Future<void> _exportImages() async {
-    if (_scannedPages.isEmpty) return;
-    setState(() => _isProcessing = true);
-    HapticFeedback.mediumImpact();
-    try {
-      final outputDir = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final savedFile = await _scannedPages.first.copy(
-        '${outputDir.path}/MASKERV_Scan_$timestamp.png',
-      );
-      final fileSize = await savedFile.length();
-
-      final doc = DocumentFile(
-        id: 'scan_img_$timestamp',
-        name: 'MASKERV_Scan_$timestamp.png',
-        path: savedFile.path,
-        size: fileSize,
-        modifiedAt: DateTime.now(),
-        type: FileTypeCategory.image,
-      );
-
-      if (mounted) {
-        await context.read<FilesProvider>().addFile(doc);
-        await context.read<HistoryProvider>().addRecord(
-          HistoryItem(
-            id: 'hist_$timestamp',
-            toolId: 'scanner-image',
-            toolName: 'Document Scanner (Image)',
-            fileName: doc.name,
-            outputPath: savedFile.path,
-            fileSize: fileSize,
-            timestamp: DateTime.now(),
-            success: true,
-          ),
-        );
-
-        setState(() => _isProcessing = false);
-
-        FileSuccessDialog.show(
-          context,
-          title: 'Frame Saved as Image!',
-          message: 'Your captured frame has been saved in high-res PNG format.',
-          file: savedFile,
-          fileSize: '${(fileSize / 1024).toStringAsFixed(1)} KB',
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save image: $e'),
-            backgroundColor: const Color(0xFFDC2626),
-          ),
-        );
-      }
-    }
-  }
 
   Future<void> _exportTextFile() async {
     if (_scannedPages.isEmpty) return;
@@ -505,7 +446,7 @@ $paragraphsXml
 
     final encoder = ZipEncoder();
     final zipData = encoder.encode(archive);
-    return Uint8List.fromList(zipData ?? []);
+    return Uint8List.fromList(zipData);
   }
 
   Future<void> _convertToWordDocx() async {

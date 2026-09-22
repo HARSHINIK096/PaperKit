@@ -1,16 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
-import '../../core/models/document_file.dart';
-import '../../core/models/history_item.dart';
-import '../../core/providers/files_provider.dart';
-import '../../core/providers/history_provider.dart';
-import '../../core/widgets/action_button.dart';
 import '../../core/widgets/app_shell.dart';
-import '../../core/widgets/file_success_dialog.dart';
 
 // ── DOMAIN 5: SPACED REPETITION STUDY TRACKER ────────────────────────────────
 class SpacedRepetitionScreen extends StatefulWidget {
